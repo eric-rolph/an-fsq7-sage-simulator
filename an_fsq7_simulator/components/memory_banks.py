@@ -73,7 +73,7 @@ def memory_banks() -> rx.Component:
                 ),
                 
                 rx.text(
-                    f"{(FSQ7State.memory_used_bank1/(FSQ7State.memory_capacity_bank1 or 1)*100):.1f}% Utilized",
+                    f"{(FSQ7State.memory_used_bank1/rx.cond(FSQ7State.memory_capacity_bank1 > 0, FSQ7State.memory_capacity_bank1, 1)*100):.1f}% Utilized",
                     color="#00FFFF",
                     font_family="monospace",
                     font_size="11px",
@@ -135,7 +135,7 @@ def memory_banks() -> rx.Component:
                 ),
                 
                 rx.text(
-                    f"{(FSQ7State.memory_used_bank2/(FSQ7State.memory_capacity_bank2 or 1)*100):.1f}% Utilized",
+                    f"{(FSQ7State.memory_used_bank2/rx.cond(FSQ7State.memory_capacity_bank2 > 0, FSQ7State.memory_capacity_bank2, 1)*100):.1f}% Utilized",
                     color="#FFA500",
                     font_family="monospace",
                     font_size="11px",
