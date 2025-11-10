@@ -84,7 +84,7 @@ def cpu_panel() -> rx.Component:
                             font_weight="bold",
                         ),
                         rx.text(
-                            f"{FSQ7State.cpu_accumulator:08X}",
+                            FSQ7State.cpu_accumulator_hex,
                             font_family="monospace",
                             color="#00FF00",
                             font_size="14px",
@@ -97,13 +97,13 @@ def cpu_panel() -> rx.Component:
                     rx.hstack(
                         rx.text("", width="30px"),  # Indent
                         rx.text(
-                            f"L={((FSQ7State.cpu_accumulator >> 16) & 0xFFFF):04X}",
+                            f"L={FSQ7State.cpu_accumulator_left_hex}",
                             font_family="monospace",
                             color="#888",
                             font_size="10px",
                         ),
                         rx.text(
-                            f"R={(FSQ7State.cpu_accumulator & 0xFFFF):04X}",
+                            f"R={FSQ7State.cpu_accumulator_right_hex}",
                             font_family="monospace",
                             color="#888",
                             font_size="10px",
@@ -134,7 +134,7 @@ def cpu_panel() -> rx.Component:
                         width="50px",
                     ),
                     rx.text(
-                        f"{FSQ7State.cpu_ix0:04X}",
+                        FSQ7State.cpu_ix0_hex,
                         font_family="monospace",
                         color="#00FFFF",
                         font_size="13px",
@@ -159,7 +159,7 @@ def cpu_panel() -> rx.Component:
                         width="50px",
                     ),
                     rx.text(
-                        f"{FSQ7State.cpu_ix1:04X}",
+                        FSQ7State.cpu_ix1_hex,
                         font_family="monospace",
                         color="#00FFFF",
                         font_size="13px",
@@ -184,7 +184,7 @@ def cpu_panel() -> rx.Component:
                         width="50px",
                     ),
                     rx.text(
-                        f"{FSQ7State.cpu_ix2:04X}",
+                        FSQ7State.cpu_ix2_hex,
                         font_family="monospace",
                         color="#00FFFF",
                         font_size="13px",
@@ -209,7 +209,7 @@ def cpu_panel() -> rx.Component:
                         width="50px",
                     ),
                     rx.text(
-                        f"{FSQ7State.cpu_ix3:04X}",
+                        FSQ7State.cpu_ix3_hex,
                         font_family="monospace",
                         color="#00FFFF",
                         font_size="13px",
@@ -218,7 +218,6 @@ def cpu_panel() -> rx.Component:
                     rx.text(
                         f"({FSQ7State.cpu_ix3})",
                         font_family="monospace",
-                        color="#888",
                         font_size="10px",
                     ),
                     width="100%",
@@ -235,7 +234,7 @@ def cpu_panel() -> rx.Component:
                         margin_top="8px",
                     ),
                     rx.text(
-                        f"{FSQ7State.cpu_program_counter:04X}",
+                        FSQ7State.cpu_program_counter_hex,
                         font_family="monospace",
                         color="#00FF00",
                         font_size="14px",
@@ -262,7 +261,7 @@ def cpu_panel() -> rx.Component:
                         font_weight="bold",
                     ),
                     rx.text(
-                        f"{FSQ7State.cpu_rtc:04X}",
+                        FSQ7State.cpu_rtc_hex,
                         font_family="monospace",
                         color="#FFFF00",
                         font_size="13px",
