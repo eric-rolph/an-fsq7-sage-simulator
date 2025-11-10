@@ -309,19 +309,7 @@ def cpu_panel() -> rx.Component:
                     width="100%",
                 ),
                 
-                rx.hstack(
-                    rx.text("Cycles:", font_family="monospace", color="#888", font_size="11px"),
-                    rx.spacer(),
-                    rx.text(
-                        f"{FSQ7State.cpu_cycle_count}",
-                        font_family="monospace",
-                        color="#00FF00",
-                        font_size="11px",
-                    ),
-                    width="100%",
-                ),
-                
-                width="100%",
+width="100%",
                 spacing="1",
                 padding="10px",
                 background="#0a0a0a",
