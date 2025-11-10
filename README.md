@@ -27,7 +27,7 @@ This simulator recreates the experience of operating an AN/FSQ-7 console with:
 - Light gun interaction for target selection
 
 ### 🎯 **NEW: Functional CPU Core**
-- **Indexed Addressing (Chapter 12.3)** - `effective_addr = base + I`
+- **Indexed Addressing ** - `effective_addr = base + I`
 - **Index Register (I)** - Critical for list processing and loops
 - **Accumulator (A)** - Main computation register
 - **Program Counter (P)** - Instruction pointer
@@ -35,7 +35,7 @@ This simulator recreates the experience of operating an AN/FSQ-7 console with:
 - **64K Word Memory** - Actual program storage and execution
 - **10 Core Opcodes** - LDA, STO, ADD, SUB, MPY, DVH, TRA, TNZ, TIX, TSX
 
-### 📜 Executable SAGE Programs (Chapter 12.5)
+### 📜 Executable SAGE Programs
 Run authentic SAGE programs that demonstrate indexed addressing:
 - **Array Sum** - Sum array elements using indexed load
 - **Array Search** - Find value in array using index register
@@ -73,7 +73,7 @@ Each program can be:
 - **Power Control** - System startup with vacuum tube warm-up sequence
 - **CPU Control Panel** (NEW) - Register display and program execution
   - View A (Accumulator), I (Index), P (Program Counter) in real-time
-  - Load Chapter 12.5 example programs
+  - Load example programs
   - Step through instructions one at a time
   - Run programs at full speed
   - Reset CPU to initial state
@@ -156,7 +156,7 @@ chmod +x setup.sh
    - Highlighted in **cyan** in the CPU panel
    - Decrements as loops execute
    - Shows current position in array operations
-   - **This is the key to understanding Chapter 12.3 indexed addressing!**
+   - **This is the key to understanding indexed addressing!**
 
 ### Operating the Radar Display
 
@@ -200,7 +200,7 @@ chmod +x setup.sh
 an_fsq7_simulator/
 ├── an_fsq7_simulator.py       # Main application and state management
 ├── cpu_core.py                # CPU execution engine (NEW!)
-├── sage_programs.py           # Chapter 12.5 example programs (NEW!)
+├── sage_programs.py           # Example programs (NEW!)
 ├── components/
 │   ├── crt_display.py         # CRT display with effects
 │   ├── control_panel.py       # Control surfaces and switches
@@ -244,7 +244,7 @@ LOOP:
     HLT
 ```
 
-See **[docs/INDEXED_ADDRESSING.md](docs/INDEXED_ADDRESSING.md)** for complete details on Chapter 12.3 implementation.
+See **[docs/INDEXED_ADDRESSING.md](docs/INDEXED_ADDRESSING.md)** for complete details on implementation.
 
 ## Testing CPU Execution
 
@@ -255,7 +255,7 @@ Run the included test programs:
 cd an_fsq7_simulator
 python -m cpu_core
 
-# Run all Chapter 12.5 examples
+# Run all examples
 python -m sage_programs
 ```
 
@@ -277,7 +277,7 @@ Expected output:
 - **[Design Document](docs/DESIGN.md)** - Technical architecture and decisions
 - **[Historical Context](docs/HISTORY.md)** - AN/FSQ-7 and SAGE history
 - **[Implementation Thoughts](docs/THOUGHTS.md)** - Development considerations
-- **[Indexed Addressing](docs/INDEXED_ADDRESSING.md)** - ⚡ NEW: Chapter 12.3 implementation details
+- **[Indexed Addressing](docs/INDEXED_ADDRESSING.md)** - ⚡ NEW: implementation details
 
 ## Historical Context
 
@@ -296,14 +296,14 @@ The Semi-Automatic Ground Environment (SAGE) was:
 4. **Distributed computing** - Multiple sites working together
 5. **Modular software** - Programs could be updated independently
 6. **Human-computer interaction** - Operators directly controlling systems
-7. **Indexed addressing** - Loop processing and data structures (Chapter 12.3)
+7. **Indexed addressing** - Loop processing and data structures
 
 ## Contributing
 
 Contributions are welcome! Areas for enhancement:
 
-- [ ] More SAGE instruction opcodes (Chapter 12 has many more)
-- [ ] Drum timing simulation (Chapters 7.2-7.3) - realistic memory latency
+- [ ] More SAGE instruction opcodes 
+- [ ] Drum timing simulation - realistic memory latency
 - [ ] More realistic radar simulation algorithms
 - [ ] Additional display modes and visualizations
 - [ ] Sound effects (tape drive, alarm bells, teleprinter)
@@ -312,7 +312,7 @@ Contributions are welcome! Areas for enhancement:
 - [ ] Mobile/touch-friendly interface
 - [ ] WebGL shader improvements for CRT effects
 - [ ] Authentic SAGE command language interpreter
-- [ ] Subroutine library (Chapter 12.6)
+- [ ] Subroutine library
 
 ## License
 
@@ -324,7 +324,7 @@ This project is open source and available under the MIT License.
 - Thanks to the Computer History Museum for preserving SAGE documentation
 - Built with [Reflex](https://reflex.dev) - Python web framework
 - CRT effects inspired by vintage computing enthusiasts
-- CPU implementation follows SAGE Programming Manual Chapter 12
+- CPU implementation follows SAGE Programming Manual
 
 ---
 
@@ -336,5 +336,5 @@ This project is open source and available under the MIT License.
 
 *Press POWER ON to begin your journey back to the dawn of interactive computing.*
 
-*Then load a Chapter 12.5 program and watch the Index Register (I) work its magic! ⚡*
+*Then load a program and watch the Index Register (I) work its magic! ⚡*
 
