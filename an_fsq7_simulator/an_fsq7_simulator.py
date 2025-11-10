@@ -521,8 +521,8 @@ def index() -> rx.Component:
                 ),
                 rx.spacer(),
                 rx.badge(
-                    "OPERATIONAL" if FSQ7State.system_ready else "OFFLINE",
-                    color_scheme="green" if FSQ7State.system_ready else "red",
+                    rx.cond(FSQ7State.system_ready, "OPERATIONAL", "OFFLINE"),
+                    color_scheme=rx.cond(FSQ7State.system_ready, "green", "red"),
                     size="3",
                 ),
                 width="100%",
