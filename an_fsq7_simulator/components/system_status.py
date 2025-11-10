@@ -70,7 +70,7 @@ def system_status() -> rx.Component:
                 border_radius="3px",
             ),
             
-            # Memory status
+            # Memory status (TWO BANKS)
             rx.vstack(
                 rx.text(
                     "CORE MEMORY",
@@ -82,7 +82,7 @@ def system_status() -> rx.Component:
                 rx.hstack(
                     rx.text("Used:", color="#00FF00", font_family="monospace", font_size="11px"),
                     rx.text(
-                        f"{FSQ7State.memory_used:,}",
+                        f"{FSQ7State.memory_used_bank1 + FSQ7State.memory_used_bank2:,}",
                         color="#FFFF00",
                         font_family="monospace",
                         font_size="11px",
@@ -92,7 +92,7 @@ def system_status() -> rx.Component:
                 rx.hstack(
                     rx.text("Total:", color="#00FF00", font_family="monospace", font_size="11px"),
                     rx.text(
-                        f"{FSQ7State.memory_capacity:,}",
+                        f"{FSQ7State.memory_capacity_bank1 + FSQ7State.memory_capacity_bank2:,}",
                         color="#FFFF00",
                         font_family="monospace",
                         font_size="11px",
@@ -100,8 +100,8 @@ def system_status() -> rx.Component:
                     width="100%",
                 ),
                 rx.progress(
-                    value=FSQ7State.memory_used,
-                    max=FSQ7State.memory_capacity,
+                    value=FSQ7State.memory_used_bank1 + FSQ7State.memory_used_bank2,
+                    max=FSQ7State.memory_capacity_bank1 + FSQ7State.memory_capacity_bank2,
                     width="100%",
                     color_scheme="cyan",
                     size="1",
