@@ -1,8 +1,12 @@
 """
-CPU Control Panel Component
+CPU Control Panel Component - AUTHENTIC AN/FSQ-7 Architecture
 
-Displays the CPU core state and provides controls for program execution.
-Shows the critical registers including the Index Register (I) for indexed addressing.
+Displays the AUTHENTIC CPU core state per Ulmann Chapter 12:
+- 32-bit accumulator with two 15-bit signed halves
+- FOUR index registers (ix[0..3]) per §12.3
+- Program counter with bank indicator
+- Real-time clock (32 Hz) per Wikipedia
+- Two memory banks system
 """
 
 import reflex as rx
@@ -10,22 +14,23 @@ import reflex as rx
 
 def cpu_panel() -> rx.Component:
     """
-    Render the CPU control panel showing registers and execution controls.
+    Render the AUTHENTIC CPU control panel showing registers and execution controls.
     
-    This panel displays:
-        - Accumulator (A): Main computation register
-        - Index Register (I): Used for indexed addressing (Chapter 12.3)
-        - Program Counter (P): Current instruction address
+    This panel displays the REAL AN/FSQ-7 architecture:
+        - Accumulator (A): 32-bit word with left/right halves
+        - Four Index Registers (ix[0..3]): Per Ulmann §12.3
+        - Program Counter (P): With bank indicator (Bank 1 or 2)
+        - Real-Time Clock (RTC): 16-bit, 32 Hz
         - Execution controls: Load, Step, Run, Reset
     """
     from ..an_fsq7_simulator import FSQ7State
     
     return rx.box(
         rx.vstack(
-            # Panel header
+            # Panel header with authentic badge
             rx.hstack(
                 rx.text(
-                    "CPU CORE",
+                    "CPU CORE (AUTHENTIC)",
                     font_size="18px",
                     font_weight="bold",
                     color="#00FF00",
@@ -57,10 +62,10 @@ def cpu_panel() -> rx.Component:
                 margin_bottom="10px",
             ),
             
-            # Register Display
+            # Register Display - AUTHENTIC ARCHITECTURE
             rx.vstack(
                 rx.text(
-                    "REGISTERS",
+                    "REGISTERS (Ch. 12)",
                     font_size="12px",
                     font_weight="bold",
                     color="#888",
@@ -68,64 +73,166 @@ def cpu_panel() -> rx.Component:
                     margin_bottom="5px",
                 ),
                 
-                # Accumulator (A)
-                rx.hstack(
-                    rx.text(
-                        "A:",
-                        font_family="monospace",
-                        color="#00FF00",
-                        width="30px",
+                # Accumulator (A) - 32-bit with two halves
+                rx.vstack(
+                    rx.hstack(
+                        rx.text(
+                            "A:",
+                            font_family="monospace",
+                            color="#00FF00",
+                            width="30px",
+                            font_weight="bold",
+                        ),
+                        rx.text(
+                            f"{FSQ7State.cpu_accumulator:08X}",
+                            font_family="monospace",
+                            color="#00FF00",
+                            font_size="14px",
+                            font_weight="bold",
+                        ),
+                        width="100%",
+                        spacing="2",
                     ),
-                    rx.text(
-                        f"{FSQ7State.cpu_accumulator:08X}",
-                        font_family="monospace",
-                        color="#00FF00",
-                        font_size="14px",
-                        font_weight="bold",
+                    # Show left and right halves separately
+                    rx.hstack(
+                        rx.text("", width="30px"),  # Indent
+                        rx.text(
+                            f"L={((FSQ7State.cpu_accumulator >> 16) & 0xFFFF):04X}",
+                            font_family="monospace",
+                            color="#888",
+                            font_size="10px",
+                        ),
+                        rx.text(
+                            f"R={(FSQ7State.cpu_accumulator & 0xFFFF):04X}",
+                            font_family="monospace",
+                            color="#888",
+                            font_size="10px",
+                        ),
+                        width="100%",
+                        spacing="2",
                     ),
-                    rx.text(
-                        f"({FSQ7State.cpu_accumulator})",
-                        font_family="monospace",
-                        color="#888",
-                        font_size="11px",
-                    ),
+                    spacing="1",
                     width="100%",
-                    spacing="2",
                 ),
                 
-                # Index Register (I) - CRITICAL for Chapter 12.5!
+                # FOUR Index Registers (per Ulmann §12.3)
+                rx.text(
+                    "INDEX REGISTERS (§12.3):",
+                    font_family="monospace",
+                    color="#00FFFF",
+                    font_size="11px",
+                    font_weight="bold",
+                    margin_top="8px",
+                ),
+                
+                # ix[0]
                 rx.hstack(
                     rx.text(
-                        "I:",
-                        font_family="monospace",
-                        color="#00FFFF",  # Cyan to highlight
-                        width="30px",
-                        font_weight="bold",
-                    ),
-                    rx.text(
-                        f"{FSQ7State.cpu_index_reg:04X}",
+                        "ix[0]:",
                         font_family="monospace",
                         color="#00FFFF",
-                        font_size="14px",
+                        width="50px",
+                    ),
+                    rx.text(
+                        f"{FSQ7State.cpu_ix0:04X}",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        font_size="13px",
                         font_weight="bold",
                     ),
                     rx.text(
-                        f"({FSQ7State.cpu_index_reg})",
+                        f"({FSQ7State.cpu_ix0})",
                         font_family="monospace",
                         color="#888",
-                        font_size="11px",
+                        font_size="10px",
                     ),
                     width="100%",
                     spacing="2",
                 ),
                 
-                # Program Counter (P)
+                # ix[1]
+                rx.hstack(
+                    rx.text(
+                        "ix[1]:",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        width="50px",
+                    ),
+                    rx.text(
+                        f"{FSQ7State.cpu_ix1:04X}",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        font_size="13px",
+                        font_weight="bold",
+                    ),
+                    rx.text(
+                        f"({FSQ7State.cpu_ix1})",
+                        font_family="monospace",
+                        color="#888",
+                        font_size="10px",
+                    ),
+                    width="100%",
+                    spacing="2",
+                ),
+                
+                # ix[2]
+                rx.hstack(
+                    rx.text(
+                        "ix[2]:",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        width="50px",
+                    ),
+                    rx.text(
+                        f"{FSQ7State.cpu_ix2:04X}",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        font_size="13px",
+                        font_weight="bold",
+                    ),
+                    rx.text(
+                        f"({FSQ7State.cpu_ix2})",
+                        font_family="monospace",
+                        color="#888",
+                        font_size="10px",
+                    ),
+                    width="100%",
+                    spacing="2",
+                ),
+                
+                # ix[3]
+                rx.hstack(
+                    rx.text(
+                        "ix[3]:",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        width="50px",
+                    ),
+                    rx.text(
+                        f"{FSQ7State.cpu_ix3:04X}",
+                        font_family="monospace",
+                        color="#00FFFF",
+                        font_size="13px",
+                        font_weight="bold",
+                    ),
+                    rx.text(
+                        f"({FSQ7State.cpu_ix3})",
+                        font_family="monospace",
+                        color="#888",
+                        font_size="10px",
+                    ),
+                    width="100%",
+                    spacing="2",
+                ),
+                
+                # Program Counter (P) with bank indicator
                 rx.hstack(
                     rx.text(
                         "P:",
                         font_family="monospace",
                         color="#00FF00",
                         width="30px",
+                        margin_top="8px",
                     ),
                     rx.text(
                         f"{FSQ7State.cpu_program_counter:04X}",
@@ -133,12 +240,39 @@ def cpu_panel() -> rx.Component:
                         color="#00FF00",
                         font_size="14px",
                         font_weight="bold",
+                        margin_top="8px",
+                    ),
+                    rx.badge(
+                        f"Bank {FSQ7State.cpu_pc_bank}",
+                        color_scheme=rx.cond(FSQ7State.cpu_pc_bank == 1, "green", "orange"),
+                        size="1",
+                        margin_top="8px",
+                    ),
+                    width="100%",
+                    spacing="2",
+                ),
+                
+                # Real-Time Clock (32 Hz)
+                rx.hstack(
+                    rx.text(
+                        "RTC:",
+                        font_family="monospace",
+                        color="#FFFF00",
+                        width="30px",
+                        font_weight="bold",
                     ),
                     rx.text(
-                        f"({FSQ7State.cpu_program_counter})",
+                        f"{FSQ7State.cpu_rtc:04X}",
+                        font_family="monospace",
+                        color="#FFFF00",
+                        font_size="13px",
+                        font_weight="bold",
+                    ),
+                    rx.text(
+                        f"(32 Hz)",
                         font_family="monospace",
                         color="#888",
-                        font_size="11px",
+                        font_size="10px",
                     ),
                     width="100%",
                     spacing="2",
@@ -196,7 +330,7 @@ def cpu_panel() -> rx.Component:
                 border_radius="5px",
             ),
             
-            # Program Selection
+            # Program Selection - AUTHENTIC PROGRAMS
             rx.vstack(
                 rx.text(
                     "PROGRAM SELECT",
@@ -210,10 +344,11 @@ def cpu_panel() -> rx.Component:
                 
                 rx.select(
                     [
-                        "Array Sum (Ch 12.5)",
-                        "Array Search (Ch 12.5)",
-                        "Array Copy (Ch 12.5)",
-                        "Matrix Init (Ch 12.5)",
+                        "Array Sum (Authentic)",
+                        "Coordinate Conversion",
+                        "Subroutine Example",
+                        "RTC Delay Loop",
+                        "Display I/O Example",
                     ],
                     value=FSQ7State.selected_program,
                     on_change=FSQ7State.set_selected_program,
@@ -278,18 +413,47 @@ def cpu_panel() -> rx.Component:
                 width="100%",
             ),
             
-            # Indexed Addressing Indicator
+            # Authentic Architecture Indicator
             rx.box(
-                rx.hstack(
-                    rx.text(
-                        "⚡",
-                        font_size="16px",
+                rx.vstack(
+                    rx.hstack(
+                        rx.text(
+                            "✓",
+                            font_size="16px",
+                            color="#00FF00",
+                        ),
+                        rx.text(
+                            "AUTHENTIC Q-7 ARCHITECTURE",
+                            font_size="10px",
+                            font_family="monospace",
+                            color="#00FFFF",
+                            font_weight="bold",
+                        ),
+                        spacing="1",
                     ),
                     rx.text(
-                        "INDEXED ADDRESSING ENABLED",
-                        font_size="10px",
+                        "• 4 Index Registers (§12.3)",
+                        font_size="9px",
                         font_family="monospace",
-                        color="#00FFFF",
+                        color="#888",
+                    ),
+                    rx.text(
+                        "• Two-half arithmetic (§12.1)",
+                        font_size="9px",
+                        font_family="monospace",
+                        color="#888",
+                    ),
+                    rx.text(
+                        "• 2 Memory Banks (65K+4K)",
+                        font_size="9px",
+                        font_family="monospace",
+                        color="#888",
+                    ),
+                    rx.text(
+                        "• Real-time clock (32 Hz)",
+                        font_size="9px",
+                        font_family="monospace",
+                        color="#888",
                     ),
                     spacing="1",
                 ),
@@ -302,7 +466,7 @@ def cpu_panel() -> rx.Component:
             
             # Info text
             rx.text(
-                "Index Register (I) implements Chapter 12.3 indexed addressing: effective_addr = base + I",
+                "Implements Ulmann Chapter 12 architecture: effective_addr = instr.addr + ix[instr.ix_sel]",
                 font_size="9px",
                 font_family="monospace",
                 color="#666",
