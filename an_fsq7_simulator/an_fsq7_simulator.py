@@ -92,7 +92,6 @@ class FSQ7State(rx.State):
     cpu_pc_bank: int = 1            # Which bank PC is in (1 or 2)
     cpu_rtc: int = 0                # Real-time clock (16-bit, 32 Hz)
     cpu_instruction_count: int = 0
-    cpu_cycle_count: int = 0
     cpu_halted: bool = True
     cpu_running: bool = False
     selected_program: str = "Array Sum (Authentic)"
@@ -261,9 +260,8 @@ class FSQ7State(rx.State):
         # Sync RTC (32 Hz real-time clock)
         self.cpu_rtc = cpu.RTC
         
-        # Sync execution stats
+        # Sync execution stats (FSQ7CPU only has instruction_count, not cycle_count)
         self.cpu_instruction_count = cpu.instruction_count
-        self.cpu_cycle_count = cpu.cycle_count
         self.cpu_halted = cpu.halted
         
         # Update memory usage for BOTH banks
@@ -499,7 +497,7 @@ class FSQ7State(rx.State):
                     target["x"] += math.cos(heading_rad) * speed_factor
                     target["y"] += math.sin(heading_rad) * speed_factor
                     
-                    # Wrap around screen
+                    # Wrap around screen edges
                     if target["x"] < 0:
                         target["x"] = 800
                     elif target["x"] > 800:
@@ -508,154 +506,84 @@ class FSQ7State(rx.State):
                         target["y"] = 600
                     elif target["y"] > 600:
                         target["y"] = 0
-                    
-                    # Random course changes
-                    if random.random() < 0.01:
-                        target["heading"] = (target["heading"] + random.randint(-15, 15)) % 360
 
 
 def index() -> rx.Component:
-    """Main page layout for the AN/FSQ-7 simulator."""
+    """Main application layout."""
     return rx.box(
-        # Background styling to look like a 1950s computer room
         rx.vstack(
             # Title bar
             rx.hstack(
                 rx.heading(
-                    "AN/FSQ-7 SAGE COMPUTER SIMULATOR (AUTHENTIC)",
+                    "AN/FSQ-7 SAGE Computer Simulator",
                     size="9",
-                    font_family="monospace",
-                    color="#00FF00",
-                    text_shadow="0 0 10px #00FF00",
+                    color="cyan",
                 ),
                 rx.spacer(),
                 rx.badge(
-                    rx.cond(
-                        FSQ7State.system_ready,
-                        "OPERATIONAL",
-                        "OFFLINE"
-                    ),
-                    color_scheme=rx.cond(
-                        FSQ7State.system_ready,
-                        "green",
-                        "red"
-                    ),
+                    "OPERATIONAL" if FSQ7State.system_ready else "OFFLINE",
+                    color_scheme="green" if FSQ7State.system_ready else "red",
                     size="3",
                 ),
                 width="100%",
-                padding="20px",
-                background="linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)",
-                border_bottom="2px solid #00FF00",
+                padding="1em",
+                background="linear-gradient(to bottom, #1a1a2e, #0f0f1e)",
+                border_bottom="2px solid cyan",
             ),
             
-            # Main simulator area
+            # Main content area with two columns
             rx.hstack(
-                # Left panel - Control surfaces
+                # Left column: Displays
+                rx.vstack(
+                    crt_display(),
+                    rx.hstack(
+                        memory_banks(),
+                        radar_scope(),
+                        width="100%",
+                        spacing="3",
+                    ),
+                    width="70%",
+                    spacing="3",
+                ),
+                
+                # Right column: Controls and status
                 rx.vstack(
                     control_panel(),
                     system_status(),
-                    width="300px",
-                    spacing="4",
-                    padding="10px",
-                ),
-                
-                # Center - CRT Display
-                rx.vstack(
-                    crt_display(),
-                    radar_scope(),
-                    flex="1",
-                    spacing="4",
-                    padding="10px",
-                ),
-                
-                # Right panel - Memory, CPU, and diagnostics
-                rx.vstack(
-                    memory_banks(),
                     cpu_panel(),
-                    width="350px",
-                    spacing="4",
-                    padding="10px",
+                    width="30%",
+                    spacing="3",
                 ),
                 
                 width="100%",
-                height="auto",
+                spacing="3",
+                padding="1em",
                 align_items="start",
             ),
             
-            # SD Console section (full width, below main simulator)
+            # SD Console at bottom (full width)
             rx.box(
-                rx.divider(border_color="#00FF00", opacity="0.3", margin="20px 0"),
                 sd_console(),
                 width="100%",
-                padding="10px 20px",
-            ),
-            
-            # Status bar at bottom
-            rx.box(
-                rx.hstack(
-                    rx.text(
-                        f"MISSION TIME: ",
-                        color="#888",
-                        font_family="monospace",
-                        font_size="12px",
-                    ),
-                    rx.text(
-                        FSQ7State.mission_time,
-                        color="#00FF00",
-                        font_family="monospace",
-                        font_size="12px",
-                        font_weight="bold",
-                    ),
-                    rx.spacer(),
-                    rx.text(
-                        f"TRACKED: {FSQ7State.tracked_objects}",
-                        color="#00FF00",
-                        font_family="monospace",
-                        font_size="12px",
-                    ),
-                    rx.spacer(),
-                    rx.text(
-                        f"INTERCEPTS: {FSQ7State.intercept_courses}",
-                        color="#FF6600",
-                        font_family="monospace",
-                        font_size="12px",
-                    ),
-                    rx.spacer(),
-                    rx.text(
-                        f"CPU: IX=[{FSQ7State.cpu_ix0},{FSQ7State.cpu_ix1},{FSQ7State.cpu_ix2},{FSQ7State.cpu_ix3}] RTC={FSQ7State.cpu_rtc}",
-                        color="#00FFFF",
-                        font_family="monospace",
-                        font_size="12px",
-                    ),
-                    width="100%",
-                    padding="10px 20px",
-                ),
-                background="linear-gradient(180deg, #0a0a0a 0%, #000000 100%)",
-                border_top="2px solid #00FF00",
-                width="100%",
+                padding="1em",
             ),
             
             spacing="0",
             width="100%",
-            height="100vh",
+            min_height="100vh",
+            background="linear-gradient(to bottom, #0f0f1e, #1a1a2e)",
         ),
-        
         width="100%",
-        height="100%",
-        background="radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)",
     )
 
 
-# Create the Reflex app
+# Create the app
 app = rx.App(
-    style={
-        "font_family": "'Courier New', monospace",
-        "background": "#000000",
-    }
+    theme=rx.theme(
+        appearance="dark",
+        accent_color="cyan",
+    )
 )
 
-# Add the index page
-app.add_page(
-    index,
-    on_load=FSQ7State.update_simulation,
-)
+# Add pages
+app.add_page(index, on_load=FSQ7State.update_simulation)
