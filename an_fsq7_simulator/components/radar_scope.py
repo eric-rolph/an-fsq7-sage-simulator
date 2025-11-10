@@ -170,7 +170,7 @@ def radar_scope() -> rx.Component:
                     align_items="center",
                 ),
                 width="100%",
-                justify="space-around",
+                justify="between",
                 padding="10px",
                 background="rgba(0, 50, 0, 0.3)",
                 border="2px solid #00FF00",
