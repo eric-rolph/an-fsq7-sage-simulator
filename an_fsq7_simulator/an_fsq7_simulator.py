@@ -20,6 +20,12 @@ Features:
   * Real-time clock (32 Hz)
   * Full instruction set with dispatch table
   * I/O mapped to displays
+- **AUTHENTIC SD CONSOLE per IBM DSP 1:**
+  * Large circular CRT display
+  * Feature and category selection switches
+  * Off-centering pushbuttons
+  * DD CRT (data display)
+  * Telephone key units (3×6 matrix)
 """
 
 import reflex as rx
@@ -36,6 +42,7 @@ from .components.system_status import system_status
 from .components.memory_banks import memory_banks
 from .components.radar_scope import radar_scope
 from .components.cpu_panel import cpu_panel
+from .components.sd_console import sd_console
 
 # Import AUTHENTIC CPU core and programs (per Ulmann Chapter 12)
 from .cpu_core_authentic import FSQ7CPU, FSQ7Word, MemoryBanks, IOHandler
@@ -499,82 +506,92 @@ def index() -> rx.Component:
                 
                 # Right panel - Memory, CPU, and diagnostics
                 rx.vstack(
-                    cpu_panel(),  # AUTHENTIC CPU panel with 4 index registers
                     memory_banks(),
+                    cpu_panel(),
                     width="350px",
                     spacing="4",
                     padding="10px",
                 ),
                 
                 width="100%",
-                spacing="4",
+                height="auto",
                 align_items="start",
             ),
             
-            # Status bar at bottom (shows ALL 4 index registers + RTC)
-            rx.hstack(
-                rx.text(
-                    f"MISSION: {FSQ7State.mission_time}",
-                    font_family="monospace",
-                    color="#00FF00",
-                ),
-                rx.spacer(),
-                rx.text(
-                    f"TUBES: {FSQ7State.active_tubes}/{FSQ7State.total_tubes}",
-                    font_family="monospace",
-                    color="#00FF00",
-                ),
-                rx.spacer(),
-                rx.text(
-                    f"A={FSQ7State.cpu_accumulator:08X} P={FSQ7State.cpu_program_counter:04X}(B{FSQ7State.cpu_pc_bank})",
-                    font_family="monospace",
-                    color="#00FFFF",
-                ),
-                rx.spacer(),
-                rx.text(
-                    f"IX=[{FSQ7State.cpu_ix0:04X},{FSQ7State.cpu_ix1:04X},{FSQ7State.cpu_ix2:04X},{FSQ7State.cpu_ix3:04X}]",
-                    font_family="monospace",
-                    color="#00FFFF",
-                ),
-                rx.spacer(),
-                rx.text(
-                    f"RTC={FSQ7State.cpu_rtc:04X}",
-                    font_family="monospace",
-                    color="#FFFF00",
-                ),
-                rx.spacer(),
-                rx.text(
-                    f"TGT: {FSQ7State.tracked_objects}",
-                    font_family="monospace",
-                    color="#00FF00",
-                ),
+            # SD Console section (full width, below main simulator)
+            rx.box(
+                rx.divider(border_color="#00FF00", opacity="0.3", margin="20px 0"),
+                sd_console(),
                 width="100%",
-                padding="10px",
-                background="#0a0a0a",
-                border_top="2px solid #00FF00",
+                padding="10px 20px",
             ),
             
+            # Status bar at bottom
+            rx.box(
+                rx.hstack(
+                    rx.text(
+                        f"MISSION TIME: ",
+                        color="#888",
+                        font_family="monospace",
+                        font_size="12px",
+                    ),
+                    rx.text(
+                        FSQ7State.mission_time,
+                        color="#00FF00",
+                        font_family="monospace",
+                        font_size="12px",
+                        font_weight="bold",
+                    ),
+                    rx.spacer(),
+                    rx.text(
+                        f"TRACKED: {FSQ7State.tracked_objects}",
+                        color="#00FF00",
+                        font_family="monospace",
+                        font_size="12px",
+                    ),
+                    rx.spacer(),
+                    rx.text(
+                        f"INTERCEPTS: {FSQ7State.intercept_courses}",
+                        color="#FF6600",
+                        font_family="monospace",
+                        font_size="12px",
+                    ),
+                    rx.spacer(),
+                    rx.text(
+                        f"CPU: IX=[{FSQ7State.cpu_ix0},{FSQ7State.cpu_ix1},{FSQ7State.cpu_ix2},{FSQ7State.cpu_ix3}] RTC={FSQ7State.cpu_rtc}",
+                        color="#00FFFF",
+                        font_family="monospace",
+                        font_size="12px",
+                    ),
+                    width="100%",
+                    padding="10px 20px",
+                ),
+                background="linear-gradient(180deg, #0a0a0a 0%, #000000 100%)",
+                border_top="2px solid #00FF00",
+                width="100%",
+            ),
+            
+            spacing="0",
             width="100%",
             height="100vh",
-            spacing="0",
         ),
         
-        background="#000000",
         width="100%",
-        height="100vh",
-        on_mount=FSQ7State.update_simulation,
+        height="100%",
+        background="radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)",
     )
 
 
-# Initialize the app
+# Create the Reflex app
 app = rx.App(
-    theme=rx.theme(
-        appearance="dark",
-        accent_color="green",
-    ),
     style={
-        "font_family": "Courier New, monospace",
-    },
+        "font_family": "'Courier New', monospace",
+        "background": "#000000",
+    }
 )
 
-app.add_page(index, title="AN/FSQ-7 SAGE Simulator (AUTHENTIC)", route="/")
+# Add the index page
+app.add_page(
+    index,
+    on_load=FSQ7State.update_simulation,
+)
