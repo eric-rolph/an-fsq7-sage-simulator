@@ -38,3 +38,5 @@ uploaded_files/
 # OS
 .DS_Store
 Thumbs.db
+
+.states/
