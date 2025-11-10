@@ -323,7 +323,7 @@ def status_display_overlay() -> rx.Component:
                         font_size="16px",
                     ),
                     width="100%",
-                    justify="space-between",
+                    justify="between",
                 ),
                 rx.hstack(
                     rx.text("TEMPERATURE:", color="#00FF00", font_family="monospace", font_size="16px"),
@@ -334,7 +334,7 @@ def status_display_overlay() -> rx.Component:
                         font_size="16px",
                     ),
                     width="100%",
-                    justify="space-between",
+                    justify="between",
                 ),
                 rx.hstack(
                     rx.text("MEMORY:", color="#00FF00", font_family="monospace", font_size="16px"),
@@ -345,7 +345,7 @@ def status_display_overlay() -> rx.Component:
                         font_size="16px",
                     ),
                     width="100%",
-                    justify="space-between",
+                    justify="between",
                 ),
                 rx.hstack(
                     rx.text("FAILED TUBES:", color="#00FF00", font_family="monospace", font_size="16px"),
@@ -356,7 +356,7 @@ def status_display_overlay() -> rx.Component:
                         font_size="16px",
                     ),
                     width="100%",
-                    justify="space-between",
+                    justify="between",
                 ),
                 spacing="3",
                 width="100%",
