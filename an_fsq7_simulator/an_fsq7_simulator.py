@@ -12,8 +12,14 @@ Features:
 - Magnetic core memory visualization
 - Vacuum tube operation indicators
 - Real-time radar tracking simulation
-- **FUNCTIONAL CPU CORE with indexed addressing (Chapter 12.3)**
-- Executable SAGE programs from Chapter 12.5
+- **AUTHENTIC CPU CORE per Ulmann Chapter 12:**
+  * 32-bit words with two 15-bit signed halves
+  * Four index registers (ix[0..3])
+  * Two memory banks (65K + 4K)
+  * Parallel left/right arithmetic
+  * Real-time clock (32 Hz)
+  * Full instruction set with dispatch table
+  * I/O mapped to displays
 """
 
 import reflex as rx
@@ -21,6 +27,7 @@ from typing import List, Dict, Tuple, Optional
 import math
 import random
 from datetime import datetime
+import time
 
 # Import custom components
 from .components.crt_display import crt_display
@@ -30,9 +37,15 @@ from .components.memory_banks import memory_banks
 from .components.radar_scope import radar_scope
 from .components.cpu_panel import cpu_panel
 
-# Import CPU core and example programs
-from .cpu_core import CPUCore
-from .sage_programs import SAGEPrograms
+# Import AUTHENTIC CPU core and programs (per Ulmann Chapter 12)
+from .cpu_core_authentic import FSQ7CPU, FSQ7Word, MemoryBanks, IOHandler
+from .sage_programs_authentic import (
+    array_sum_authentic,
+    coordinate_conversion,
+    subroutine_example,
+    rtc_delay_loop,
+    display_io_example
+)
 
 
 class RadarTarget:
@@ -61,20 +74,27 @@ class FSQ7State(rx.State):
     failed_tubes: int = 0
     tube_temperature: float = 0.0
     
-    # Memory system (magnetic core memory)
-    memory_capacity: int = 65536  # 64K words
-    memory_used: int = 0
+    # Memory system (TWO BANKS per Wikipedia)
+    memory_capacity_bank1: int = 65536  # Bank 1: 65K words (main core)
+    memory_capacity_bank2: int = 4096   # Bank 2: 4K words (auxiliary)
+    memory_used_bank1: int = 0
+    memory_used_bank2: int = 0
     memory_cycles: int = 0
     
-    # CPU Core State (NEW - Chapter 12.3 indexed addressing support)
-    cpu_accumulator: int = 0        # A register
-    cpu_index_reg: int = 0          # I register - CRITICAL for indexed addressing!
+    # CPU Core State (AUTHENTIC - per Ulmann Chapter 12)
+    cpu_accumulator: int = 0        # A register (32-bit, two halves)
+    cpu_ix0: int = 0                # Index register 0
+    cpu_ix1: int = 0                # Index register 1
+    cpu_ix2: int = 0                # Index register 2
+    cpu_ix3: int = 0                # Index register 3
     cpu_program_counter: int = 0    # P register
+    cpu_pc_bank: int = 1            # Which bank PC is in (1 or 2)
+    cpu_rtc: int = 0                # Real-time clock (16-bit, 32 Hz)
     cpu_instruction_count: int = 0
     cpu_cycle_count: int = 0
     cpu_halted: bool = True
     cpu_running: bool = False
-    selected_program: str = "Array Sum (Ch 12.5)"
+    selected_program: str = "Array Sum (Authentic)"
     
     # Display system
     display_mode: str = "RADAR"  # RADAR, TACTICAL, STATUS, MEMORY
@@ -109,13 +129,15 @@ class FSQ7State(rx.State):
     # Animation frame for real-time updates
     animation_frame: int = 0
     
-    # CPU instance (initialized on startup)
-    _cpu_core: Optional[CPUCore] = None
+    # CPU instance (AUTHENTIC FSQ7CPU)
+    _cpu_core: Optional[FSQ7CPU] = None
+    _last_rtc_tick: float = 0.0
     
-    def _get_cpu(self) -> CPUCore:
-        """Get or create CPU core instance."""
+    def _get_cpu(self) -> FSQ7CPU:
+        """Get or create authentic FSQ7CPU core instance."""
         if self._cpu_core is None:
-            self._cpu_core = CPUCore(memory_size=self.memory_capacity)
+            self._cpu_core = FSQ7CPU()
+            self._last_rtc_tick = time.time()
         return self._cpu_core
     
     def power_on_system(self):
@@ -141,7 +163,7 @@ class FSQ7State(rx.State):
         async with self:
             self.system_ready = True
             self.mission_time = "00:00:00"
-            # Initialize CPU
+            # Initialize AUTHENTIC CPU
             cpu = self._get_cpu()
             cpu.reset()
             self.cpu_halted = False
@@ -162,41 +184,80 @@ class FSQ7State(rx.State):
         self.cpu_running = False
     
     def sync_cpu_state(self):
-        """Sync CPU core state to UI state variables."""
+        """Sync AUTHENTIC CPU core state to UI state variables."""
         cpu = self._get_cpu()
-        state = cpu.get_state()
-        self.cpu_accumulator = state["accumulator"]
-        self.cpu_index_reg = state["index_reg"]
-        self.cpu_program_counter = state["program_counter"]
-        self.cpu_instruction_count = state["instruction_count"]
-        self.cpu_cycle_count = state["cycle_count"]
-        self.cpu_halted = state["halted"]
         
-        # Update memory usage based on actual CPU memory
-        non_zero_words = sum(1 for word in cpu.memory if word != 0)
-        self.memory_used = non_zero_words
+        # Sync all FOUR index registers (per Ulmann §12.3)
+        self.cpu_ix0 = cpu.ix[0]
+        self.cpu_ix1 = cpu.ix[1]
+        self.cpu_ix2 = cpu.ix[2]
+        self.cpu_ix3 = cpu.ix[3]
+        
+        # Sync accumulator (32-bit with two halves)
+        self.cpu_accumulator = cpu.A
+        
+        # Sync PC and its bank
+        self.cpu_program_counter = cpu.P
+        self.cpu_pc_bank = cpu.P_bank
+        
+        # Sync RTC (32 Hz real-time clock)
+        self.cpu_rtc = cpu.RTC
+        
+        # Sync execution stats
+        self.cpu_instruction_count = cpu.instruction_count
+        self.cpu_cycle_count = cpu.cycle_count
+        self.cpu_halted = cpu.halted
+        
+        # Update memory usage for BOTH banks
+        non_zero_bank1 = sum(1 for word in cpu.memory.bank1 if word != 0)
+        non_zero_bank2 = sum(1 for word in cpu.memory.bank2 if word != 0)
+        self.memory_used_bank1 = non_zero_bank1
+        self.memory_used_bank2 = non_zero_bank2
+        
+        # Sync I/O handler state (for light gun/display)
+        self.light_gun_x = cpu.io_handler.light_gun_x
+        self.light_gun_y = cpu.io_handler.light_gun_y
+    
+    def tick_rtc(self):
+        """Update the real-time clock at 32 Hz."""
+        cpu = self._get_cpu()
+        current_time = time.time()
+        delta = current_time - self._last_rtc_tick
+        cpu.tick_rtc(delta)
+        self._last_rtc_tick = current_time
+        self.cpu_rtc = cpu.RTC
     
     def load_selected_program(self):
-        """Load the selected example program into CPU memory."""
+        """Load the selected AUTHENTIC example program into CPU memory."""
         cpu = self._get_cpu()
         cpu.reset()
         
-        # Map UI names to program functions
+        # Map UI names to AUTHENTIC program functions
         program_map = {
-            "Array Sum (Ch 12.5)": SAGEPrograms.array_sum_program,
-            "Array Search (Ch 12.5)": SAGEPrograms.array_search_program,
-            "Array Copy (Ch 12.5)": SAGEPrograms.array_copy_program,
-            "Matrix Init (Ch 12.5)": SAGEPrograms.nested_loop_program,
+            "Array Sum (Authentic)": array_sum_authentic,
+            "Coordinate Conversion": coordinate_conversion,
+            "Subroutine Example": subroutine_example,
+            "RTC Delay Loop": rtc_delay_loop,
+            "Display I/O Example": display_io_example,
         }
         
         program_func = program_map.get(self.selected_program)
         if program_func:
+            # Load the authentic program
             loaded_cpu, metadata = program_func()
-            # Copy the loaded program's memory and registers to our CPU
-            cpu.memory = loaded_cpu.memory.copy()
-            cpu.index_reg = loaded_cpu.index_reg
-            cpu.program_counter = loaded_cpu.program_counter
-            cpu.accumulator = loaded_cpu.accumulator
+            
+            # Copy memory from BOTH banks
+            for i in range(65536):
+                cpu.memory.bank1[i] = loaded_cpu.memory.bank1[i]
+            for i in range(4096):
+                cpu.memory.bank2[i] = loaded_cpu.memory.bank2[i]
+            
+            # Copy registers (including all 4 index registers)
+            cpu.A = loaded_cpu.A
+            cpu.ix = loaded_cpu.ix.copy()
+            cpu.P = loaded_cpu.P
+            cpu.P_bank = loaded_cpu.P_bank
+            cpu.RTC = loaded_cpu.RTC
             cpu.halted = False
             
         self.sync_cpu_state()
@@ -205,6 +266,8 @@ class FSQ7State(rx.State):
         """Execute one CPU instruction."""
         cpu = self._get_cpu()
         if not cpu.halted:
+            # Tick RTC before execution
+            self.tick_rtc()
             cpu.step()
             self.sync_cpu_state()
     
@@ -212,6 +275,7 @@ class FSQ7State(rx.State):
         """Start running CPU in background."""
         if not self.cpu_running:
             self.cpu_running = True
+            self._last_rtc_tick = time.time()
             return FSQ7State.cpu_run_background
     
     @rx.event(background=True)
@@ -229,15 +293,19 @@ class FSQ7State(rx.State):
                     self.cpu_running = False
                     break
                 
+                # Tick RTC at 32 Hz
+                self.tick_rtc()
+                
                 # Execute one instruction
                 cpu.step()
                 self.sync_cpu_state()
     
     def cpu_reset(self):
-        """Reset the CPU core."""
+        """Reset the AUTHENTIC CPU core."""
         cpu = self._get_cpu()
         cpu.reset()
         self.cpu_running = False
+        self._last_rtc_tick = time.time()
         self.sync_cpu_state()
     
     def toggle_display_mode(self):
@@ -264,11 +332,18 @@ class FSQ7State(rx.State):
         self.light_gun_y = y
         self.light_gun_active = True
         
+        # Update CPU I/O handler
+        cpu = self._get_cpu()
+        cpu.io_handler.light_gun_x = x
+        cpu.io_handler.light_gun_y = y
+        
         # Check if a target was selected
         for target in self.radar_targets:
             dist = math.sqrt((target["x"] - x)**2 + (target["y"] - y)**2)
             if dist < 20:  # Selection radius
                 self.selected_target = target["target_id"]
+                # Write target ID to I/O handler
+                cpu.io_handler.selected_track = int(target["target_id"].split("-")[1])
                 break
     
     def clear_light_gun(self):
@@ -337,6 +412,10 @@ class FSQ7State(rx.State):
                 # Update memory cycles
                 self.memory_cycles += 1
                 
+                # Tick RTC at 32 Hz (every ~31ms, but check every frame)
+                if not self.cpu_running:
+                    self.tick_rtc()
+                
                 # Sync CPU state periodically (if not running continuously)
                 if not self.cpu_running and self.animation_frame % 10 == 0:
                     self.sync_cpu_state()
@@ -372,7 +451,7 @@ def index() -> rx.Component:
             # Title bar
             rx.hstack(
                 rx.heading(
-                    "AN/FSQ-7 SAGE COMPUTER SIMULATOR",
+                    "AN/FSQ-7 SAGE COMPUTER SIMULATOR (AUTHENTIC)",
                     size="9",
                     font_family="monospace",
                     color="#00FF00",
@@ -420,7 +499,7 @@ def index() -> rx.Component:
                 
                 # Right panel - Memory, CPU, and diagnostics
                 rx.vstack(
-                    cpu_panel(),  # NEW: CPU control panel with indexed addressing
+                    cpu_panel(),  # AUTHENTIC CPU panel with 4 index registers
                     memory_banks(),
                     width="350px",
                     spacing="4",
@@ -432,10 +511,10 @@ def index() -> rx.Component:
                 align_items="start",
             ),
             
-            # Status bar at bottom
+            # Status bar at bottom (shows ALL 4 index registers + RTC)
             rx.hstack(
                 rx.text(
-                    f"MISSION TIME: {FSQ7State.mission_time}",
+                    f"MISSION: {FSQ7State.mission_time}",
                     font_family="monospace",
                     color="#00FF00",
                 ),
@@ -447,19 +526,25 @@ def index() -> rx.Component:
                 ),
                 rx.spacer(),
                 rx.text(
-                    f"CPU: A={FSQ7State.cpu_accumulator:X} I={FSQ7State.cpu_index_reg} P={FSQ7State.cpu_program_counter:X}",
+                    f"A={FSQ7State.cpu_accumulator:08X} P={FSQ7State.cpu_program_counter:04X}(B{FSQ7State.cpu_pc_bank})",
                     font_family="monospace",
                     color="#00FFFF",
                 ),
                 rx.spacer(),
                 rx.text(
-                    f"TARGETS: {FSQ7State.tracked_objects}",
+                    f"IX=[{FSQ7State.cpu_ix0:04X},{FSQ7State.cpu_ix1:04X},{FSQ7State.cpu_ix2:04X},{FSQ7State.cpu_ix3:04X}]",
                     font_family="monospace",
-                    color="#00FF00",
+                    color="#00FFFF",
                 ),
                 rx.spacer(),
                 rx.text(
-                    f"INTERCEPTS: {FSQ7State.intercept_courses}",
+                    f"RTC={FSQ7State.cpu_rtc:04X}",
+                    font_family="monospace",
+                    color="#FFFF00",
+                ),
+                rx.spacer(),
+                rx.text(
+                    f"TGT: {FSQ7State.tracked_objects}",
                     font_family="monospace",
                     color="#00FF00",
                 ),
@@ -492,4 +577,4 @@ app = rx.App(
     },
 )
 
-app.add_page(index, title="AN/FSQ-7 SAGE Simulator", route="/")
+app.add_page(index, title="AN/FSQ-7 SAGE Simulator (AUTHENTIC)", route="/")
