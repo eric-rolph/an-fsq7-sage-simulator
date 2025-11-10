@@ -46,13 +46,7 @@ from .components.sd_console import sd_console
 
 # Import AUTHENTIC CPU core and programs (per Ulmann Chapter 12)
 from .cpu_core_authentic import FSQ7CPU, FSQ7Word, MemoryBanks, IOHandler
-from .sage_programs_authentic import (
-    array_sum_authentic,
-    coordinate_conversion,
-    subroutine_example,
-    rtc_delay_loop,
-    display_io_example
-)
+from .sage_programs_authentic import SAGEProgramsAuthentic
 
 
 class RadarTarget:
@@ -241,11 +235,11 @@ class FSQ7State(rx.State):
         
         # Map UI names to AUTHENTIC program functions
         program_map = {
-            "Array Sum (Authentic)": array_sum_authentic,
-            "Coordinate Conversion": coordinate_conversion,
-            "Subroutine Example": subroutine_example,
-            "RTC Delay Loop": rtc_delay_loop,
-            "Display I/O Example": display_io_example,
+            "Array Sum (Authentic)": SAGEProgramsAuthentic.array_sum_authentic,
+            "Coordinate Conversion": SAGEProgramsAuthentic.coordinate_conversion,
+            "Subroutine Example": SAGEProgramsAuthentic.subroutine_example,
+            "RTC Delay Loop": SAGEProgramsAuthentic.rtc_delay_loop,
+            "Display I/O Example": SAGEProgramsAuthentic.display_io_example,
         }
         
         program_func = program_map.get(self.selected_program)
