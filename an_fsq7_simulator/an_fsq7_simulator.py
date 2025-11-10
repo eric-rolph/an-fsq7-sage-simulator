@@ -12,10 +12,12 @@ Features:
 - Magnetic core memory visualization
 - Vacuum tube operation indicators
 - Real-time radar tracking simulation
+- **FUNCTIONAL CPU CORE with indexed addressing (Chapter 12.3)**
+- Executable SAGE programs from Chapter 12.5
 """
 
 import reflex as rx
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 import math
 import random
 from datetime import datetime
@@ -26,6 +28,11 @@ from .components.control_panel import control_panel
 from .components.system_status import system_status
 from .components.memory_banks import memory_banks
 from .components.radar_scope import radar_scope
+from .components.cpu_panel import cpu_panel
+
+# Import CPU core and example programs
+from .cpu_core import CPUCore
+from .sage_programs import SAGEPrograms
 
 
 class RadarTarget:
@@ -58,6 +65,16 @@ class FSQ7State(rx.State):
     memory_capacity: int = 65536  # 64K words
     memory_used: int = 0
     memory_cycles: int = 0
+    
+    # CPU Core State (NEW - Chapter 12.3 indexed addressing support)
+    cpu_accumulator: int = 0        # A register
+    cpu_index_reg: int = 0          # I register - CRITICAL for indexed addressing!
+    cpu_program_counter: int = 0    # P register
+    cpu_instruction_count: int = 0
+    cpu_cycle_count: int = 0
+    cpu_halted: bool = True
+    cpu_running: bool = False
+    selected_program: str = "Array Sum (Ch 12.5)"
     
     # Display system
     display_mode: str = "RADAR"  # RADAR, TACTICAL, STATUS, MEMORY
@@ -92,6 +109,15 @@ class FSQ7State(rx.State):
     # Animation frame for real-time updates
     animation_frame: int = 0
     
+    # CPU instance (initialized on startup)
+    _cpu_core: Optional[CPUCore] = None
+    
+    def _get_cpu(self) -> CPUCore:
+        """Get or create CPU core instance."""
+        if self._cpu_core is None:
+            self._cpu_core = CPUCore(memory_size=self.memory_capacity)
+        return self._cpu_core
+    
     def power_on_system(self):
         """Initialize system startup sequence."""
         if not self.power_on:
@@ -115,6 +141,11 @@ class FSQ7State(rx.State):
         async with self:
             self.system_ready = True
             self.mission_time = "00:00:00"
+            # Initialize CPU
+            cpu = self._get_cpu()
+            cpu.reset()
+            self.cpu_halted = False
+            self.sync_cpu_state()
             # Initialize with some sample radar targets
             self.generate_sample_targets()
     
@@ -127,6 +158,87 @@ class FSQ7State(rx.State):
         self.tube_temperature = 20.0
         self.radar_targets = []
         self.tracked_objects = 0
+        self.cpu_halted = True
+        self.cpu_running = False
+    
+    def sync_cpu_state(self):
+        """Sync CPU core state to UI state variables."""
+        cpu = self._get_cpu()
+        state = cpu.get_state()
+        self.cpu_accumulator = state["accumulator"]
+        self.cpu_index_reg = state["index_reg"]
+        self.cpu_program_counter = state["program_counter"]
+        self.cpu_instruction_count = state["instruction_count"]
+        self.cpu_cycle_count = state["cycle_count"]
+        self.cpu_halted = state["halted"]
+        
+        # Update memory usage based on actual CPU memory
+        non_zero_words = sum(1 for word in cpu.memory if word != 0)
+        self.memory_used = non_zero_words
+    
+    def load_selected_program(self):
+        """Load the selected example program into CPU memory."""
+        cpu = self._get_cpu()
+        cpu.reset()
+        
+        # Map UI names to program functions
+        program_map = {
+            "Array Sum (Ch 12.5)": SAGEPrograms.array_sum_program,
+            "Array Search (Ch 12.5)": SAGEPrograms.array_search_program,
+            "Array Copy (Ch 12.5)": SAGEPrograms.array_copy_program,
+            "Matrix Init (Ch 12.5)": SAGEPrograms.nested_loop_program,
+        }
+        
+        program_func = program_map.get(self.selected_program)
+        if program_func:
+            loaded_cpu, metadata = program_func()
+            # Copy the loaded program's memory and registers to our CPU
+            cpu.memory = loaded_cpu.memory.copy()
+            cpu.index_reg = loaded_cpu.index_reg
+            cpu.program_counter = loaded_cpu.program_counter
+            cpu.accumulator = loaded_cpu.accumulator
+            cpu.halted = False
+            
+        self.sync_cpu_state()
+    
+    def cpu_step(self):
+        """Execute one CPU instruction."""
+        cpu = self._get_cpu()
+        if not cpu.halted:
+            cpu.step()
+            self.sync_cpu_state()
+    
+    def cpu_run(self):
+        """Start running CPU in background."""
+        if not self.cpu_running:
+            self.cpu_running = True
+            return FSQ7State.cpu_run_background
+    
+    @rx.event(background=True)
+    async def cpu_run_background(self):
+        """Background task to execute CPU instructions."""
+        import asyncio
+        
+        cpu = self._get_cpu()
+        
+        while True:
+            await asyncio.sleep(0.01)  # 100 Hz execution rate
+            
+            async with self:
+                if not self.cpu_running or cpu.halted:
+                    self.cpu_running = False
+                    break
+                
+                # Execute one instruction
+                cpu.step()
+                self.sync_cpu_state()
+    
+    def cpu_reset(self):
+        """Reset the CPU core."""
+        cpu = self._get_cpu()
+        cpu.reset()
+        self.cpu_running = False
+        self.sync_cpu_state()
     
     def toggle_display_mode(self):
         """Cycle through display modes."""
@@ -224,8 +336,10 @@ class FSQ7State(rx.State):
                 
                 # Update memory cycles
                 self.memory_cycles += 1
-                self.memory_used = min(self.memory_capacity, 
-                                       int(self.memory_capacity * 0.45 + random.randint(-100, 100)))
+                
+                # Sync CPU state periodically (if not running continuously)
+                if not self.cpu_running and self.animation_frame % 10 == 0:
+                    self.sync_cpu_state()
                 
                 # Move radar targets
                 for target in self.radar_targets:
@@ -304,10 +418,11 @@ def index() -> rx.Component:
                     padding="10px",
                 ),
                 
-                # Right panel - Memory and diagnostics
+                # Right panel - Memory, CPU, and diagnostics
                 rx.vstack(
+                    cpu_panel(),  # NEW: CPU control panel with indexed addressing
                     memory_banks(),
-                    width="300px",
+                    width="350px",
                     spacing="4",
                     padding="10px",
                 ),
@@ -329,6 +444,12 @@ def index() -> rx.Component:
                     f"TUBES: {FSQ7State.active_tubes}/{FSQ7State.total_tubes}",
                     font_family="monospace",
                     color="#00FF00",
+                ),
+                rx.spacer(),
+                rx.text(
+                    f"CPU: A={FSQ7State.cpu_accumulator:X} I={FSQ7State.cpu_index_reg} P={FSQ7State.cpu_program_counter:X}",
+                    font_family="monospace",
+                    color="#00FFFF",
                 ),
                 rx.spacer(),
                 rx.text(
