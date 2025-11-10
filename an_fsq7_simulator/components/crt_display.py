@@ -240,7 +240,7 @@ def tactical_display_overlay() -> rx.Component:
                     rx.vstack(
                         rx.text("THREATS", color="#FF0000", font_family="monospace", font_size="16px"),
                         rx.text(
-                            f"{sum(1 for t in FSQ7State.radar_targets if t.get('threat_level') == 'HIGH')}",
+                            f"{FSQ7State.high_threat_count}",
                             color="#FF0000",
                             font_family="monospace",
                             font_size="48px",
@@ -339,7 +339,7 @@ def status_display_overlay() -> rx.Component:
                 rx.hstack(
                     rx.text("MEMORY:", color="#00FF00", font_family="monospace", font_size="16px"),
                     rx.text(
-                        f"{FSQ7State.memory_used:,} / {FSQ7State.memory_capacity:,}",
+                        f"{FSQ7State.total_memory_used:,} / {FSQ7State.total_memory_capacity:,}",
                         color="#FFFF00",
                         font_family="monospace",
                         font_size="16px",
@@ -385,26 +385,26 @@ def memory_display_overlay() -> rx.Component:
             ),
             rx.divider(border_color="#00FF00", width="80%"),
             rx.text(
-                f"CAPACITY: {FSQ7State.memory_capacity:,} WORDS",
+                f"CAPACITY: {FSQ7State.total_memory_capacity:,} WORDS",
                 color="#00FFFF",
                 font_family="monospace",
                 font_size="16px",
             ),
             rx.text(
-                f"IN USE: {FSQ7State.memory_used:,} WORDS",
+                f"IN USE: {FSQ7State.total_memory_used:,} WORDS",
                 color="#FFFF00",
                 font_family="monospace",
                 font_size="16px",
             ),
             rx.progress(
-                value=FSQ7State.memory_used,
-                max=FSQ7State.memory_capacity,
+                value=FSQ7State.total_memory_used,
+                max=FSQ7State.total_memory_capacity,
                 width="80%",
                 size="3",
                 color_scheme="cyan",
             ),
             rx.text(
-                f"{(FSQ7State.memory_used/FSQ7State.memory_capacity*100):.1f}% UTILIZED",
+                f"{(FSQ7State.total_memory_used/FSQ7State.total_memory_capacity*100):.1f}% UTILIZED",
                 color="#00FFFF",
                 font_family="monospace",
                 font_size="20px",
