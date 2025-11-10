@@ -2,7 +2,6 @@
 
 A full-featured web-based simulator of the AN/FSQ-7 computer, the massive vacuum tube computer used in the SAGE (Semi-Automatic Ground Environment) air defense system during the Cold War era (1958-1983).
 
-**NEW: Now includes a functional CPU core with indexed addressing support!** Run authentic SAGE programs from Chapter 12.5 of the programming manual.
 
 ## About the AN/FSQ-7
 
