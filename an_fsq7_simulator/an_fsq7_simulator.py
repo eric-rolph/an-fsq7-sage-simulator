@@ -315,9 +315,12 @@ class FSQ7State(rx.State):
         current_index = modes.index(self.display_mode)
         self.display_mode = modes[(current_index + 1) % len(modes)]
     
-    def adjust_brightness(self, value: int):
+    def adjust_brightness(self, value: list[float]):
         """Adjust CRT display brightness."""
-        self.display_brightness = max(0, min(100, value))
+        # Slider returns a list, extract first value
+        if value and len(value) > 0:
+            brightness = int(value[0])
+            self.display_brightness = max(0, min(100, brightness))
     
     def toggle_manual_override(self):
         """Toggle manual control override."""
