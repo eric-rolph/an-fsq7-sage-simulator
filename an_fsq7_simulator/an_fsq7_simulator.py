@@ -106,6 +106,7 @@ class FSQ7State(rx.State):
     radar_targets: List[Dict] = []
     tracked_objects: int = 0
     intercept_courses: int = 0
+    high_threat_count: int = 0  # Count of HIGH threat targets
     
     # Control surface states
     master_alarm: bool = False
@@ -133,6 +134,16 @@ class FSQ7State(rx.State):
     # CPU instance (AUTHENTIC FSQ7CPU)
     _cpu_core: Optional[FSQ7CPU] = None
     _last_rtc_tick: float = 0.0
+    
+    @rx.var
+    def total_memory_capacity(self) -> int:
+        """Total memory capacity across both banks."""
+        return self.memory_capacity_bank1 + self.memory_capacity_bank2
+    
+    @rx.var
+    def total_memory_used(self) -> int:
+        """Total memory used across both banks."""
+        return self.memory_used_bank1 + self.memory_used_bank2
     
     def _get_cpu(self) -> FSQ7CPU:
         """Get or create authentic FSQ7CPU core instance."""
@@ -360,7 +371,12 @@ class FSQ7State(rx.State):
         self.radar_targets = []
         target_types = ["AIRCRAFT", "MISSILE", "FRIENDLY", "UNKNOWN"]
         
+        high_threats = 0
         for i in range(random.randint(5, 12)):
+            threat_level = random.choice(["LOW", "MEDIUM", "HIGH"])
+            if threat_level == "HIGH":
+                high_threats += 1
+                
             self.radar_targets.append({
                 "target_id": f"TGT-{1000 + i}",
                 "x": random.randint(50, 750),
@@ -369,10 +385,11 @@ class FSQ7State(rx.State):
                 "speed": random.randint(200, 800),
                 "altitude": random.randint(5000, 45000),
                 "target_type": random.choice(target_types),
-                "threat_level": random.choice(["LOW", "MEDIUM", "HIGH"]),
+                "threat_level": threat_level,
             })
         
         self.tracked_objects = len(self.radar_targets)
+        self.high_threat_count = high_threats
     
     def assign_intercept(self):
         """Assign an interceptor to the selected target."""
@@ -423,6 +440,10 @@ class FSQ7State(rx.State):
                 # Sync CPU state periodically (if not running continuously)
                 if not self.cpu_running and self.animation_frame % 10 == 0:
                     self.sync_cpu_state()
+                
+                # Update threat count
+                high_threats = sum(1 for t in self.radar_targets if t.get("threat_level") == "HIGH")
+                self.high_threat_count = high_threats
                 
                 # Move radar targets
                 for target in self.radar_targets:
