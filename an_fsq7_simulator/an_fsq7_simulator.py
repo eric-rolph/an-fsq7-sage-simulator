@@ -145,6 +145,52 @@ class FSQ7State(rx.State):
         """Total memory used across both banks."""
         return self.memory_used_bank1 + self.memory_used_bank2
     
+    # Hex formatted CPU state variables (for display)
+    @rx.var
+    def cpu_accumulator_hex(self) -> str:
+        """Accumulator in 8-digit hex format."""
+        return f"{self.cpu_accumulator & 0xFFFFFFFF:08X}"
+    
+    @rx.var
+    def cpu_accumulator_left_hex(self) -> str:
+        """Left half of accumulator in 4-digit hex."""
+        return f"{((self.cpu_accumulator >> 16) & 0xFFFF):04X}"
+    
+    @rx.var
+    def cpu_accumulator_right_hex(self) -> str:
+        """Right half of accumulator in 4-digit hex."""
+        return f"{(self.cpu_accumulator & 0xFFFF):04X}"
+    
+    @rx.var
+    def cpu_ix0_hex(self) -> str:
+        """Index register 0 in 4-digit hex."""
+        return f"{self.cpu_ix0 & 0xFFFF:04X}"
+    
+    @rx.var
+    def cpu_ix1_hex(self) -> str:
+        """Index register 1 in 4-digit hex."""
+        return f"{self.cpu_ix1 & 0xFFFF:04X}"
+    
+    @rx.var
+    def cpu_ix2_hex(self) -> str:
+        """Index register 2 in 4-digit hex."""
+        return f"{self.cpu_ix2 & 0xFFFF:04X}"
+    
+    @rx.var
+    def cpu_ix3_hex(self) -> str:
+        """Index register 3 in 4-digit hex."""
+        return f"{self.cpu_ix3 & 0xFFFF:04X}"
+    
+    @rx.var
+    def cpu_program_counter_hex(self) -> str:
+        """Program counter in 4-digit hex."""
+        return f"{self.cpu_program_counter & 0xFFFF:04X}"
+    
+    @rx.var
+    def cpu_rtc_hex(self) -> str:
+        """Real-time clock in 4-digit hex."""
+        return f"{self.cpu_rtc & 0xFFFF:04X}"
+    
     def _get_cpu(self) -> FSQ7CPU:
         """Get or create authentic FSQ7CPU core instance."""
         if self._cpu_core is None:
