@@ -19,10 +19,12 @@ from typing import List, Set
 from datetime import datetime
 import asyncio
 
+# Import state model
+from . import state_model
+
 # Import all our component modules
 from .components_v2 import (
-    state_model,
-    scenarios,
+    scenarios_layered,
     execution_trace_panel,
     light_gun,
     sd_console,
@@ -79,8 +81,7 @@ class InteractiveSageState(rx.State):
     show_welcome: bool = True
     tutorial_active: bool = False
     
-    # ===== GEOGRAPHIC DATA =====
-    geo_overlays: geographic_overlays.GeographicOverlays = geographic_overlays.GeographicOverlays()
+    # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
     
     # ========================
@@ -104,8 +105,10 @@ class InteractiveSageState(rx.State):
             self.world_time += 500
             
             # Advance world (move tracks, spawn scenarios, resolve intercepts)
-            updated_tracks = scenarios.advance_world(500, self.tracks, self.maintenance)
-            self.tracks = updated_tracks
+            # updated_tracks = scenarios_layered.advance_world(500, self.tracks, self.maintenance)
+            # self.tracks = updated_tracks
+            # TODO: Implement advance_world in scenarios_layered.py
+            pass
             
             # Check tube degradation
             self.degrade_tubes()
@@ -210,8 +213,20 @@ class InteractiveSageState(rx.State):
             return
         
         # Spawn interceptor
-        interceptor = scenarios.spawn_interceptor(target)
-        self.tracks.append(interceptor)
+        # interceptor = scenarios_layered.spawn_interceptor(target)
+        # self.tracks.append(interceptor)
+        # TODO: Implement spawn_interceptor in scenarios_layered.py
+        
+        # For now, log the action
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now().strftime("%H:%M:%S"),
+                level="info",
+                category="intercept",
+                message=f"INTERCEPT LAUNCHED: Target {target.id}",
+                details=f"Interceptor dispatched toward {target.track_type} at {target.altitude} ft"
+            )
+        )
     
     
     # ========================
@@ -464,7 +479,12 @@ class InteractiveSageState(rx.State):
     
     def get_geo_json(self) -> str:
         """Serialize geographic data"""
-        return self.geo_overlays.to_json()
+        # Return basic GeoJSON structure for now
+        return json.dumps({
+            "coastlines": [],
+            "cities": [],
+            "range_rings": []
+        })
     
     def apply_filters(self, tracks: List[state_model.Track]) -> List[state_model.Track]:
         """Apply active filters to track list"""
@@ -522,8 +542,14 @@ def index() -> rx.Component:
             rx.hstack(
                 # LEFT COLUMN: SD Console + Maintenance
                 rx.vstack(
-                    sd_console.sd_console_master_panel(),
-                    tube_maintenance.tube_maintenance_panel(),
+                    sd_console.sd_console_master_panel(
+                        InteractiveSageState.active_filters,
+                        InteractiveSageState.active_overlays,
+                        InteractiveSageState.brightness
+                    ),
+                    tube_maintenance.tube_maintenance_panel(
+                        InteractiveSageState.maintenance
+                    ),
                     width="300px",
                     spacing="4"
                 ),
@@ -551,8 +577,13 @@ def index() -> rx.Component:
                 
                 # RIGHT COLUMN: CPU Trace + Light Gun
                 rx.vstack(
-                    execution_trace_panel.execution_trace_panel_compact(),
-                    light_gun.track_detail_panel(),
+                    execution_trace_panel.execution_trace_panel_compact(
+                        InteractiveSageState.cpu_trace
+                    ),
+                    light_gun.track_detail_panel(
+                        InteractiveSageState.get_selected_track(),
+                        InteractiveSageState.lightgun_armed
+                    ),
                     light_gun.light_gun_controls(),
                     width="350px",
                     spacing="4"
@@ -584,9 +615,10 @@ def index() -> rx.Component:
 
 
 # Create the Reflex app
-app = rx.App(
-    stylesheets=[
-        "https://fonts.googleapis.com/css2?family=Courier+New:wght@400;700&display=swap"
-    ]
-)
-app.add_page(index, route="/")
+# Temporarily disabled - using demo_sage.py for testing
+# app = rx.App(
+#     stylesheets=[
+#         "https://fonts.googleapis.com/css2?family=Courier+New:wght@400;700&display=swap"
+#     ]
+# )
+# app.add_page(index, route="/")
