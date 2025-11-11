@@ -2,22 +2,22 @@
 AN/FSQ-7 SAGE Computer - Authentic CPU Core
 
 This is an accurate implementation of the AN/FSQ-7 CPU architecture as described
-in Ulmann's book, Chapter 12, and confirmed by Wikipedia sources.
+in technical documentation, technical specification, and confirmed by Wikipedia sources.
 
 Key architectural features (all authentic to the real machine):
 
-1. **Word Format (Ulmann §12.1)**:
+1. **Word Format (AN/FSQ-7 spec)**:
    - 32 bits per word
    - Two 15-bit signed halves (left and right)
    - Each half represents a fraction between -1 and +1
    - Arithmetic operations performed on BOTH halves in parallel
 
-2. **Instruction Format (Ulmann §12.2)**:
+2. **Instruction Format (AN/FSQ-7 spec)**:
    - Address = right half (15 bits) + left sign bit
    - Opcode/Class = left half (excluding sign)
    - Index register select embedded in instruction
 
-3. **Index Registers (Ulmann §12.3)**:
+3. **Index Registers (AN/FSQ-7 spec)**:
    - Four index registers: ix[0], ix[1], ix[2], ix[3]
    - Indexed addressing: effective_addr = instr.addr + ix[instr.ix_sel]
    - Instructions to load/clear index registers
@@ -28,7 +28,7 @@ Key architectural features (all authentic to the real machine):
    - Bank select via sign bits: 2.07777 = bank 2, highest word
    - Octal addressing with bank prefix
 
-5. **Instruction Classes (Ulmann §12.2)**:
+5. **Instruction Classes (AN/FSQ-7 spec)**:
    - Miscellaneous / Reset
    - ADD class (CAD, etc.)
    - DIM (subtract)
@@ -43,18 +43,18 @@ Key architectural features (all authentic to the real machine):
    - Incremented 32 times per second
    - Accessible via I/O read
 
-7. **Subroutines (Ulmann §12.4)**:
+7. **Subroutines (AN/FSQ-7 spec)**:
    - JSB/JMS: Store PC and branch
    - Indirect branch for return
    - No modern call stack
 
-8. **I/O Mapping to Displays (Ulmann Ch. 8-9)**:
+8. **I/O Mapping to Displays (AN/FSQ-7 specification)**:
    - Write to 0170xx → radar/CRT display
    - Read from 0171xx → light gun position / selected track
    - Connects CPU to Reflex UI panels
 
 References:
-- Ulmann: "AN/FSQ-7 - The Computer That Shaped The Modern World"
+- Technical specification: "AN/FSQ-7 - The Computer That Shaped The Modern World"
 - Wikipedia: "AN/FSQ-7 Combat Direction Central"
 """
 
@@ -65,7 +65,7 @@ import math
 
 
 # ============================================================================
-# Word Format and Arithmetic (Ulmann §12.1)
+# Word Format and Arithmetic (AN/FSQ-7 spec)
 # ============================================================================
 
 class FSQ7Word:
@@ -120,11 +120,11 @@ class FSQ7Word:
 
 
 # ============================================================================
-# Instruction Decode (Ulmann §12.2)
+# Instruction Decode (AN/FSQ-7 spec)
 # ============================================================================
 
 class InstructionClass(IntEnum):
-    """Instruction classes per Ulmann §12.2."""
+    """Instruction classes as per AN/FSQ-7 specification"""
     MISC = 0     # Miscellaneous / Reset
     ADD = 1      # Add class (CAD, etc.)
     SUB = 2      # DIM (subtract)
@@ -148,7 +148,7 @@ class FSQ7Instruction:
     @staticmethod
     def decode(word: int) -> 'FSQ7Instruction':
         """
-        Decode 32-bit instruction word per Ulmann §12.2.
+        Decode 32-bit instruction word as per AN/FSQ-7 specification
         
         Format:
             Left half (bits 31-16):
@@ -238,7 +238,7 @@ class MemoryBanks:
 
 class FSQ7CPU:
     """
-    Authentic AN/FSQ-7 CPU implementation per Ulmann Chapter 12.
+    Authentic AN/FSQ-7 CPU implementation as per AN/FSQ-7 specification
     
     Registers:
         A: Accumulator (32-bit, two halves)
@@ -252,7 +252,7 @@ class FSQ7CPU:
     Instruction execution:
         - Parallel left/right half arithmetic
         - Indexed addressing with 4 index registers
-        - Full instruction set from Ulmann §12.2
+        - Full instruction set from AN/FSQ-7 spec
     """
     
     def __init__(self, io_handler=None):
@@ -331,7 +331,7 @@ class FSQ7CPU:
     
     def compute_effective_address(self, inst: FSQ7Instruction) -> Tuple[int, int]:
         """
-        Compute effective address with indexed addressing per Ulmann §12.3.
+        Compute effective address with indexed addressing as per AN/FSQ-7 specification
         
         Returns:
             (bank, effective_address)
@@ -545,7 +545,7 @@ class FSQ7CPU:
         """I/O Read - Read from I/O space."""
         _, addr = self.compute_effective_address(inst)
         
-        # Special addresses per Ulmann Ch. 8-9
+        # Special addresses per AN/FSQ-7 specification
         if addr == 0o171000:  # Light gun X position
             self.A = self.io_handler.read_light_gun_x()
         elif addr == 0o171001:  # Light gun Y position
@@ -589,7 +589,7 @@ class FSQ7CPU:
 
 class IOHandler:
     """
-    I/O system connecting CPU to displays per Ulmann Ch. 8-9.
+    I/O system connecting CPU to displays per AN/FSQ-7 specification.
     
     Address ranges:
         0170xx: Write to CRT/radar display
@@ -637,7 +637,7 @@ class IOHandler:
 if __name__ == "__main__":
     print("AN/FSQ-7 Authentic CPU Core")
     print("=" * 60)
-    print("Architecture per Ulmann Chapter 12:")
+    print("Architecture as per AN/FSQ-7 specification:")
     print("  • 32-bit words with two 15-bit signed halves")
     print("  • Four index registers: ix[0..3]")
     print("  • Two memory banks: 65536 + 4096 words")
@@ -669,4 +669,4 @@ if __name__ == "__main__":
     print(f"  ix[0] = {cpu.ix[0]}, ix[1] = {cpu.ix[1]}")
     
     print("\n✓ Authentic AN/FSQ-7 CPU core initialized")
-    print("  Ready to run SAGE programs per Ulmann §12.5")
+    print("  Ready to run SAGE programs as per AN/FSQ-7 specification")

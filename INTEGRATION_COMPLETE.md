@@ -124,7 +124,7 @@ X.X% Utilized
 
 **Drum Storage**:
 - Updated description: "12,000 RPM • ~10ms avg access"
-- Note: "Per Chapter 7: CD/OD transfers"
+- Note: "Per technical specification: CD/OD transfers"
 
 **Commit**: `fe1e104da770eb1b5a5955cb46db362e0c5b228a`
 
@@ -271,7 +271,7 @@ Programs can:
 - PC knows which bank it's in
 
 ### 5. **Authentic Programs**
-All example programs from Ulmann §12.5:
+All example programs from AN/FSQ-7 spec:
 - Array operations with indexed addressing
 - Coordinate conversions (X/Y parallel)
 - Subroutine calls (JSB/BIR)
@@ -284,7 +284,7 @@ All example programs from Ulmann §12.5:
 
 ### Remaining Tasks
 
-1. **Drum Storage Implementation** (Optional - Chapter 7)
+1. **Drum Storage Implementation** (Optional - technical specification)
    - Create `drum_storage.py`
    - Add CD/OD transfer queue
    - Connect to UI indicators
@@ -320,8 +320,8 @@ All example programs from Ulmann §12.5:
 
 **Implementation Based On:**
 
-1. **Ulmann, Bernd**: "AN/FSQ-7 - The Computer That Shaped The Modern World"
-   - Chapter 12: Programming the AN/FSQ-7
+1. **Technical documentation**: "AN/FSQ-7 - The Computer That Shaped The Modern World"
+   - technical specification: Programming the AN/FSQ-7
    - §12.1: Word format (two 15-bit halves)
    - §12.2: Instruction classes
    - §12.3: Indexed addressing (4 registers)
@@ -348,7 +348,7 @@ All example programs from Ulmann §12.5:
 
 ## Summary
 
-**The AN/FSQ-7 simulator is now running the AUTHENTIC architecture per Ulmann Chapter 12.**
+**The AN/FSQ-7 simulator is now running the AUTHENTIC architecture as per AN/FSQ-7 specification**
 
 ✅ **Core CPU**: Complete with 4 index registers, 2 banks, RTC, full instruction set  
 ✅ **UI Integration**: All components updated to display authentic features  

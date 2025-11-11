@@ -2,13 +2,13 @@
 
 ## What Was Built
 
-This implementation adds a **fully functional CPU core** with **Chapter 12.3 indexed addressing** to the AN/FSQ-7 SAGE simulator. Previously, the simulator was only a visual UI with no actual instruction execution capability. Now it can run authentic SAGE programs from Chapter 12.5.
+This implementation adds a **fully functional CPU core** with **technical specification indexed addressing** to the AN/FSQ-7 SAGE simulator. Previously, the simulator was only a visual UI with no actual instruction execution capability. Now it can run authentic SAGE programs from technical specification
 
 ## Critical Requirement: Why Indexed Addressing Matters
 
-From the SAGE Programming Manual Chapter 12.3:
+From the SAGE Programming Manual technical specification:
 
-> **Indexed addressing is not optional** — the examples in Chapter 12.5 assume it exists.
+> **Indexed addressing is not optional** — the examples in technical specification assume it exists.
 
 The AN/FSQ-7 does **not only** do:
 ```
@@ -24,7 +24,7 @@ op  <base address>(I)      ; effective_addr = base + I
 - Loop through arrays
 - Process lists
 - Implement data structures
-- Run the Chapter 12.5 example programs
+- Run the technical specification example programs
 
 ## Before and After
 
@@ -44,7 +44,7 @@ op  <base address>(I)      ; effective_addr = base + I
 - ✅ **Program Counter (P)** for control flow
 - ✅ `effective_addr = base + I` implementation
 - ✅ 64K word memory (cycle-free for now)
-- ✅ 4 working Chapter 12.5 example programs
+- ✅ 4 working technical specification example programs
 - ✅ Step-by-step execution mode
 - ✅ Full-speed execution mode (100 Hz)
 - ✅ CPU panel UI showing registers in real-time
@@ -84,10 +84,10 @@ op  <base address>(I)      ; effective_addr = base + I
 ### Documentation
 
 4. **`docs/INDEXED_ADDRESSING.md`** (9,644 bytes)
-   - Complete explanation of Chapter 12.3 indexed addressing
+   - Complete explanation of technical specification indexed addressing
    - Instruction format with INDEX_BIT
    - `effective_addr = base + I` formula
-   - All Chapter 12.5 example programs with assembly listings
+   - All technical specification example programs with assembly listings
    - TIX (Transfer on Index) loop control
    - Usage patterns for arrays, loops, and data structures
    - Testing instructions
@@ -111,7 +111,7 @@ op  <base address>(I)      ; effective_addr = base + I
      - `cpu_halted`, `cpu_running`
      - `selected_program`
    - Implemented CPU control methods:
-     - `load_selected_program()` - Load Chapter 12.5 examples
+     - `load_selected_program()` - Load technical specification examples
      - `cpu_step()` - Execute one instruction
      - `cpu_run()` / `cpu_run_background()` - Full-speed execution
      - `cpu_reset()` - Reset CPU state
@@ -152,7 +152,7 @@ def compute_effective_address(self, instruction: int) -> int:
         return base_addr
 ```
 
-This simple formula **unlocks all of Chapter 12.5**:
+This simple formula **unlocks all of technical specification**:
 - Array operations (sum, search, copy)
 - Loop counters (TIX instruction)
 - Data structure access
@@ -210,7 +210,7 @@ cd an_fsq7_simulator
 # Test array sum example
 python -m cpu_core
 
-# Test all Chapter 12.5 programs
+# Test all technical specification programs
 python -m sage_programs
 ```
 
@@ -243,13 +243,13 @@ This can be added later without changing the indexed addressing implementation.
 
 ### Additional Instructions
 
-Chapter 12 has many more opcodes:
+technical specification has many more opcodes:
 - Logical operations (AND, OR, XOR)
 - Shift/rotate operations
 - Double-precision arithmetic
 - I/O instructions
 
-The current 10 opcodes are sufficient to run all Chapter 12.5 examples.
+The current 10 opcodes are sufficient to run all technical specification examples.
 
 ## Repository Structure
 
@@ -263,7 +263,7 @@ an-fsq7-sage-simulator/
 │   ├── __init__.py
 │   ├── an_fsq7_simulator.py          # Modified: CPU integration
 │   ├── cpu_core.py                   # NEW: CPU execution engine
-│   ├── sage_programs.py              # NEW: Chapter 12.5 examples
+│   ├── sage_programs.py              # NEW: technical specification examples
 │   └── components/
 │       ├── __init__.py
 │       ├── crt_display.py
@@ -283,10 +283,10 @@ an-fsq7-sage-simulator/
 ## Commits Made
 
 1. **83aa720** - Add CPU core with index register and instruction execution
-2. **c8a47b8** - Add SAGE example programs from Chapter 12.5
+2. **c8a47b8** - Add SAGE example programs from technical specification
 3. **eb9950a** - Add CPU control panel showing registers and program execution
 4. **19f8c96** - Integrate CPU core with indexed addressing into main simulator
-5. **76f8859** - Add documentation for Chapter 12.3 indexed addressing implementation
+5. **76f8859** - Add documentation for technical specification indexed addressing implementation
 6. **61a1e46** - Update README with functional CPU core and indexed addressing features
 
 ## Links to Key Files
@@ -303,10 +303,10 @@ an-fsq7-sage-simulator/
 
 ## Summary
 
-✅ **The AN/FSQ-7 simulator now has a functional CPU that implements Chapter 12.3 indexed addressing.**
+✅ **The AN/FSQ-7 simulator now has a functional CPU that implements technical specification indexed addressing.**
 
 The critical formula `effective_addr = base + I` is working correctly, enabling:
-- All Chapter 12.5 example programs
+- All technical specification example programs
 - Array processing with loops
 - List data structures
 - Authentic SAGE program execution

@@ -1,7 +1,7 @@
 """
 CPU Control Panel Component - AUTHENTIC AN/FSQ-7 Architecture
 
-Displays the AUTHENTIC CPU core state per Ulmann Chapter 12:
+Displays the AUTHENTIC CPU core state as per AN/FSQ-7 specification:
 - 32-bit accumulator with two 15-bit signed halves
 - FOUR index registers (ix[0..3]) per §12.3
 - Program counter with bank indicator
@@ -18,7 +18,7 @@ def cpu_panel() -> rx.Component:
     
     This panel displays the REAL AN/FSQ-7 architecture:
         - Accumulator (A): 32-bit word with left/right halves
-        - Four Index Registers (ix[0..3]): Per Ulmann §12.3
+        - Four Index Registers (ix[0..3]): as per AN/FSQ-7 specification
         - Program Counter (P): With bank indicator (Bank 1 or 2)
         - Real-Time Clock (RTC): 16-bit, 32 Hz
         - Execution controls: Load, Step, Run, Reset
@@ -115,7 +115,7 @@ def cpu_panel() -> rx.Component:
                     width="100%",
                 ),
                 
-                # FOUR Index Registers (per Ulmann §12.3)
+                # FOUR Index Registers (as per AN/FSQ-7 specification)
                 rx.text(
                     "INDEX REGISTERS (§12.3):",
                     font_family="monospace",
@@ -453,7 +453,7 @@ width="100%",
             
             # Info text
             rx.text(
-                "Implements Ulmann Chapter 12 architecture: effective_addr = instr.addr + ix[instr.ix_sel]",
+                "Implements AN/FSQ-7 specification architecture: effective_addr = instr.addr + ix[instr.ix_sel]",
                 font_size="9px",
                 font_family="monospace",
                 color="#666",

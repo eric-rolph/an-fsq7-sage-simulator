@@ -1,4 +1,4 @@
-""`
+"""
 Status Bar Component
 
 Top-of-screen status bar showing:
@@ -6,13 +6,13 @@ Top-of-screen status bar showing:
 - Mission elapsed time
 - Quick CPU status (PC, A register)
 - System health (tubes, temperature)
-`""
+"""
 
 import reflex as rx
 
 
 def status_bar() -> rx.Component:
-    ""`Status bar showing current operational mode and key metrics.`""
+    """Status bar showing current operational mode and key metrics."""
     
     # Import here to avoid circular dependency
     from ..an_fsq7_simulator import FSQ7State

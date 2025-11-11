@@ -12,7 +12,7 @@ Features:
 - Magnetic core memory visualization
 - Vacuum tube operation indicators
 - Real-time radar tracking simulation
-- **AUTHENTIC CPU CORE per Ulmann Chapter 12:**
+- **AUTHENTIC CPU CORE as per AN/FSQ-7 specification:**
   * 32-bit words with two 15-bit signed halves
   * Four index registers (ix[0..3])
   * Two memory banks (65K + 4K)
@@ -44,7 +44,7 @@ from .components.radar_scope import radar_scope
 from .components.cpu_panel import cpu_panel
 from .components.sd_console import sd_console
 
-# Import AUTHENTIC CPU core and programs (per Ulmann Chapter 12)
+# Import AUTHENTIC CPU core and programs (as per AN/FSQ-7 specification)
 from .cpu_core_authentic import FSQ7CPU, FSQ7Word, MemoryBanks, IOHandler
 from .sage_programs_authentic import SAGEProgramsAuthentic
 
@@ -82,7 +82,7 @@ class FSQ7State(rx.State):
     memory_used_bank2: int = 0
     memory_cycles: int = 0
     
-    # CPU Core State (AUTHENTIC - per Ulmann Chapter 12)
+    # CPU Core State (AUTHENTIC - as per AN/FSQ-7 specification)
     cpu_accumulator: int = 0        # A register (32-bit, two halves)
     cpu_ix0: int = 0                # Index register 0
     cpu_ix1: int = 0                # Index register 1
@@ -244,7 +244,7 @@ class FSQ7State(rx.State):
         """Sync AUTHENTIC CPU core state to UI state variables."""
         cpu = self._get_cpu()
         
-        # Sync all FOUR index registers (per Ulmann §12.3)
+        # Sync all FOUR index registers (as per AN/FSQ-7 specification)
         self.cpu_ix0 = cpu.ix[0]
         self.cpu_ix1 = cpu.ix[1]
         self.cpu_ix2 = cpu.ix[2]

@@ -1,5 +1,5 @@
 """
-Authentic SAGE Programs (Ulmann §12.5)
+Authentic SAGE Programs (AN/FSQ-7 spec)
 
 These programs use the REAL AN/FSQ-7 instruction format:
 - 32-bit words with two 15-bit signed halves
@@ -8,7 +8,7 @@ These programs use the REAL AN/FSQ-7 instruction format:
 - Left/right half parallel arithmetic
 - I/O mapped to displays
 
-All examples match Ulmann Chapter 12.5 programming patterns.
+All examples match AN/FSQ-7 specification programming patterns.
 """
 
 from .cpu_core_authentic import (
@@ -19,7 +19,7 @@ from typing import Dict, List, Tuple
 
 
 class SAGEProgramsAuthentic:
-    """Collection of authentic SAGE programs per Ulmann §12.5."""
+    """Collection of authentic SAGE programs as per AN/FSQ-7 specification"""
     
     @staticmethod
     def encode_instruction(inst_class: int, opcode: int, ix_sel: int, 
@@ -138,7 +138,7 @@ class SAGEProgramsAuthentic:
         Coordinate conversion using parallel left/right half arithmetic.
         
         This demonstrates the AN/FSQ-7's unique capability to process
-        both X and Y coordinates in one operation (Ulmann §12.5).
+        both X and Y coordinates in one operation (AN/FSQ-7 spec).
         
         Left half = X coordinate
         Right half = Y coordinate
@@ -214,7 +214,7 @@ class SAGEProgramsAuthentic:
     @staticmethod
     def subroutine_example():
         """
-        Subroutine call example using JSB/BIR per Ulmann §12.4.
+        Subroutine call example using JSB/BIR as per AN/FSQ-7 specification
         
         Demonstrates SAGE-style subroutines (not modern call stack).
         """
@@ -286,7 +286,7 @@ class SAGEProgramsAuthentic:
     @staticmethod
     def rtc_delay_loop():
         """
-        Real-time clock delay loop per Ulmann §12.5.5.
+        Real-time clock delay loop as per AN/FSQ-7 specification
         
         Wait for RTC to advance by reading it in a loop.
         Demonstrates I/O read of RTC register.
@@ -356,7 +356,7 @@ class SAGEProgramsAuthentic:
         """
         Write to CRT display using I/O class.
         
-        Demonstrates memory-mapped I/O per Ulmann Ch. 8-9.
+        Demonstrates memory-mapped I/O per AN/FSQ-7 specification.
         Address 0170xx range maps to display buffer.
         """
         cpu = FSQ7CPU()
@@ -446,7 +446,7 @@ def run_authentic_program(program_func, verbose=True):
 
 if __name__ == "__main__":
     print("AN/FSQ-7 Authentic SAGE Programs")
-    print("Ulmann Chapter 12.5 Examples")
+    print("AN/FSQ-7 specification Examples")
     print("Using REAL Q-7 instruction format\n")
     
     programs = [
@@ -465,7 +465,7 @@ if __name__ == "__main__":
     print("  • Two-half word format with parallel arithmetic")
     print("  • Four index registers")
     print("  • Two memory banks (65536 + 4096 words)")
-    print("  • Real instruction decoder matching Ulmann §12.2")
+    print("  • Real instruction decoder matching AN/FSQ-7 spec")
     print("  • Real-time clock at 32 Hz")
     print("  • I/O mapped to displays")
     print("  • Subroutines per §12.4")

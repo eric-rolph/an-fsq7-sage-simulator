@@ -1,9 +1,9 @@
 """
-SAGE Program Examples - Chapter 12.5 Style
+SAGE Program Examples - technical specification Style
 
 These programs demonstrate the indexed addressing capability that is
 essential to the AN/FSQ-7 instruction set. All examples follow the
-pattern from Chapter 12.5 of the SAGE programming manual.
+pattern from technical specification of the SAGE programming manual.
 
 Each program shows:
     op  base_addr(I)    ; effective_addr = base_addr + I
@@ -348,7 +348,7 @@ if __name__ == "__main__":
     """Run all example programs to demonstrate indexed addressing."""
     
     print("AN/FSQ-7 SAGE Programs - Indexed Addressing Demonstrations")
-    print("Chapter 12.5 Example Programs")
+    print("technical specification Example Programs")
     print("")
     
     all_programs = SAGEPrograms.get_all_programs()

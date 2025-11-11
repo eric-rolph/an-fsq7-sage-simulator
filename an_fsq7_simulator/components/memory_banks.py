@@ -309,7 +309,7 @@ def memory_banks() -> rx.Component:
                     font_size="11px",
                 ),
                 rx.text(
-                    "Per Chapter 7: CD/OD transfers",
+                    "Per technical specification: CD/OD transfers",
                     color="#888",
                     font_family="monospace",
                     font_size="9px",

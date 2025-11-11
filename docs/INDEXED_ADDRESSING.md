@@ -1,8 +1,8 @@
-# Indexed Addressing Implementation (Chapter 12.3)
+# Indexed Addressing Implementation (technical specification)
 
 ## Overview
 
-The AN/FSQ-7 SAGE computer uses **indexed addressing** as a fundamental addressing mode. This is **not optional** — it's essential for almost all real SAGE programs, especially the list processing and loop examples in Chapter 12.5.
+The AN/FSQ-7 SAGE computer uses **indexed addressing** as a fundamental addressing mode. This is **not optional** — it's essential for almost all real SAGE programs, especially the list processing and loop examples in technical specification
 
 ## The Critical Formula
 
@@ -18,7 +18,7 @@ Where:
 ## Why It Matters
 
 Without indexed addressing, you cannot:
-- **Loop through arrays** (Chapter 12.5 examples)
+- **Loop through arrays** (technical specification examples)
 - **Process lists** (core SAGE data structures)
 - **Implement subroutines with local variables**
 - **Access data structures** (tables, matrices)
@@ -82,7 +82,7 @@ LOOP:   LDA  ARRAY(I)
 NEXT:   TIX  LOOP
 ```
 
-## Chapter 12.5 Example Programs
+## technical specification Example Programs
 
 ### 1. Array Sum (Indexed Load)
 
@@ -253,7 +253,7 @@ Final state:
 Expected sum: 275 (should be 275)
 ```
 
-Or run all Chapter 12.5 examples:
+Or run all technical specification examples:
 
 ```bash
 python -m sage_programs
@@ -262,7 +262,7 @@ python -m sage_programs
 Expected output:
 ```
 AN/FSQ-7 SAGE Programs - Indexed Addressing Demonstrations
-Chapter 12.5 Example Programs
+technical specification Example Programs
 
 ============================================================
 Program: Array Sum
@@ -285,7 +285,7 @@ The simulator now includes a **CPU Panel** that displays:
 - **A (Accumulator)**: Main computation register
 - **I (Index Register)**: Highlighted in cyan - critical for debugging loops
 - **P (Program Counter)**: Current instruction address
-- **Program Selector**: Load Chapter 12.5 examples
+- **Program Selector**: Load technical specification examples
 - **Execution Controls**: Step, Run, Reset
 
 ### Using the Web Interface
@@ -337,7 +337,7 @@ The real AN/FSQ-7 had more complex indexing. Could add:
 - ✅ Index Register (I) in CPU core
 - ✅ `effective_addr = base + I` computation
 - ✅ INDEX_BIT in instruction format
-- ✅ Chapter 12.5 example programs working
+- ✅ technical specification example programs working
 - ✅ TIX loop control instruction
 - ✅ UI showing I register in real-time
 - ✅ Step-by-step execution for debugging
@@ -346,6 +346,6 @@ The real AN/FSQ-7 had more complex indexing. Could add:
 
 ## References
 
-- **Chapter 12.3**: Indexed Addressing (defines the I register and effective address formula)
-- **Chapter 12.5**: Example Programs (assumes indexed addressing exists)
-- **Chapter 7.2-7.3**: Drum timing (future enhancement for realistic latency)
+- **technical specification**: Indexed Addressing (defines the I register and effective address formula)
+- **technical specification**: Example Programs (assumes indexed addressing exists)
+- **technical specification-7.3**: Drum timing (future enhancement for realistic latency)

@@ -11,7 +11,7 @@ from typing import List
 
 
 class DisplayMode(Enum):
-    ""`Operator console display modes matching historical SAGE operation.`""
+    """Operator console display modes matching historical SAGE operation."""
     RADAR = "RADAR"
     TACTICAL = "TACTICAL"
     STATUS = "STATUS"
@@ -20,11 +20,11 @@ class DisplayMode(Enum):
 
 @dataclass
 class ConsoleModeInfo:
-    ""`
+    """
     Metadata about a console display mode.
     
     Describes what the operator sees and can do in this mode.
-    `""
+    """
     mode: DisplayMode
     title: str
     description: str
@@ -98,13 +98,14 @@ MODE_INFO = {
 
 
 def get_mode_info(mode: DisplayMode) -> ConsoleModeInfo:
-    ""`Get metadata for a display mode.`""
+    """Get metadata for a display mode."""
     return MODE_INFO[mode]
 
 
 def cycle_mode(current: DisplayMode) -> DisplayMode:
-    ""`Get next mode in sequence.`""
+    """Get next mode in sequence."""
     modes = list(DisplayMode)
     current_idx = modes.index(current)
     next_idx = (current_idx + 1) % len(modes)
     return modes[next_idx]
+

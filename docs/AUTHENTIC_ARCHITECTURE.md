@@ -2,13 +2,13 @@
 
 All files uploaded to: https://github.com/eric-rolph/an-fsq7-sage-simulator
 
-**The simulator now implements the REAL AN/FSQ-7 architecture as described in Ulmann Chapter 12 and Wikipedia.**
+**The simulator now implements the REAL AN/FSQ-7 architecture as described in AN/FSQ-7 specification and Wikipedia.**
 
 ---
 
 ## What Was Built
 
-### 1. Authentic Word Format (Ulmann §12.1) ✓
+### 1. Authentic Word Format (AN/FSQ-7 spec) ✓
 
 **32-bit word with TWO 15-bit signed halves:**
 
@@ -38,7 +38,7 @@ class FSQ7Word:
 
 ---
 
-### 2. Real Instruction Decoder (Ulmann §12.2) ✓
+### 2. Real Instruction Decoder (AN/FSQ-7 spec) ✓
 
 **NOT just "opcode + address"** — the book is explicit:
 
@@ -73,12 +73,12 @@ class FSQ7Instruction:
     
     @staticmethod
     def decode(word: int) -> 'FSQ7Instruction':
-        """Decode per Ulmann §12.2 format."""
+        """Decode as per AN/FSQ-7 specification format."""
 ```
 
 ---
 
-### 3. Four Index Registers (Ulmann §12.3) ✓
+### 3. Four Index Registers (AN/FSQ-7 spec) ✓
 
 **NOT one index register** — the book and Wikipedia confirm **FOUR:**
 
@@ -141,7 +141,7 @@ class MemoryBanks:
 
 ---
 
-### 5. Full Instruction Classes (Ulmann §12.2) ✓
+### 5. Full Instruction Classes (AN/FSQ-7 spec) ✓
 
 **ALL instruction classes from the book:**
 
@@ -156,7 +156,7 @@ class MemoryBanks:
 | 6 | BRA | BPX, BLM, BZE, JSB, BIR | Branch and subroutines |
 | 7 | IO | IOR, IOW, LIX, CIX | I/O and index registers |
 
-**These are the EXACT operations used in Ulmann §12.5 examples.**
+**These are the EXACT operations used in AN/FSQ-7 spec examples.**
 
 **Dispatch table implementation:**
 ```python
@@ -178,7 +178,7 @@ self.dispatch = {
 
 **The key feature that made Q-7 fast:** both halves computed simultaneously.
 
-**Example: Coordinate conversion (Ulmann §12.5)**
+**Example: Coordinate conversion (AN/FSQ-7 spec)**
 
 ```python
 def _inst_tmu(self, inst: FSQ7Instruction):
@@ -226,11 +226,11 @@ def tick_rtc(self, delta_seconds: float):
 IOR 0o171003  # Loads RTC value into accumulator
 ```
 
-**Enables delay loops per Ulmann §12.5.5.**
+**Enables delay loops as per AN/FSQ-7 specification**
 
 ---
 
-### 8. Subroutines (Ulmann §12.4) ✓
+### 8. Subroutines (AN/FSQ-7 spec) ✓
 
 **NOT modern call stacks** — SAGE-style store-return-address:
 
@@ -274,7 +274,7 @@ SUB_ADDR:
 
 ---
 
-### 9. I/O System (Ulmann Ch. 8-9) ✓
+### 9. I/O System (AN/FSQ-7 specification) ✓
 
 **Memory-mapped I/O connecting CPU to displays:**
 
@@ -379,7 +379,7 @@ python -m sage_programs_authentic
 ```
 AN/FSQ-7 Authentic CPU Core
 ============================================================
-Architecture per Ulmann Chapter 12:
+Architecture as per AN/FSQ-7 specification:
   • 32-bit words with two 15-bit signed halves
   • Four index registers: ix[0..3]
   • Two memory banks: 65536 + 4096 words
@@ -389,14 +389,14 @@ Architecture per Ulmann Chapter 12:
 ============================================================
 
 ✓ Authentic AN/FSQ-7 CPU core initialized
-  Ready to run SAGE programs per Ulmann §12.5
+  Ready to run SAGE programs as per AN/FSQ-7 specification
 ```
 
 ---
 
 ## What This Enables
 
-### 1. Coordinate Conversion (Ulmann §12.5)
+### 1. Coordinate Conversion (AN/FSQ-7 spec)
 
 **Single instruction multiplies X and Y simultaneously:**
 
@@ -447,7 +447,7 @@ DELAY:
 
 ✅ **The simulator now implements the AUTHENTIC AN/FSQ-7:**
 
-- ✅ Two-half word format per Ulmann §12.1
+- ✅ Two-half word format as per AN/FSQ-7 specification
 - ✅ Real instruction decoder per §12.2
 - ✅ Four index registers per §12.3
 - ✅ Two memory banks per Wikipedia
@@ -457,7 +457,7 @@ DELAY:
 - ✅ Subroutines per §12.4
 - ✅ I/O mapped to displays per Ch. 8-9
 - ✅ Octal addressing with bank prefixes
-- ✅ All features used in Ulmann §12.5 examples
+- ✅ All features used in AN/FSQ-7 spec examples
 
 **This is NOT a simplification — this is the REAL architecture.**
 
@@ -465,8 +465,8 @@ DELAY:
 
 ## References
 
-- **Ulmann: "AN/FSQ-7 - The Computer That Shaped The Modern World"**
-  - Chapter 12: Programming the AN/FSQ-7
+- **Technical specification: "AN/FSQ-7 - The Computer That Shaped The Modern World"**
+  - technical specification: Programming the AN/FSQ-7
   - §12.1: Word format
   - §12.2: Instruction classes
   - §12.3: Indexed addressing

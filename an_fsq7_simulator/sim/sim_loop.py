@@ -13,13 +13,13 @@ from .models import RadarTarget, VacuumTubeBank, MissionClock
 
 
 class Simulator:
-    ""`
+    """
     Central simulation coordinator for SAGE system.
     
     This class owns all simulation state and provides a single tick(dt) method
     that advances all subsystems consistently. The Reflex UI subscribes to this
     state but does not implement simulation logic.
-    `""
+    """
     
     def __init__(self, cpu_core=None):
         # Simulation subsystems
@@ -51,12 +51,12 @@ class Simulator:
         self._rtc_interval = 1.0 / 32.0  # 32 Hz = 31.25ms
     
     def tick(self, dt: float):
-        ""`
+        """
         Advance simulation by dt seconds.
         
         This is the SINGLE place where simulation state is updated.
         Call this at a consistent frame rate (e.g. 20 Hz = 50ms intervals).
-        `""
+        """
         
         if not self.powered_on:
             return
@@ -98,7 +98,7 @@ class Simulator:
         self.memory_cycles += 1
     
     def power_on(self):
-        ""`Start system power-on sequence.`""
+        """Start system power-on sequence."""
         if not self.powered_on:
             self.powered_on = True
             self.warming_up = True
@@ -106,7 +106,7 @@ class Simulator:
             self._last_rtc_tick = time.time()
     
     def power_off(self):
-        ""`Shut down system.`""
+        """Shut down system."""
         self.powered_on = False
         self.system_ready = False
         self.warming_up = False
@@ -114,7 +114,7 @@ class Simulator:
         self.mission_clock.reset()
     
     def spawn_radar_targets(self, count: int = 9):
-        ""`Generate random radar targets for demonstration.`""
+        """Generate random radar targets for demonstration."""
         self.radar_targets.clear()
         
         target_types = ["AIRCRAFT", "MISSILE", "FRIENDLY", "UNKNOWN"]
@@ -138,10 +138,10 @@ class Simulator:
         self.high_threat_count = sum(1 for t in self.radar_targets if t.threat_level == "HIGH")
     
     def select_target(self, x: float, y: float, max_distance: float = 30.0) -> Optional[RadarTarget]:
-        ""`
+        """
         Select nearest radar target to given coordinates.
         Returns the target object if found within max_distance, else None.
-        `""
+        """
         nearest_target = None
         nearest_distance = max_distance
         
@@ -159,7 +159,7 @@ class Simulator:
         return nearest_target
     
     def get_selected_target(self) -> Optional[RadarTarget]:
-        ""`Get currently selected target object.`""
+        """Get currently selected target object."""
         if not self.selected_target_id:
             return None
         for target in self.radar_targets:
@@ -168,17 +168,17 @@ class Simulator:
         return None
     
     def assign_intercept(self):
-        ""`Assign an interceptor to the currently selected target.`""
+        """Assign an interceptor to the currently selected target."""
         if self.selected_target_id:
             self.intercept_courses_count += 1
             self.alerts_count += 1
             # Future: Actually spawn interceptor aircraft
     
     def get_radar_targets_as_dicts(self) -> List[dict]:
-        ""`
+        """
         Convert radar targets to dict format for UI compatibility.
         TODO: Refactor UI to use RadarTarget objects directly.
-        `""
+        """
         return [
             {
                 "target_id": t.target_id,
@@ -192,3 +192,4 @@ class Simulator:
             }
             for t in self.radar_targets
         ]
+

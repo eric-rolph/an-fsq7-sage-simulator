@@ -10,7 +10,7 @@ from .models import RadarTarget
 
 
 class Scenario:
-    ""`Defines a mission scenario with initial conditions.`""
+    """Defines a mission scenario with initial conditions."""
     
     def __init__(self, name: str, description: str, targets: List[RadarTarget]):
         self.name = name
@@ -213,20 +213,20 @@ SCENARIOS = {
 
 
 def get_scenario(name: str) -> Scenario:
-    ""`Get a scenario by name.`""
+    """Get a scenario by name."""
     return SCENARIOS.get(name)
 
 
 def list_scenarios() -> List[str]:
-    ""`Get list of available scenario names.`""
+    """Get list of available scenario names."""
     return list(SCENARIOS.keys())
 
 
 def load_scenario(simulator, name: str):
-    ""`
+    """
     Load a scenario into the simulator.
     Clears existing targets and spawns scenario targets.
-    `""
+    """
     scenario = get_scenario(name)
     if scenario:
         simulator.radar_targets.clear()
@@ -234,3 +234,4 @@ def load_scenario(simulator, name: str):
         simulator.tracked_objects_count = len(scenario.targets)
         simulator.high_threat_count = sum(1 for t in scenario.targets 
                                           if t.threat_level == "HIGH")
+

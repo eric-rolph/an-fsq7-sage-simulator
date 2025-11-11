@@ -2,7 +2,7 @@
 AN/FSQ-7 CPU Core - Instruction Execution Engine
 
 This module implements the actual CPU core of the AN/FSQ-7 SAGE computer,
-including the index register for indexed addressing as specified in Chapter 12.3.
+including the index register for indexed addressing as specified in technical specification
 
 The AN/FSQ-7 instruction format:
     OPCODE ADDRESS [INDEX_BIT]
@@ -11,7 +11,7 @@ Where INDEX_BIT determines if the index register (I) is added to the address:
     effective_address = ADDRESS + I    (if indexed)
     effective_address = ADDRESS        (if not indexed)
 
-This is essential for list processing and loop operations demonstrated in Chapter 12.5.
+This is essential for list processing and loop operations demonstrated in technical specification
 """
 
 from typing import Optional, List, Tuple, Callable
@@ -32,7 +32,7 @@ class CPUCore:
         Each word is 32 bits
     """
     
-    # Instruction opcodes (simplified set for Chapter 12 examples)
+    # Instruction opcodes (simplified set for technical specification examples)
     OP_LDA = 0x01  # Load Accumulator:        A ← mem[addr]
     OP_STO = 0x02  # Store Accumulator:       mem[addr] ← A
     OP_ADD = 0x03  # Add to Accumulator:      A ← A + mem[addr]
@@ -102,7 +102,7 @@ class CPUCore:
         """
         Compute the effective address from an instruction word.
         
-        This is the critical indexed addressing implementation from Chapter 12.3:
+        This is the critical indexed addressing implementation from technical specification:
             effective_addr = base_addr + (I if indexed else 0)
         
         Args:
@@ -347,7 +347,7 @@ class CPUCore:
         self.trace_buffer = []
 
 
-# Example programs demonstrating indexed addressing (Chapter 12.5 style)
+# Example programs demonstrating indexed addressing (technical specification style)
 
 def example_array_sum():
     """
