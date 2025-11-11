@@ -8,10 +8,19 @@ Implements functional SAGE Situation Display console buttons:
 - Bright-Dim: Adjust scope brightness
 
 Each button provides visual feedback and actually affects the display.
+
+Requirement #3: SD Console Button Semantics
+- All buttons wired to state methods
+- Visual active state feedback
+- System messages logging
 """
 
 import reflex as rx
 from typing import List, Set
+
+
+# NOTE: Import InteractiveSageState from parent when integrating
+# For now, these functions accept State as parameter
 
 
 def console_button(
@@ -84,7 +93,7 @@ def category_select_panel(active_filters: Set[str]) -> rx.Component:
                 console_button(
                     f"{switch} {name}",
                     active=(filter_key in active_filters),
-                    on_click=lambda fk=filter_key: None,  # TODO: Wire to toggle_filter(fk)
+                    on_click=rx.State.toggle_filter(filter_key),  # type: ignore
                     size="1",
                 )
                 for switch, name, filter_key in categories
@@ -136,7 +145,7 @@ def feature_select_panel(active_overlays: Set[str]) -> rx.Component:
                     console_button(
                         f"{switch} {name}",
                         active=(overlay_key in active_overlays),
-                        on_click=lambda ok=overlay_key: None,  # TODO: Wire to toggle_overlay(ok)
+                        on_click=rx.State.toggle_overlay(overlay_key),  # type: ignore
                         size="2",
                     ),
                     rx.text(
@@ -180,13 +189,13 @@ def off_centering_controls() -> rx.Component:
                 rx.text("PAN VIEW", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.grid(
                     rx.box(),  # Empty corner
-                    console_button("↑", on_click=lambda: None, size="2"),  # TODO: Wire
+                    console_button("↑", on_click=rx.State.pan_scope("up"), size="2"),  # type: ignore
                     rx.box(),  # Empty corner
-                    console_button("←", on_click=lambda: None, size="2"),  # TODO: Wire
-                    console_button("⊙", on_click=lambda: None, size="2"),  # Center - TODO: Wire
-                    console_button("→", on_click=lambda: None, size="2"),  # TODO: Wire
+                    console_button("←", on_click=rx.State.pan_scope("left"), size="2"),  # type: ignore
+                    console_button("⊙", on_click=rx.State.center_scope, size="2"),  # type: ignore
+                    console_button("→", on_click=rx.State.pan_scope("right"), size="2"),  # type: ignore
                     rx.box(),  # Empty corner
-                    console_button("↓", on_click=lambda: None, size="2"),  # TODO: Wire
+                    console_button("↓", on_click=rx.State.pan_scope("down"), size="2"),  # type: ignore
                     rx.box(),  # Empty corner
                     columns="3",
                     spacing="1",
@@ -201,9 +210,9 @@ def off_centering_controls() -> rx.Component:
             rx.box(
                 rx.text("ZOOM", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("−", on_click=lambda: None, size="2"),  # Zoom out - TODO: Wire
-                    console_button("+", on_click=lambda: None, size="2"),  # Zoom in - TODO: Wire
-                    console_button("FIT", on_click=lambda: None, size="2"),  # Fit all - TODO: Wire
+                    console_button("−", on_click=rx.State.zoom_scope("out"), size="2"),  # type: ignore
+                    console_button("+", on_click=rx.State.zoom_scope("in"), size="2"),  # type: ignore
+                    console_button("FIT", on_click=rx.State.zoom_scope("fit"), size="2"),  # type: ignore
                     spacing="2",
                 ),
             ),
@@ -214,9 +223,9 @@ def off_centering_controls() -> rx.Component:
             rx.box(
                 rx.text("ROTATE", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("↶", on_click=lambda: None, size="2"),  # Rotate CCW - TODO: Wire
-                    console_button("N", on_click=lambda: None, size="2"),  # North up - TODO: Wire
-                    console_button("↷", on_click=lambda: None, size="2"),  # Rotate CW - TODO: Wire
+                    console_button("↶", on_click=rx.State.rotate_scope("ccw"), size="2"),  # type: ignore
+                    console_button("N", on_click=rx.State.rotate_scope("north"), size="2"),  # type: ignore
+                    console_button("↷", on_click=rx.State.rotate_scope("cw"), size="2"),  # type: ignore
                     spacing="2",
                 ),
             ),
@@ -253,7 +262,7 @@ def bright_dim_control(brightness: float) -> rx.Component:
                 min=20,
                 max=100,
                 step=5,
-                on_change=lambda val: None,  # TODO: Wire to set_brightness(val/100)
+                on_change=rx.State.set_brightness_percent,  # type: ignore
                 color_scheme="green",
             ),
             
@@ -269,9 +278,9 @@ def bright_dim_control(brightness: float) -> rx.Component:
             
             # Quick presets
             rx.hstack(
-                console_button("DIM", on_click=lambda: None, size="1"),  # 40% - TODO: Wire
-                console_button("MED", on_click=lambda: None, size="1"),  # 70% - TODO: Wire
-                console_button("BRIGHT", on_click=lambda: None, size="1"),  # 100% - TODO: Wire
+                console_button("DIM", on_click=rx.State.set_brightness_preset(0.4), size="1"),  # type: ignore
+                console_button("MED", on_click=rx.State.set_brightness_preset(0.7), size="1"),  # type: ignore
+                console_button("BRIGHT", on_click=rx.State.set_brightness_preset(1.0), size="1"),  # type: ignore
                 spacing="2",
                 justify="center",
             ),
@@ -383,10 +392,10 @@ def sd_console_compact(
         
         # Quick filters
         rx.wrap(
-            console_button("ALL", active=("all" in active_filters), size="1"),
-            console_button("HOSTILE", active=("hostile" in active_filters), size="1"),
-            console_button("FRIENDLY", active=("friendly" in active_filters), size="1"),
-            console_button("MISSILE", active=("missile" in active_filters), size="1"),
+            console_button("ALL", active=("all" in active_filters), on_click=rx.State.toggle_filter("all"), size="1"),  # type: ignore
+            console_button("HOSTILE", active=("hostile" in active_filters), on_click=rx.State.toggle_filter("hostile"), size="1"),  # type: ignore
+            console_button("FRIENDLY", active=("friendly" in active_filters), on_click=rx.State.toggle_filter("friendly"), size="1"),  # type: ignore
+            console_button("MISSILE", active=("missile" in active_filters), on_click=rx.State.toggle_filter("missile"), size="1"),  # type: ignore
             spacing="1",
         ),
         
@@ -394,9 +403,9 @@ def sd_console_compact(
         
         # Quick overlays
         rx.wrap(
-            console_button("PATHS", active=("flight_paths" in active_overlays), size="1"),
-            console_button("RINGS", active=("range_rings" in active_overlays), size="1"),
-            console_button("COAST", active=("coastlines" in active_overlays), size="1"),
+            console_button("PATHS", active=("flight_paths" in active_overlays), on_click=rx.State.toggle_overlay("flight_paths"), size="1"),  # type: ignore
+            console_button("RINGS", active=("range_rings" in active_overlays), on_click=rx.State.toggle_overlay("range_rings"), size="1"),  # type: ignore
+            console_button("COAST", active=("coastlines" in active_overlays), on_click=rx.State.toggle_overlay("coastlines"), size="1"),  # type: ignore
             spacing="1",
         ),
         

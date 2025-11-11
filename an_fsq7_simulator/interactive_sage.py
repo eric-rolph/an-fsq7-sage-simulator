@@ -29,7 +29,8 @@ from .components_v2 import (
     geographic_overlays,
     tube_maintenance,
     tutorial_system,
-    radar_scope
+    radar_scope,
+    system_messages,  # NEW: Operator goal flow requirement #2
 )
 
 
@@ -60,6 +61,9 @@ class InteractiveSageState(rx.State):
     scope_center_y: float = 0.0
     scope_zoom: float = 1.0
     brightness: float = 0.75
+    
+    # ===== SYSTEM MESSAGES STATE =====
+    system_messages_log: List[system_messages.SystemMessage] = []
     
     # ===== MAINTENANCE STATE =====
     maintenance: state_model.MaintenanceState = state_model.MaintenanceState(
@@ -218,15 +222,39 @@ class InteractiveSageState(rx.State):
         """Toggle a category filter (S1-S13 buttons)"""
         if filter_name in self.active_filters:
             self.active_filters.remove(filter_name)
+            action = "disabled"
         else:
             self.active_filters.add(filter_name)
+            action = "enabled"
+        
+        # Log the filter change
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="FILTER",
+                message=f"Filter {action.upper()}",
+                details=f"Category: {filter_name.upper()}"
+            )
+        )
     
     def toggle_overlay(self, overlay_name: str):
         """Toggle a feature overlay (S20-S24 buttons)"""
         if overlay_name in self.active_overlays:
             self.active_overlays.remove(overlay_name)
+            action = "disabled"
         else:
             self.active_overlays.add(overlay_name)
+            action = "enabled"
+        
+        # Log the overlay change
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="INFO",
+                message=f"Overlay {action.upper()}",
+                details=f"Display: {overlay_name.replace('_', ' ').upper()}"
+            )
+        )
     
     def pan_scope(self, direction: str):
         """Pan scope view (arrow buttons)"""
@@ -239,11 +267,31 @@ class InteractiveSageState(rx.State):
             self.scope_center_x -= step
         elif direction == "right":
             self.scope_center_x += step
+        
+        # Log pan action
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="ACTION",
+                message="Scope Panned",
+                details=f"Direction: {direction.upper()}"
+            )
+        )
     
     def center_scope(self):
         """Reset scope to center (⊙ button)"""
         self.scope_center_x = 0.0
         self.scope_center_y = 0.0
+        
+        # Log center action
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="ACTION",
+                message="Scope Centered",
+                details="View reset to origin"
+            )
+        )
     
     def zoom_scope(self, direction: str):
         """Zoom in/out (+/- buttons)"""
@@ -253,10 +301,67 @@ class InteractiveSageState(rx.State):
             self.scope_zoom = max(0.5, self.scope_zoom / 1.2)
         elif direction == "fit":
             self.scope_zoom = 1.0
+        
+        # Log zoom action
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="ACTION",
+                message="Zoom Changed",
+                details=f"{direction.upper()} (zoom: {self.scope_zoom:.2f}x)"
+            )
+        )
     
     def set_brightness(self, value: float):
         """Set scope brightness (slider)"""
+        old_brightness = self.brightness
         self.brightness = max(0.2, min(1.0, value))
+        
+        # Only log if changed significantly (avoid spam from slider)
+        if abs(self.brightness - old_brightness) > 0.05:
+            self.system_messages_log.append(
+                system_messages.SystemMessage(
+                    timestamp=datetime.now(),
+                    category="ACTION",
+                    message="Brightness Adjusted",
+                    details=f"{int(self.brightness * 100)}%"
+                )
+            )
+    
+    def set_brightness_percent(self, percent: float):
+        """Set brightness from percentage (0-100)"""
+        self.brightness = max(0.2, min(1.0, percent / 100.0))
+        
+        # Log brightness change
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="ACTION",
+                message="Brightness Set",
+                details=f"{int(percent)}%"
+            )
+        )
+    
+    def set_brightness_preset(self, value: float):
+        """Set brightness to preset value"""
+        self.brightness = value
+        
+        # Log preset selection
+        preset_name = "DIM" if value <= 0.4 else "MEDIUM" if value <= 0.7 else "BRIGHT"
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="ACTION",
+                message=f"Brightness: {preset_name}",
+                details=f"{int(value * 100)}%"
+            )
+        )
+    
+    def rotate_scope(self, direction: str):
+        """Rotate scope view (bonus feature - not yet implemented)"""
+        # TODO: Implement scope rotation
+        # For now, this is a placeholder for future rotation feature
+        pass
     
     
     # ========================
