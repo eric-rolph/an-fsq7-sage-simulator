@@ -22,6 +22,10 @@ import asyncio
 # Import state model
 from . import state_model
 
+# Import simulation models and scenarios
+from .sim import models as sim_models
+from .sim import scenarios as sim_scenarios
+
 # Import all our component modules
 from .components_v2 import (
     scenarios_layered,
@@ -126,6 +130,43 @@ class InteractiveSageState(rx.State):
                 tube = random.choice(healthy_tubes)
                 tube.status = "degrading"
                 tube.health = 50
+    
+    def load_scenario(self, scenario_name: str):
+        """Load a scenario and convert RadarTarget objects to Track objects"""
+        if scenario_name not in sim_scenarios.SCENARIOS:
+            return
+        
+        scenario = sim_scenarios.SCENARIOS[scenario_name]
+        
+        # Convert RadarTarget to Track
+        self.tracks = []
+        for rt in scenario.targets:
+            track = state_model.Track(
+                id=rt.target_id,
+                x=rt.x,
+                y=rt.y,
+                altitude=rt.altitude,
+                speed=int(rt.speed),
+                heading=int(rt.heading),
+                track_type=rt.target_type.lower(),
+                threat_level=rt.threat_level,
+                time_detected=self.world_time / 1000.0
+            )
+            self.tracks.append(track)
+        
+        # Log scenario load
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="SCENARIO",
+                message=f"Loaded: {scenario.name}",
+                details=f"{len(self.tracks)} tracks initialized"
+            )
+        )
+    
+    def on_page_load(self):
+        """Called when the page loads - initialize demo scenario"""
+        self.load_scenario("Demo 1 - Three Inbound")
     
     
     # ========================
@@ -615,7 +656,8 @@ def index() -> rx.Component:
         rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
         
         max_width="100%",
-        background="#000000"
+        background="#000000",
+        on_mount=InteractiveSageState.on_page_load
     )
 
 
