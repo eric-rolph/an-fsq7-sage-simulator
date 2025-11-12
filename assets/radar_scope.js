@@ -1,32 +1,21 @@
-"""
-Professional WebGL Radar Scope Renderer
+// Professional WebGL Radar Scope Renderer for SAGE Simulator
+// Authentic phosphor green on black aesthetic with rotating sweep
 
-The visual heart of the SAGE simulator:
-- Authentic phosphor green on black aesthetic
-- Rotating radar sweep with fade
-- Color-coded tracks (green=friendly, red=hostile, yellow=unknown)
-- Fading trails showing flight paths
-- Geographic overlays (coastlines, range rings)
-- Smooth animations and glow effects
-
-This creates the immersive Cold War radar experience.
-"""
-
-# WebGL/Canvas JavaScript code for radar rendering
-# This will be injected into the Reflex page
-
-RADAR_SCOPE_JAVASCRIPT = """
-<script>
 class RadarScope {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) {
+            console.error(`Canvas with id '${canvasId}' not found`);
+            return;
+        }
+        
         this.ctx = this.canvas.getContext('2d');
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         
         // State
         this.tracks = [];
-        this.overlays = new Set();
+        this.overlays = new Set(['range_rings', 'coastlines']); // Default overlays
         this.geoData = null;
         this.sweepAngle = 0;
         this.brightness = 0.75;
@@ -48,14 +37,17 @@ class RadarScope {
         // Start animation loop
         this.lastFrameTime = Date.now();
         requestAnimationFrame(() => this.render());
+        
+        console.log('RadarScope initialized:', canvasId);
     }
     
     updateTracks(tracks) {
-        this.tracks = tracks;
+        this.tracks = tracks || [];
+        console.log(`Updated tracks: ${this.tracks.length} tracks`);
         
         // Update trail history
         const now = Date.now();
-        tracks.forEach(track => {
+        this.tracks.forEach(track => {
             if (!this.trailHistory.has(track.id)) {
                 this.trailHistory.set(track.id, []);
             }
@@ -76,11 +68,13 @@ class RadarScope {
     }
     
     updateOverlays(overlays) {
-        this.overlays = new Set(overlays);
+        this.overlays = new Set(overlays || ['range_rings', 'coastlines']);
+        console.log('Updated overlays:', Array.from(this.overlays));
     }
     
     updateGeoData(geoData) {
         this.geoData = geoData;
+        console.log('Updated geo data');
     }
     
     setBrightness(brightness) {
@@ -415,143 +409,21 @@ class RadarScope {
     }
 }
 
-// Initialize radar scope
-let radarScope = null;
-
+// Global initialization function
 function initRadarScope(canvasId) {
-    radarScope = new RadarScope(canvasId);
-    console.log('Radar scope initialized');
-    return radarScope;
+    const scope = new RadarScope(canvasId);
+    window.radarScope = scope;
+    return scope;
 }
 
-// Export for use from Python/Reflex
-window.radarScope = null;
+// Initialize on window load
+window.addEventListener('load', function() {
+    setTimeout(() => {
+        if (document.getElementById('radar-scope-canvas')) {
+            initRadarScope('radar-scope-canvas');
+        }
+    }, 100);
+});
+
+// Export
 window.initRadarScope = initRadarScope;
-
-</script>
-"""
-
-
-# Reflex component wrapper for the radar scope
-RADAR_SCOPE_HTML = """
-<div style="position: relative; width: 100%; height: 100%;">
-    <canvas 
-        id="radar-scope-canvas" 
-        width="800" 
-        height="800"
-        style="width: 100%; height: 100%; background: #000000; border-radius: 8px;"
-    ></canvas>
-</div>
-"""
-
-
-# Python helper functions to bridge Reflex state to JavaScript
-
-def get_radar_scope_html() -> str:
-    """
-    Returns just the HTML canvas element
-    To be used in Reflex: rx.html(radar_scope.get_radar_scope_html())
-    """
-    return RADAR_SCOPE_HTML
-
-
-def get_radar_scope_javascript() -> str:
-    """
-    Returns the JavaScript code for the radar scope
-    To be used in Reflex: rx.script(radar_scope.get_radar_scope_javascript())
-    """
-    return RADAR_SCOPE_JAVASCRIPT.replace("<script>", "").replace("</script>", "")
-
-
-def get_radar_scope_init_script(tracks_json: str = "[]") -> str:
-    """
-    Returns initialization script to run after page load
-    Args:
-        tracks_json: JSON string of tracks array to display initially
-    """
-    return f"""
-        // Initialize radar scope after a short delay to ensure DOM is ready
-        setTimeout(() => {{
-            if (typeof initRadarScope !== 'undefined' && !window.radarScope) {{
-                window.radarScope = initRadarScope('radar-scope-canvas');
-                
-                // Load initial tracks if provided
-                const tracks = {tracks_json};
-                if (tracks && tracks.length > 0) {{
-                    window.radarScope.updateTracks(tracks);
-                    console.log('Radar scope initialized with', tracks.length, 'tracks');
-                }} else {{
-                    console.log('Radar scope initialized successfully');
-                }}
-            }}
-        }}, 500);
-    """
-
-
-def create_radar_scope_component() -> str:
-    """
-    DEPRECATED: Use get_radar_scope_html() with rx.html() and get_radar_scope_javascript() with rx.script()
-    Creates the complete HTML/JS for the radar scope
-    """
-    return f"""
-    {RADAR_SCOPE_JAVASCRIPT}
-    {RADAR_SCOPE_HTML}
-    <script>
-        // Initialize on load
-        window.addEventListener('load', function() {{
-            setTimeout(() => {{
-                window.radarScope = initRadarScope('radar-scope-canvas');
-            }}, 100);
-        }});
-    </script>
-    """
-
-
-def radar_update_script(tracks_json: str, overlays_json: str, geo_json: str) -> str:
-    """
-    Generates JavaScript to update the radar scope with new data
-    Call this from Reflex backend when state changes
-    """
-    return f"""
-    <script>
-        // Wait for radarScope to be initialized, then update
-        (function updateRadarData() {{
-            if (window.radarScope) {{
-                window.radarScope.updateTracks({tracks_json});
-                window.radarScope.updateOverlays({overlays_json});
-                window.radarScope.updateGeoData({geo_json});
-            }} else {{
-                // Retry after 50ms if not ready yet
-                setTimeout(updateRadarData, 50);
-            }}
-        }})();
-    </script>
-    """
-
-
-# CSS for radar scope container
-RADAR_SCOPE_CSS = """
-<style>
-#radar-scope-canvas {
-    image-rendering: crisp-edges;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -webkit-crisp-edges;
-    cursor: crosshair;
-}
-
-#radar-scope-canvas:hover {
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-}
-
-/* Crosshair cursor when light gun armed */
-.lightgun-armed #radar-scope-canvas {
-    cursor: crosshair;
-}
-
-/* Animation for track selection pulse */
-@keyframes pulse-ring {
-    0% { r: 8; opacity: 1; }
-    100% { r: 20; opacity: 0; }
-}
-</style>
-"""

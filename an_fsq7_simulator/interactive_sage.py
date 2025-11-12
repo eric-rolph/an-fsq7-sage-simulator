@@ -604,7 +604,7 @@ def index() -> rx.Component:
                 rx.vstack(
                     # Radar scope (main display)
                     rx.box(
-                        rx.html(radar_scope.create_radar_scope_component()),
+                        rx.html(radar_scope.get_radar_scope_html()),
                         width="800px",
                         height="800px",
                         border="2px solid #00ff00",
@@ -643,14 +643,10 @@ def index() -> rx.Component:
             padding="20px"
         ),
         
-        # Inject radar update script
-        rx.html(radar_scope.radar_update_script(
-            InteractiveSageState.get_tracks_json(),
-            InteractiveSageState.get_overlays_json(),
-            InteractiveSageState.get_geo_json()
-        )),
+        # Load external radar scope JavaScript
+        rx.html('<script src="/radar_scope.js"></script>'),
         
-        # Inject CSS
+        # Inject CSS and scripts
         rx.html(radar_scope.RADAR_SCOPE_CSS),
         rx.html(tube_maintenance.TUBE_ANIMATIONS_CSS),
         rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
