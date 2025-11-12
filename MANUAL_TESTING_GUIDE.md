@@ -1,9 +1,14 @@
 # Manual Testing Guide for SD Console
 
 ## Issue: Windows Hot-Reload Problem
-The Reflex development server has a known issue on Windows where it automatically stops after 5-10 seconds due to the hot-reload lifecycle. This prevents automated Playwright testing.
+The Reflex development server has a known issue on Windows where it automatically stops after 10-15 seconds due to the React Router dev server receiving shutdown signals from the Windows file watcher.
 
-**Workaround**: Use WSL (Windows Subsystem for Linux) or manual testing.
+**Root Cause**: Exit code `3221225786` (0xC000013A - STATUS_CONTROL_C_EXIT) indicates the frontend process is receiving Control-C signals.
+
+**Workarounds**:
+1. **Use WSL** (Recommended): Run `wsl` then `python -m reflex run` for stable server
+2. **Manual Quick Testing**: Start server, test features within the 10-15 second window
+3. **Use keep_alive.py**: Run `python keep_alive.py` to auto-restart server when it crashes
 
 ## Manual Testing Procedure
 
