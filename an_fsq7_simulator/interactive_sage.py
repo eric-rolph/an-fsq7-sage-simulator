@@ -655,6 +655,30 @@ def index() -> rx.Component:
             console.log('[SAGE] Auto-initializing radar scope...');
             window.initRadarScope('radar-scope-canvas');
             
+            // Wire up track click handler for light gun selection
+            if (window.radarScope) {
+                window.radarScope.onTrackClick = function(track) {
+                    console.log('[SAGE] Track clicked:', track.id);
+                    
+                    // Send track selection event to Reflex backend
+                    fetch('/_event', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            events: [{
+                                name: 'interactive_sage_state.select_track',
+                                payload: {values: [track.id]}
+                            }]
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('[SAGE] Track selection response:', data);
+                    })
+                    .catch(err => console.error('[SAGE] Track selection failed:', err));
+                };
+            }
+            
             // Load demo tracks immediately after initialization
             setTimeout(function loadDemoTracks() {
                 if (window.radarScope) {
