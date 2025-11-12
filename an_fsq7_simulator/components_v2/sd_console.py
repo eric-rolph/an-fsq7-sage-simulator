@@ -102,7 +102,7 @@ def category_select_panel(active_filters: Set[str], state_class) -> rx.Component
                 console_button(
                     f"{switch} {name}",
                     active=active_filters.contains(filter_key),
-                    on_click=lambda fk=filter_key: state_class.toggle_filter(fk),
+                    on_click=lambda _event, fk=filter_key: state_class.toggle_filter(fk),
                     size="1",
                 )
                 for switch, name, filter_key in categories
@@ -158,7 +158,7 @@ def feature_select_panel(active_overlays: Set[str], state_class) -> rx.Component
                     console_button(
                         f"{switch} {name}",
                         active=active_overlays.contains(overlay_key),
-                        on_click=lambda ok=overlay_key: state_class.toggle_overlay(ok),
+                        on_click=lambda _event, ok=overlay_key: state_class.toggle_overlay(ok),
                         size="2",
                     ),
                     rx.text(
@@ -205,13 +205,13 @@ def off_centering_controls(state_class) -> rx.Component:
                 rx.text("PAN VIEW", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.grid(
                     rx.box(),  # Empty corner
-                    console_button("↑", on_click=lambda: state_class.pan_scope("up"), size="2"),
+                    console_button("↑", on_click=lambda _: state_class.pan_scope("up"), size="2"),
                     rx.box(),  # Empty corner
-                    console_button("←", on_click=lambda: state_class.pan_scope("left"), size="2"),
-                    console_button("⊙", on_click=state_class.center_scope, size="2"),
-                    console_button("→", on_click=lambda: state_class.pan_scope("right"), size="2"),
+                    console_button("←", on_click=lambda _: state_class.pan_scope("left"), size="2"),
+                    console_button("⊙", on_click=lambda _: state_class.center_scope(), size="2"),
+                    console_button("→", on_click=lambda _: state_class.pan_scope("right"), size="2"),
                     rx.box(),  # Empty corner
-                    console_button("↓", on_click=lambda: state_class.pan_scope("down"), size="2"),
+                    console_button("↓", on_click=lambda _: state_class.pan_scope("down"), size="2"),
                     rx.box(),  # Empty corner
                     columns="3",
                     spacing="1",
@@ -226,9 +226,9 @@ def off_centering_controls(state_class) -> rx.Component:
             rx.box(
                 rx.text("ZOOM", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("−", on_click=lambda: state_class.zoom_scope("out"), size="2"),
-                    console_button("+", on_click=lambda: state_class.zoom_scope("in"), size="2"),
-                    console_button("FIT", on_click=lambda: state_class.zoom_scope("fit"), size="2"),
+                    console_button("−", on_click=lambda _: state_class.zoom_scope("out"), size="2"),
+                    console_button("+", on_click=lambda _: state_class.zoom_scope("in"), size="2"),
+                    console_button("FIT", on_click=lambda _: state_class.zoom_scope("fit"), size="2"),
                     spacing="2",
                 ),
             ),
@@ -239,9 +239,9 @@ def off_centering_controls(state_class) -> rx.Component:
             rx.box(
                 rx.text("ROTATE", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("↶", on_click=lambda: state_class.rotate_scope("ccw"), size="2"),
-                    console_button("N", on_click=lambda: state_class.rotate_scope("reset"), size="2"),
-                    console_button("↷", on_click=lambda: state_class.rotate_scope("cw"), size="2"),
+                    console_button("↶", on_click=lambda _: state_class.rotate_scope("ccw"), size="2"),
+                    console_button("N", on_click=lambda _: state_class.rotate_scope("reset"), size="2"),
+                    console_button("↷", on_click=lambda _: state_class.rotate_scope("cw"), size="2"),
                     spacing="2"),
             ),
             
@@ -281,7 +281,7 @@ def bright_dim_control(brightness: float, state_class) -> rx.Component:
                 min=20,
                 max=100,
                 step=5,
-                on_change=state_class.set_brightness_percent,
+                on_change=lambda v: state_class.set_brightness_percent(v),
                 color_scheme="green",
             ),
             
@@ -297,9 +297,9 @@ def bright_dim_control(brightness: float, state_class) -> rx.Component:
             
             # Quick presets
             rx.hstack(
-                console_button("DIM", on_click=lambda: state_class.set_brightness_preset("dim"), size="1"),
-                console_button("MED", on_click=lambda: state_class.set_brightness_preset("med"), size="1"),
-                console_button("BRIGHT", on_click=lambda: state_class.set_brightness_preset("bright"), size="1"),
+                console_button("DIM", on_click=lambda _: state_class.set_brightness_preset("dim"), size="1"),
+                console_button("MED", on_click=lambda _: state_class.set_brightness_preset("med"), size="1"),
+                console_button("BRIGHT", on_click=lambda _: state_class.set_brightness_preset("bright"), size="1"),
                 spacing="2",
                 justify="center",
             ),
