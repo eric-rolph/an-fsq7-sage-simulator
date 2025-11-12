@@ -156,7 +156,12 @@ def _track_detail_content(track: Track, armed: bool) -> rx.Component:
                 rx.text("THREAT", font_size="0.8rem", color="#888888"),
                 rx.badge(
                     track.threat_level,
-                    color_scheme="red" if track.threat_level in ["CRITICAL", "HIGH"] else "yellow",
+                    color_scheme=rx.match(
+                        track.threat_level,
+                        ("CRITICAL", "red"),
+                        ("HIGH", "red"),
+                        "yellow"  # default for MEDIUM, LOW, NONE
+                    ),
                     font_size="0.9rem",
                 ),
             ),
@@ -177,39 +182,39 @@ def _track_detail_content(track: Track, armed: bool) -> rx.Component:
             margin_bottom="1rem",
         ),
         
-        # Velocity vector
-        rx.box(
-            rx.text("VELOCITY", font_size="0.8rem", color="#888888", margin_bottom="0.25rem"),
-            rx.text(
-                f"VX: {track.vx:.4f}  VY: {track.vy:.4f}",
-                font_family="'Courier New', monospace",
-                color="#88ff88",
-                font_size="0.9rem",
-            ),
-            margin_bottom="1rem",
-        ),
+        # Velocity vector - TODO: Track model needs vx, vy attributes
+        # rx.box(
+        #     rx.text("VELOCITY", font_size="0.8rem", color="#888888", margin_bottom="0.25rem"),
+        #     rx.text(
+        #         f"VX: {track.vx:.4f}  VY: {track.vy:.4f}",
+        #         font_family="'Courier New', monospace",
+        #         color="#88ff88",
+        #         font_size="0.9rem",
+        #     ),
+        #     margin_bottom="1rem",
+        # ),
         
-        # Special: Missile countdown
-        rx.cond(
-            (track.track_type == "missile") & (track.t_minus != None),  # Use & instead of 'and' for Vars
-            rx.box(
-                rx.text("TIME TO IMPACT", font_size="0.8rem", color="#ff0000", margin_bottom="0.25rem"),
-                rx.text(
-                    f"T-{track.t_minus:.1f}s",
-                    font_family="'Courier New', monospace",
-                    color="#ff0000",
-                    font_size="1.5rem",
-                    font_weight="bold",
-                ),
-                padding="0.5rem",
-                background="#330000",
-                border="1px solid #ff0000",
-                border_radius="4px",
-                text_align="center",
-                margin_bottom="1rem",
-            ),
-            rx.box(),
-        ),
+        # Special: Missile countdown - TODO: Track model needs t_minus attribute
+        # rx.cond(
+        #     (track.track_type == "missile") & (track.t_minus != None),
+        #     rx.box(
+        #         rx.text("TIME TO IMPACT", font_size="0.8rem", color="#ff0000", margin_bottom="0.25rem"),
+        #         rx.text(
+        #             f"T-{track.t_minus:.1f}s",
+        #             font_family="'Courier New', monospace",
+        #             color="#ff0000",
+        #             font_size="1.5rem",
+        #             font_weight="bold",
+        #         ),
+        #         padding="0.5rem",
+        #         background="#330000",
+        #         border="1px solid #ff0000",
+        #         border_radius="4px",
+        #         text_align="center",
+        #         margin_bottom="1rem",
+        #     ),
+        #     rx.box(),
+        # ),
         
         # Action buttons
         rx.vstack(

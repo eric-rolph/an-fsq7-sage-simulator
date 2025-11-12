@@ -15,7 +15,7 @@ Runs 500ms tick loop for realistic scenario advancement.
 
 import reflex as rx
 import json
-from typing import List, Set
+from typing import List, Set, Optional
 from datetime import datetime
 import asyncio
 
@@ -515,11 +515,13 @@ class InteractiveSageState(rx.State):
         
         return filtered
     
-    def get_selected_track(self) -> state_model.Track:
-        """Get currently selected track for detail panel"""
-        if not self.selected_track_id:
-            return None
-        return next((t for t in self.tracks if t.id == self.selected_track_id), None)
+    @rx.var
+    def selected_track(self) -> Optional[state_model.Track]:
+        """Get currently selected track for detail panel (computed var)"""
+        for track in self.tracks:
+            if track.id == self.selected_track_id:
+                return track
+        return None
 
 
 # ========================
@@ -590,11 +592,10 @@ def index() -> rx.Component:
                     execution_trace_panel.execution_trace_panel_compact(
                         InteractiveSageState.cpu_trace
                     ),
-                    # light_gun.track_detail_panel(  # TODO: get_selected_track() has Python logic incompatible with Vars
-                    #     InteractiveSageState.get_selected_track(),
-                    #     InteractiveSageState.lightgun_armed
-                    # ),
-                    rx.box(rx.text("Track detail panel disabled - needs refactoring", color="#888888")),
+                    light_gun.track_detail_panel(
+                        InteractiveSageState.selected_track,
+                        InteractiveSageState.lightgun_armed
+                    ),
                     light_gun.light_gun_controls(),
                     width="350px",
                     spacing="4"
