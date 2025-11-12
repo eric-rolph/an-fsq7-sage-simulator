@@ -69,7 +69,7 @@ def load_radar_scope() -> rx.Component:
                 console.log('[SAGE] Canvas found, initializing radar scope...');
                 window.initRadarScope('radar-scope-canvas');
                 
-                // Step 3: Load tracks from embedded data attribute
+                // Step 3: Load tracks and overlays from embedded data attribute
                 setTimeout(function() {
                     if (window.radarScope) {
                         var trackDataDiv = document.getElementById('sage-track-data');
@@ -78,6 +78,10 @@ def load_radar_scope() -> rx.Component:
                             console.log('[SAGE] Loading', tracks.length, 'tracks from state');
                             window.radarScope.updateTracks(tracks);
                         }
+                        
+                        // Update overlays to include flight_paths by default
+                        window.radarScope.updateOverlays(['range_rings', 'coastlines', 'flight_paths']);
+                        console.log('[SAGE] Overlays initialized with flight paths enabled');
                     }
                 }, 100);
                 

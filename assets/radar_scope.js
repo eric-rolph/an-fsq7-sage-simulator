@@ -193,29 +193,28 @@ class RadarScope {
     }
     
     drawTrails() {
-        const now = Date.now();
-        
-        this.trailHistory.forEach((trail, trackId) => {
-            if (trail.length < 2) return;
-            
-            const track = this.tracks.find(t => t.id === trackId);
-            if (!track) return;
+        // Draw trails using backend-provided trail data
+        this.tracks.forEach(track => {
+            if (!track.trail || track.trail.length < 2) return;
             
             // Determine trail color based on track type
-            let baseColor = this.getTrackColor(track);
+            const baseColor = this.getTrackColor(track);
             
             this.ctx.save();
             this.ctx.strokeStyle = baseColor;
             this.ctx.lineWidth = 1;
             
-            for (let i = 0; i < trail.length - 1; i++) {
-                const age = now - trail[i].timestamp;
-                const alpha = Math.max(0, 1 - (age / this.trailFadeMs)) * this.brightness * 0.5;
+            // Draw trail with fading effect (older positions more transparent)
+            const trailLength = track.trail.length;
+            for (let i = 0; i < trailLength - 1; i++) {
+                // Alpha increases from 0.1 (oldest) to 0.5 (newest)
+                const age = (trailLength - i - 1) / trailLength;
+                const alpha = (0.1 + age * 0.4) * this.brightness;
                 
                 this.ctx.globalAlpha = alpha;
                 this.ctx.beginPath();
-                this.ctx.moveTo(trail[i].x * this.width, trail[i].y * this.height);
-                this.ctx.lineTo(trail[i+1].x * this.width, trail[i+1].y * this.height);
+                this.ctx.moveTo(track.trail[i][0] * this.width, track.trail[i][1] * this.height);
+                this.ctx.lineTo(track.trail[i+1][0] * this.width, track.trail[i+1][1] * this.height);
                 this.ctx.stroke();
             }
             

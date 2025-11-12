@@ -63,7 +63,7 @@ class InteractiveSageState(rx.State):
     
     # ===== SD CONSOLE STATE =====
     active_filters: Set[str] = set()
-    active_overlays: Set[str] = {"range_rings", "coastlines"}
+    active_overlays: Set[str] = {"range_rings", "coastlines", "flight_paths"}
     scope_center_x: float = 0.0
     scope_center_y: float = 0.0
     scope_zoom: float = 1.0
@@ -574,7 +574,8 @@ class InteractiveSageState(rx.State):
             "track_type": t.track_type,
             "threat_level": t.threat_level,
             "selected": getattr(t, 'selected', False),
-            "designation": getattr(t, 'designation', '')
+            "designation": getattr(t, 'designation', ''),
+            "trail": getattr(t, 'trail', [])  # Include trail history for rendering
         } for t in filtered_tracks])
     
     def get_overlays_json(self) -> str:
