@@ -38,6 +38,7 @@ from .components_v2 import (
     tutorial_system,
     radar_scope,
     system_messages,  # NEW: Operator goal flow requirement #2
+    scenario_selector,  # NEW: Scenario switching UI
 )
 
 
@@ -51,6 +52,7 @@ class InteractiveSageState(rx.State):
     tracks: List[state_model.Track] = []
     world_time: int = 0  # milliseconds since start
     is_running: bool = False
+    current_scenario_name: str = "Demo 1 - Three Inbound"
     
     # ===== CPU STATE =====
     current_program: str = ""
@@ -185,6 +187,7 @@ class InteractiveSageState(rx.State):
         if scenario_name not in sim_scenarios.SCENARIOS:
             return
         
+        self.current_scenario_name = scenario_name
         scenario = sim_scenarios.SCENARIOS[scenario_name]
         
         # Convert RadarTarget to Track
@@ -223,6 +226,19 @@ class InteractiveSageState(rx.State):
                 category="SCENARIO",
                 message=f"Loaded: {scenario.name}",
                 details=f"{len(self.tracks)} tracks initialized"
+            )
+        )
+    
+    def change_scenario(self, scenario_name: str):
+        """Change to a different scenario"""
+        self.load_scenario(scenario_name)
+        # Log scenario change
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="SCENARIO",
+                message=f"Scenario changed to: {scenario_name}",
+                details=f"{len(self.tracks)} tracks loaded"
             )
         )
     
@@ -652,8 +668,12 @@ def index() -> rx.Component:
             
             # Main layout: 3 columns
             rx.hstack(
-                # LEFT COLUMN: SD Console + Maintenance
+                # LEFT COLUMN: SD Console + Maintenance + Scenario Selector
                 rx.vstack(
+                    scenario_selector.scenario_selector_panel(
+                        InteractiveSageState.current_scenario_name,
+                        InteractiveSageState.change_scenario
+                    ),
                     sd_console.sd_console_master_panel(
                         InteractiveSageState.active_filters,
                         InteractiveSageState.active_overlays,
