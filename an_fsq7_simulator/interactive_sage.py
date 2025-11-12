@@ -646,6 +646,80 @@ def index() -> rx.Component:
         # Load external radar scope JavaScript
         rx.html('<script src="/radar_scope.js"></script>'),
         
+        # Auto-initialize radar scope after external script loads
+        rx.html('''<script>
+(function autoInitRadar() {
+    // Poll for radar scope initialization
+    function initWhenReady() {
+        if (typeof window.initRadarScope !== 'undefined' && document.getElementById('radar-scope-canvas')) {
+            console.log('[SAGE] Auto-initializing radar scope...');
+            window.initRadarScope('radar-scope-canvas');
+            
+            // Load demo tracks immediately after initialization
+            setTimeout(function loadDemoTracks() {
+                if (window.radarScope) {
+                    console.log('[SAGE] Loading demo tracks from state...');
+                    
+                    // Fetch current track data from backend
+                    fetch('/_event', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            events: [{
+                                name: 'interactive_sage_state.get_tracks_json',
+                                payload: {}
+                            }]
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('[SAGE] Received track data:', data);
+                        if (data && data.events && data.events[0] && data.events[0].result) {
+                            var tracks = JSON.parse(data.events[0].result);
+                            console.log('[SAGE] Updating radar with', tracks.length, 'tracks');
+                            window.radarScope.updateTracks(tracks);
+                        }
+                    })
+                    .catch(err => console.error('[SAGE] Failed to load tracks:', err));
+                    
+                    // Poll for updates every 2 seconds
+                    setInterval(function pollTrackData() {
+                        fetch('/_event', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                events: [{
+                                    name: 'interactive_sage_state.get_tracks_json',
+                                    payload: {}
+                                }]
+                            })
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data && data.events && data.events[0] && data.events[0].result) {
+                                var tracks = JSON.parse(data.events[0].result);
+                                window.radarScope.updateTracks(tracks);
+                            }
+                        })
+                        .catch(err => console.error('[SAGE] Track poll failed:', err));
+                    }, 2000);
+                }
+            }, 500);
+        } else {
+            // Retry after 100ms
+            setTimeout(initWhenReady, 100);
+        }
+    }
+    
+    // Start initialization check after page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+        initWhenReady();
+    }
+})();
+</script>'''),
+        
         # Inject CSS and scripts
         rx.html(radar_scope.RADAR_SCOPE_CSS),
         rx.html(tube_maintenance.TUBE_ANIMATIONS_CSS),
