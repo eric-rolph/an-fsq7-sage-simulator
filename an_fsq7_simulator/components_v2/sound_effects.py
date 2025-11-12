@@ -389,14 +389,15 @@ def sound_settings_panel(
                 color="#888888",
                 font_size="11px"
             ),
-            rx.wrap(
+            rx.flex(
                 test_sound_button("Radar Ping", "track_detected"),
                 test_sound_button("Button Click", "button_press"),
                 test_sound_button("Light Gun", "lightgun_select"),
                 test_sound_button("Hostile Alert", "hostile_alert"),
                 test_sound_button("Intercept", "intercept_launch"),
                 test_sound_button("Error Tone", "error_tone"),
-                spacing="2"
+                spacing="2",
+                wrap="wrap",
             ),
             
             rx.divider(border_color="#444444"),

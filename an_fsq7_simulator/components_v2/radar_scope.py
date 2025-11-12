@@ -26,7 +26,7 @@ class RadarScope {
         
         // State
         this.tracks = [];
-        this.overlays = {};
+        this.overlays = new Set();
         this.geoData = null;
         this.sweepAngle = 0;
         this.brightness = 0.75;
@@ -98,8 +98,8 @@ class RadarScope {
     
     handleClick(e) {
         const rect = this.canvas.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left) / this.width;
-        const clickY = (e.clientY - rect.top) / this.height;
+        const clickX = (e.clientX - rect.left) / rect.width;
+        const clickY = (e.clientY - rect.top) / rect.height;
         
         // Find nearest track within threshold
         let nearestTrack = null;
@@ -116,8 +116,18 @@ class RadarScope {
             }
         });
         
-        if (nearestTrack && this.onTrackClick) {
-            this.onTrackClick(nearestTrack);
+        if (nearestTrack) {
+            // Deselect all tracks first
+            this.tracks.forEach(t => t.selected = false);
+            // Select the clicked track
+            nearestTrack.selected = true;
+            
+            // Call callback if set
+            if (this.onTrackClick) {
+                this.onTrackClick(nearestTrack);
+            }
+            
+            console.log('Track selected:', nearestTrack.id || nearestTrack.track_id);
         }
     }
     
@@ -437,10 +447,51 @@ RADAR_SCOPE_HTML = """
 
 # Python helper functions to bridge Reflex state to JavaScript
 
+def get_radar_scope_html() -> str:
+    """
+    Returns just the HTML canvas element
+    To be used in Reflex: rx.html(radar_scope.get_radar_scope_html())
+    """
+    return RADAR_SCOPE_HTML
+
+
+def get_radar_scope_javascript() -> str:
+    """
+    Returns the JavaScript code for the radar scope
+    To be used in Reflex: rx.script(radar_scope.get_radar_scope_javascript())
+    """
+    return RADAR_SCOPE_JAVASCRIPT.replace("<script>", "").replace("</script>", "")
+
+
+def get_radar_scope_init_script(tracks_json: str = "[]") -> str:
+    """
+    Returns initialization script to run after page load
+    Args:
+        tracks_json: JSON string of tracks array to display initially
+    """
+    return f"""
+        // Initialize radar scope after a short delay to ensure DOM is ready
+        setTimeout(() => {{
+            if (typeof initRadarScope !== 'undefined' && !window.radarScope) {{
+                window.radarScope = initRadarScope('radar-scope-canvas');
+                
+                // Load initial tracks if provided
+                const tracks = {tracks_json};
+                if (tracks && tracks.length > 0) {{
+                    window.radarScope.updateTracks(tracks);
+                    console.log('Radar scope initialized with', tracks.length, 'tracks');
+                }} else {{
+                    console.log('Radar scope initialized successfully');
+                }}
+            }}
+        }}, 500);
+    """
+
+
 def create_radar_scope_component() -> str:
     """
+    DEPRECATED: Use get_radar_scope_html() with rx.html() and get_radar_scope_javascript() with rx.script()
     Creates the complete HTML/JS for the radar scope
-    To be used in Reflex: rx.html(create_radar_scope_component())
     """
     return f"""
     {RADAR_SCOPE_JAVASCRIPT}

@@ -40,3 +40,11 @@ uploaded_files/
 Thumbs.db
 
 .states/
+
+# Test artifacts and temporary files
+test-screenshots/
+test-artifacts/
+.playwright-mcp/
+BROWSER_TEST_SCRIPT.js
+RECONCILE_DIRECTORIES.ps1
+fix_sd_console.py

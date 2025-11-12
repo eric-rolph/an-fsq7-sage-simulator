@@ -527,11 +527,11 @@ class InteractiveSageState(rx.State):
 def index() -> rx.Component:
     """Main SAGE simulator page"""
     return rx.container(
-        # Welcome modal (first visit)
-        rx.cond(
-            InteractiveSageState.show_welcome,
-            tutorial_system.welcome_modal()
-        ),
+        # Welcome modal (first visit) - Temporarily disabled due to lambda event handler issues
+        # rx.cond(
+        #     InteractiveSageState.show_welcome,
+        #     tutorial_system.welcome_modal(True)
+        # ),
         
         rx.vstack(
             # Header
@@ -580,10 +580,11 @@ def index() -> rx.Component:
                     execution_trace_panel.execution_trace_panel_compact(
                         InteractiveSageState.cpu_trace
                     ),
-                    light_gun.track_detail_panel(
-                        InteractiveSageState.get_selected_track(),
-                        InteractiveSageState.lightgun_armed
-                    ),
+                    # light_gun.track_detail_panel(  # TODO: get_selected_track() has Python logic incompatible with Vars
+                    #     InteractiveSageState.get_selected_track(),
+                    #     InteractiveSageState.lightgun_armed
+                    # ),
+                    rx.box(rx.text("Track detail panel disabled - needs refactoring", color="#888888")),
                     light_gun.light_gun_controls(),
                     width="350px",
                     spacing="4"
@@ -615,10 +616,9 @@ def index() -> rx.Component:
 
 
 # Create the Reflex app
-# Temporarily disabled - using demo_sage.py for testing
-# app = rx.App(
-#     stylesheets=[
-#         "https://fonts.googleapis.com/css2?family=Courier+New:wght@400;700&display=swap"
-#     ]
-# )
-# app.add_page(index, route="/")
+app = rx.App(
+    stylesheets=[
+        "https://fonts.googleapis.com/css2?family=Courier+New:wght@400;700&display=swap"
+    ]
+)
+app.add_page(index, route="/")

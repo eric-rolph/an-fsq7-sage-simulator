@@ -32,22 +32,27 @@ def console_button(
     """
     Styled console button with lit/unlit states
     """
-    return rx.button(
-        label,
-        on_click=on_click or (lambda: None),
-        background="#003300" if active else "#001100",
-        color="#00ff00" if active else "#004400",
-        border=f"2px solid {'#00ff00' if active else '#003300'}",
-        size=size,
-        font_family="'Courier New', monospace",
-        font_weight="bold",
-        _hover={
-            "background": "#005500" if active else "#002200",
+    button_props = {
+        "background": rx.cond(active, "#003300", "#001100"),
+        "color": rx.cond(active, "#00ff00", "#004400"),
+        "border": rx.cond(active, "2px solid #00ff00", "2px solid #003300"),
+        "size": size,
+        "font_family": "'Courier New', monospace",
+        "font_weight": "bold",
+        "_hover": {
+            "background": rx.cond(active, "#005500", "#002200"),
             "border_color": "#00ff00",
             "color": "#00ff00",
         },
-        box_shadow="0 0 10px rgba(0,255,0,0.3)" if active else "none",
-        transition="all 0.2s",
+        "box_shadow": rx.cond(active, "0 0 10px rgba(0,255,0,0.3)", "none"),
+        "transition": "all 0.2s",
+    }
+    if on_click is not None:
+        button_props["on_click"] = on_click
+    
+    return rx.button(
+        label,
+        **button_props,
     )
 
 
@@ -92,8 +97,8 @@ def category_select_panel(active_filters: Set[str]) -> rx.Component:
             *[
                 console_button(
                     f"{switch} {name}",
-                    active=(filter_key in active_filters),
-                    on_click=rx.State.toggle_filter(filter_key),  # type: ignore
+                    active=active_filters.contains(filter_key),
+                    # on_click=  # TODO: Wire up toggle_filter event handler
                     size="1",
                 )
                 for switch, name, filter_key in categories
@@ -144,8 +149,8 @@ def feature_select_panel(active_overlays: Set[str]) -> rx.Component:
                 rx.box(
                     console_button(
                         f"{switch} {name}",
-                        active=(overlay_key in active_overlays),
-                        on_click=rx.State.toggle_overlay(overlay_key),  # type: ignore
+                        active=active_overlays.contains(overlay_key),
+                        # on_click=  # TODO: Wire up toggle_overlay event handler
                         size="2",
                     ),
                     rx.text(
@@ -189,13 +194,13 @@ def off_centering_controls() -> rx.Component:
                 rx.text("PAN VIEW", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.grid(
                     rx.box(),  # Empty corner
-                    console_button("↑", on_click=rx.State.pan_scope("up"), size="2"),  # type: ignore
+                    console_button("↑", size="2"),  # TODO: Wire up pan_scope handler
                     rx.box(),  # Empty corner
-                    console_button("←", on_click=rx.State.pan_scope("left"), size="2"),  # type: ignore
-                    console_button("⊙", on_click=rx.State.center_scope, size="2"),  # type: ignore
-                    console_button("→", on_click=rx.State.pan_scope("right"), size="2"),  # type: ignore
+                    console_button("←", size="2"),  # TODO: Wire up pan_scope handler
+                    console_button("⊙", size="2"),  # TODO: Wire up center_scope handler
+                    console_button("→", size="2"),  # TODO: Wire up pan_scope handler
                     rx.box(),  # Empty corner
-                    console_button("↓", on_click=rx.State.pan_scope("down"), size="2"),  # type: ignore
+                    console_button("↓", size="2"),  # TODO: Wire up pan_scope handler
                     rx.box(),  # Empty corner
                     columns="3",
                     spacing="1",
@@ -210,9 +215,9 @@ def off_centering_controls() -> rx.Component:
             rx.box(
                 rx.text("ZOOM", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("−", on_click=rx.State.zoom_scope("out"), size="2"),  # type: ignore
-                    console_button("+", on_click=rx.State.zoom_scope("in"), size="2"),  # type: ignore
-                    console_button("FIT", on_click=rx.State.zoom_scope("fit"), size="2"),  # type: ignore
+                    console_button("−", size="2"),  # TODO: Wire up zoom_scope handler
+                    console_button("+", size="2"),  # TODO: Wire up zoom_scope handler
+                    console_button("FIT", size="2"),  # TODO: Wire up zoom_scope handler
                     spacing="2",
                 ),
             ),
@@ -223,9 +228,9 @@ def off_centering_controls() -> rx.Component:
             rx.box(
                 rx.text("ROTATE", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("↶", on_click=rx.State.rotate_scope("ccw"), size="2"),  # type: ignore
-                    console_button("N", on_click=rx.State.rotate_scope("north"), size="2"),  # type: ignore
-                    console_button("↷", on_click=rx.State.rotate_scope("cw"), size="2"),  # type: ignore
+                    console_button("↶", size="2"),  # TODO: Wire up rotate_scope handler
+                    console_button("N", size="2"),  # TODO: Wire up rotate_scope handler
+                    console_button("↷", size="2"),  # TODO: Wire up rotate_scope handler
                     spacing="2",
                 ),
             ),
@@ -262,13 +267,13 @@ def bright_dim_control(brightness: float) -> rx.Component:
                 min=20,
                 max=100,
                 step=5,
-                on_change=rx.State.set_brightness_percent,  # type: ignore
+                # on_change=  # TODO: Wire up set_brightness_percent handler
                 color_scheme="green",
             ),
             
             # Percentage display
             rx.text(
-                f"{int(brightness * 100)}%",
+                f"{brightness * 100:.0f}%",
                 color="#00ff00",
                 font_size="1.5rem",
                 font_family="'Courier New', monospace",
@@ -278,9 +283,9 @@ def bright_dim_control(brightness: float) -> rx.Component:
             
             # Quick presets
             rx.hstack(
-                console_button("DIM", on_click=rx.State.set_brightness_preset(0.4), size="1"),  # type: ignore
-                console_button("MED", on_click=rx.State.set_brightness_preset(0.7), size="1"),  # type: ignore
-                console_button("BRIGHT", on_click=rx.State.set_brightness_preset(1.0), size="1"),  # type: ignore
+                console_button("DIM", size="1"),  # TODO: Wire up set_brightness_preset handler
+                console_button("MED", size="1"),  # TODO: Wire up set_brightness_preset handler
+                console_button("BRIGHT", size="1"),  # TODO: Wire up set_brightness_preset handler
                 spacing="2",
                 justify="center",
             ),
@@ -305,12 +310,14 @@ def active_filters_display(filters: Set[str], overlays: Set[str]) -> rx.Componen
             # Active filters
             rx.box(
                 rx.text("ACTIVE FILTERS:", font_weight="bold", color="#00ff00", font_size="0.8rem"),
-                rx.wrap(
-                    *[
-                        rx.badge(f.upper(), color_scheme="green", size="1")
-                        for f in sorted(filters)
-                    ] if filters else [rx.text("NONE", color="#666666", font_size="0.75rem")],
+                rx.flex(
+                    rx.foreach(
+                        filters,
+                        lambda f: rx.badge(f.upper(), color_scheme="green", size="1")
+                    ),
+                    wrap="wrap",
                     spacing="1",
+                    min_height="1.5rem",
                 ),
             ),
             
@@ -319,12 +326,14 @@ def active_filters_display(filters: Set[str], overlays: Set[str]) -> rx.Componen
             # Active overlays
             rx.box(
                 rx.text("ACTIVE OVERLAYS:", font_weight="bold", color="#00ff00", font_size="0.8rem"),
-                rx.wrap(
-                    *[
-                        rx.badge(o.replace("_", " ").upper(), color_scheme="blue", size="1")
-                        for o in sorted(overlays)
-                    ] if overlays else [rx.text("NONE", color="#666666", font_size="0.75rem")],
+                rx.flex(
+                    rx.foreach(
+                        overlays,
+                        lambda o: rx.badge(o.replace("_", " ").upper(), color_scheme="blue", size="1")
+                    ),
+                    wrap="wrap",
                     spacing="1",
+                    min_height="1.5rem",
                 ),
             ),
             
@@ -391,21 +400,23 @@ def sd_console_compact(
         rx.heading("CONSOLE", size="4", color="#00ff00", margin_bottom="0.5rem"),
         
         # Quick filters
-        rx.wrap(
-            console_button("ALL", active=("all" in active_filters), on_click=rx.State.toggle_filter("all"), size="1"),  # type: ignore
-            console_button("HOSTILE", active=("hostile" in active_filters), on_click=rx.State.toggle_filter("hostile"), size="1"),  # type: ignore
-            console_button("FRIENDLY", active=("friendly" in active_filters), on_click=rx.State.toggle_filter("friendly"), size="1"),  # type: ignore
-            console_button("MISSILE", active=("missile" in active_filters), on_click=rx.State.toggle_filter("missile"), size="1"),  # type: ignore
+        rx.flex(
+            console_button("ALL", active=active_filters.contains("all"), size="1"),  # TODO: Wire up event handler
+            console_button("HOSTILE", active=active_filters.contains("hostile"), size="1"),  # TODO: Wire up event handler
+            console_button("FRIENDLY", active=active_filters.contains("friendly"), size="1"),  # TODO: Wire up event handler
+            console_button("MISSILE", active=active_filters.contains("missile"), size="1"),  # TODO: Wire up event handler
+            wrap="wrap",
             spacing="1",
         ),
         
         rx.divider(margin_y="0.5rem"),
         
         # Quick overlays
-        rx.wrap(
-            console_button("PATHS", active=("flight_paths" in active_overlays), on_click=rx.State.toggle_overlay("flight_paths"), size="1"),  # type: ignore
-            console_button("RINGS", active=("range_rings" in active_overlays), on_click=rx.State.toggle_overlay("range_rings"), size="1"),  # type: ignore
-            console_button("COAST", active=("coastlines" in active_overlays), on_click=rx.State.toggle_overlay("coastlines"), size="1"),  # type: ignore
+        rx.flex(
+            console_button("PATHS", active=active_overlays.contains("flight_paths"), size="1"),  # TODO: Wire up event handler
+            console_button("RINGS", active=active_overlays.contains("range_rings"), size="1"),  # TODO: Wire up event handler
+            console_button("COAST", active=active_overlays.contains("coastlines"), size="1"),  # TODO: Wire up event handler
+            wrap="wrap",
             spacing="1",
         ),
         

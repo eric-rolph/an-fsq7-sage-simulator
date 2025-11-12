@@ -22,7 +22,7 @@ def execution_step_row(step: ExecutionStep, index: int) -> rx.Component:
         rx.hstack(
             # Step number
             rx.text(
-                f"#{step.step_num}",
+                f"#{step.step_number}",  # Fixed: was step_num, correct is step_number
                 font_family="'Courier New', monospace",
                 color="#00ff00",
                 width="40px",
@@ -30,7 +30,7 @@ def execution_step_row(step: ExecutionStep, index: int) -> rx.Component:
             ),
             # Instruction text
             rx.text(
-                step.instruction_text,
+                step.instruction,  # Fixed: was instruction_text, correct is instruction
                 font_family="'Courier New', monospace",
                 color="#88ff88",
                 flex="1",
@@ -42,7 +42,7 @@ def execution_step_row(step: ExecutionStep, index: int) -> rx.Component:
         # Result text (indented)
         rx.box(
             rx.text(
-                f"→ {step.result_text}",
+                f"→ {step.description}",  # Fixed: was result_text, correct is description
                 font_family="'Courier New', monospace",
                 color="#ffff88",
                 font_size="0.85rem",
@@ -176,7 +176,7 @@ def program_header(trace: CpuTrace) -> rx.Component:
                 rx.text("STATUS", font_size="0.8rem", color="#888888"),
                 rx.badge(
                     trace.status,
-                    color_scheme="green" if trace.status == "Done" else "yellow",
+                    color_scheme=rx.cond(trace.status == "Done", "green", "yellow"),
                     font_size="0.9rem",
                 ),
                 spacing="0",
@@ -201,30 +201,35 @@ def program_header(trace: CpuTrace) -> rx.Component:
 
 def final_result_banner(trace: CpuTrace) -> rx.Component:
     """Show final computation result"""
-    if trace.status != "Done" or not trace.final_result:
-        return rx.box()  # Empty if not done
+    # if trace.status != "Done" or not trace.final_result:
+    #     return rx.box()  # Empty if not done
+    # Can't use Python if with Vars - return rx.cond instead
     
-    return rx.box(
+    return rx.cond(
+        (trace.status == "Done") & (trace.final_result != None),
+        rx.box(
         rx.heading("✓ EXECUTION COMPLETE", size="4", color="#00ff00"),
         rx.text(
-            f"Final result: {trace.final_result.get('value', 'N/A')}",
+            f"Final result: {trace.final_result}",  # Simplified - .get() not supported on Vars
             font_size="1.2rem",
             color="#ffff00",
             font_family="'Courier New', monospace",
             margin_y="0.5rem",
         ),
-        rx.text(
-            f"Stored at address: {trace.final_result.get('address', 'N/A')}",
-            font_size="0.9rem",
-            color="#88ff88",
-            font_family="'Courier New', monospace",
-        ),
+        # rx.text(  # Removed - .get('address') not supported on Vars
+        #     f"Stored at address: {trace.final_result.get('address', 'N/A')}",
+        #     font_size="0.9rem",
+        #     color="#88ff88",
+        #     font_family="'Courier New', monospace",
+        # ),
         padding="1.5rem",
         background="#002200",
         border="2px solid #00ff00",
         border_radius="4px",
         text_align="center",
         margin_top="1rem",
+        ),
+        rx.box()  # Empty if not done
     )
 
 
@@ -261,9 +266,9 @@ def execution_trace_panel(trace: CpuTrace) -> rx.Component:
             rx.box(
                 # Render all steps
                 rx.cond(
-                    len(trace.steps) > 0,
+                    trace.steps.length() > 0,
                     rx.vstack(
-                        *[execution_step_row(step, i) for i, step in enumerate(trace.steps)],
+                        rx.foreach(trace.steps, lambda step: execution_step_row(step, 0)),  # TODO: Fix index
                         spacing="0",
                         width="100%",
                     ),
@@ -286,8 +291,8 @@ def execution_trace_panel(trace: CpuTrace) -> rx.Component:
         
         # Register view
         rx.cond(
-            len(trace.steps) > 0,
-            register_view(trace.steps[-1].registers if trace.steps else CpuRegisters()),
+            trace.steps.length() > 0,
+            register_view(trace.steps[-1].registers),  # Already checked length > 0 above
             rx.box(),
         ),
         
@@ -327,17 +332,21 @@ def execution_trace_panel_compact(trace: CpuTrace) -> rx.Component:
         # Status indicator
         rx.hstack(
             rx.text("Status:", color="#888888", font_size="0.9rem"),
-            rx.badge(trace.status, color_scheme="green" if trace.status == "Done" else "yellow"),
+            rx.badge(trace.status, color_scheme=rx.cond(trace.status == "Done", "green", "yellow")),
             spacing="2",
         ),
         
         # Last few steps only
         rx.box(
-            rx.vstack(
-                *[execution_step_row(step, i) for i, step in enumerate(trace.steps[-5:])],
-                spacing="0",
-                width="100%",
-            ) if trace.steps else rx.text("Idle", color="#888888"),
+            rx.cond(
+                trace.steps.length() > 0,
+                rx.vstack(
+                    rx.foreach(trace.steps, lambda step: execution_step_row(step, 0)),  # TODO: Fix index
+                    spacing="0",
+                    width="100%",
+                ),
+                rx.text("Idle", color="#888888"),
+            ),
             max_height="200px",
             overflow_y="auto",
             background="#000000",
@@ -351,7 +360,7 @@ def execution_trace_panel_compact(trace: CpuTrace) -> rx.Component:
         rx.cond(
             trace.status == "Done",
             rx.text(
-                f"Result: {trace.final_result.get('value', 'N/A')}",
+                f"Result: {trace.final_result}",  # Simplified - .get() not supported on Vars
                 color="#ffff00",
                 font_family="'Courier New', monospace",
             ),

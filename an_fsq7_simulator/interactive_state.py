@@ -156,56 +156,51 @@ def create_initial_tubes() -> List[TubeState]:
             ))
     return tubes
 
+# Commented out - tutorial_system.py has its own mission definitions
+# This version causes Reflex errors due to comparison operators in condition strings
 def create_tutorial_missions() -> List[Mission]:
-    """Create the 6 tutorial missions"""
-    return [
-        Mission(
-            id="mission_1",
-            title="Power-On & Scope Basics",
-            steps=[
-                MissionStep("Power on the system", "state.powered_on"),
-                MissionStep("Toggle range circles overlay", "'range_circles' in state.ui.active_overlays"),
-                MissionStep("Toggle coastlines overlay", "state.ui.active_overlays.get('coastlines', False)")
-            ]
-        ),
-        Mission(
-            id="mission_2",
-            title="Target Selection with Light Gun",
-            steps=[
-                MissionStep("Arm light gun (press D)", "state.ui.lightgun_armed"),
-                MissionStep("Select any track", "state.ui.selected_track_id is not None")
-            ]
-        ),
-        Mission(
-            id="mission_3",
-            title="Launch Intercept",
-            steps=[
-                MissionStep("Select a hostile track", "any(t.selected and t.type == 'hostile' for t in state.tracks)"),
-                MissionStep("Launch intercept", "any(t.type == 'interceptor' for t in state.tracks)")
-            ]
-        ),
-        Mission(
-            id="mission_4",
-            title="Use Console Filters",
-            steps=[
-                MissionStep("Show hostiles only (press S1)", "'hostile' in state.ui.active_filters"),
-                MissionStep("Clear all filters", "len(state.ui.active_filters) == 0")
-            ]
-        ),
-        Mission(
-            id="mission_5",
-            title="Computer Maintenance",
-            steps=[
-                MissionStep("Open maintenance panel", "state.ui.show_maintenance"),
-                MissionStep("Replace a failed tube", "state.maintenance.replacing_tube_id is not None")
-            ]
-        ),
-        Mission(
-            id="mission_6",
-            title="Run CPU Program",
-            steps=[
-                MissionStep("Open CPU trace panel", "state.ui.show_cpu_trace"),
-                MissionStep("Run test program", "state.cpu_trace.status == 'Done'")
-            ]
-        )
-    ]
+    """Create the 6 tutorial missions - DISABLED for now"""
+    return []
+    # return [
+    #     Mission(
+    #         id="mission_1",
+    #         title="Power-On & Scope Basics",
+    #         steps=[
+    #             MissionStep("Power on the system", "state.powered_on"),
+    #             MissionStep("Toggle range circles overlay", "'range_circles' in state.ui.active_overlays"),
+    #             MissionStep("Toggle coastlines overlay", "state.ui.active_overlays.get('coastlines', False)")
+    #         ]
+    #     ),
+    #     Mission(
+    #         id="mission_2",
+    #         title="Target Selection with Light Gun",
+    #         steps=[
+    #             MissionStep("Arm light gun (press D)", "state.ui.lightgun_armed"),
+    #             MissionStep("Select any track", "state.ui.selected_track_id is not None")
+    #         ]
+    #     ),
+    #     Mission(
+    #         id="mission_3",
+    #         title="Launch Intercept",
+    #         steps=[
+    #             MissionStep("Select a hostile track", "any(t.selected and t.type == 'hostile' for t in state.tracks)"),
+    #             MissionStep("Launch intercept", "any(t.type == 'interceptor' for t in state.tracks)")
+    #         ]
+    #     ),
+    #     Mission(
+    #         id="mission_4",
+    #         title="Use Console Filters",
+    #         steps=[
+    #             MissionStep("Show hostiles only (press S1)", "'hostile' in state.ui.active_filters"),
+    #             MissionStep("Clear all filters", "len(state.ui.active_filters) == 0")
+    #         ]
+    #     ),
+    #     Mission(
+    #         id="mission_5",
+    #         title="Computer Maintenance",
+    #         steps=[
+    #             MissionStep("Open maintenance panel", "state.ui.show_maintenance"),
+    #             MissionStep("Replace a failed tube", "state.maintenance.replacing_tube_id is not None")
+    #         ]
+    #     ),
+    # ]

@@ -36,13 +36,16 @@ def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
     Track Detail Panel (DD CRT equivalent)
     Shows selected target information
     """
-    if not track:
-        return rx.box(
+    # Can't use Python if with Vars - use rx.cond instead
+    return rx.cond(
+        track != None,
+        _track_detail_content(track, armed),
+        rx.box(
             rx.heading("TARGET DETAIL", size="4", color="#00ff00", margin_bottom="0.5rem"),
             rx.box(
                 rx.text(
-                    "NO TARGET SELECTED" if not armed else "LIGHT GUN ARMED - SELECT TARGET",
-                    color="#ffff00" if armed else "#888888",
+                    rx.cond(armed, "LIGHT GUN ARMED - SELECT TARGET", "NO TARGET SELECTED"),
+                    color=rx.cond(armed, "#ffff00", "#888888"),
                     font_size="0.9rem",
                     text_align="center",
                     font_style="italic",
@@ -56,25 +59,30 @@ def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
             border="1px solid #00ff00",
             border_radius="4px",
         )
+    )
+
+
+def _track_detail_content(track: Track, armed: bool) -> rx.Component:
+    """Helper function for track detail content when track exists"""
+    # Color coding by hostility - can't use dict.get() with Vars, use rx.match instead
+    type_color = rx.match(
+        track.track_type,
+        ("hostile", "#ff0000"),
+        ("friendly", "#00ff00"),
+        ("unknown", "#ffff00"),
+        ("missile", "#ff00ff"),
+        "#888888"  # default
+    )
     
-    # Color coding by hostility
-    type_colors = {
-        "hostile": "#ff0000",
-        "friendly": "#00ff00",
-        "unknown": "#ffff00",
-        "missile": "#ff00ff",
-    }
-    
-    threat_colors = {
-        "CRITICAL": "#ff0000",
-        "HIGH": "#ff8800",
-        "MEDIUM": "#ffff00",
-        "LOW": "#88ff88",
-        "NONE": "#00ff00",
-    }
-    
-    type_color = type_colors.get(track.track_type, "#888888")
-    threat_color = threat_colors.get(track.threat_level, "#888888")
+    threat_color = rx.match(
+        track.threat_level,
+        ("CRITICAL", "#ff0000"),
+        ("HIGH", "#ff8800"),
+        ("MEDIUM", "#ffff00"),
+        ("LOW", "#88ff88"),
+        ("NONE", "#00ff00"),
+        "#888888"  # default
+    )
     
     return rx.box(
         # Header with track ID
@@ -102,7 +110,7 @@ def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
                 rx.text("TYPE:", font_weight="bold", color="#00ff00", width="60px"),
                 rx.badge(
                     track.track_type.upper(),
-                    color_scheme="red" if track.track_type == "hostile" else "green",
+                    color_scheme=rx.cond(track.track_type == "hostile", "red", "green"),
                     font_size="0.9rem",
                 ),
                 spacing="2",
@@ -183,7 +191,7 @@ def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
         
         # Special: Missile countdown
         rx.cond(
-            track.track_type == "missile" and track.t_minus is not None,
+            (track.track_type == "missile") & (track.t_minus != None),  # Use & instead of 'and' for Vars
             rx.box(
                 rx.text("TIME TO IMPACT", font_size="0.8rem", color="#ff0000", margin_bottom="0.25rem"),
                 rx.text(
@@ -207,18 +215,18 @@ def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
         rx.vstack(
             rx.button(
                 "🚀 LAUNCH INTERCEPT",
-                on_click=lambda: None,  # TODO: Wire to launch_intercept
+                # on_click: TODO: Wire to launch_intercept
                 background="#003300",
                 color="#00ff00",
                 border="2px solid #00ff00",
                 width="100%",
                 size="3",
-                disabled=(track.track_type == "friendly"),  # Can't intercept friendlies
+                # disabled: TODO - Can't use Python comparison (track.track_type == "friendly")
                 _hover={"background": "#005500"},
             ),
             rx.button(
                 "✕ CLEAR SELECTION",
-                on_click=lambda: None,  # TODO: Wire to clear_selection
+                # on_click: TODO: Wire to clear_selection
                 background="#330000",
                 color="#ff0000",
                 border="1px solid #ff0000",
@@ -293,7 +301,7 @@ def light_gun_controls() -> rx.Component:
             # Arm/Disarm button
             rx.button(
                 "🎯 ARM LIGHT GUN (D)",
-                on_click=lambda: None,  # TODO: Wire to toggle_light_gun
+                # on_click: TODO: Wire to toggle_light_gun
                 background="#003300",
                 color="#00ff00",
                 border="2px solid #00ff00",
