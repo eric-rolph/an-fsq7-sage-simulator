@@ -158,7 +158,7 @@ def feature_select_panel(active_overlays: Set[str], on_toggle_overlay=None) -> r
                     console_button(
                         f"{switch} {name}",
                         active=active_overlays.contains(overlay_key),
-                        on_click=lambda ok=overlay_key: on_toggle_overlay(ok) if on_toggle_overlay else None,
+                        on_click=lambda ok=overlay_key: on_toggle_overlay(ok),
                         size="2",
                     ),
                     rx.text(
@@ -208,13 +208,13 @@ def off_centering_controls(on_pan=None, on_zoom=None, on_rotate=None, on_center=
                 rx.text("PAN VIEW", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.grid(
                     rx.box(),  # Empty corner
-                    console_button("↑", on_click=lambda: on_pan("up") if on_pan else None, size="2"),
+                    console_button("↑", on_click=lambda: on_pan("up"), size="2"),
                     rx.box(),  # Empty corner
-                    console_button("←", on_click=lambda: on_pan("left") if on_pan else None, size="2"),
-                    console_button("⊙", on_click=lambda: on_center() if on_center else None, size="2"),
-                    console_button("→", on_click=lambda: on_pan("right") if on_pan else None, size="2"),
+                    console_button("←", on_click=lambda: on_pan("left"), size="2"),
+                    console_button("⊙", on_click=on_center, size="2"),
+                    console_button("→", on_click=lambda: on_pan("right"), size="2"),
                     rx.box(),  # Empty corner
-                    console_button("↓", on_click=lambda: on_pan("down") if on_pan else None, size="2"),
+                    console_button("↓", on_click=lambda: on_pan("down"), size="2"),
                     rx.box(),  # Empty corner
                     columns="3",
                     spacing="1",
@@ -229,9 +229,9 @@ def off_centering_controls(on_pan=None, on_zoom=None, on_rotate=None, on_center=
             rx.box(
                 rx.text("ZOOM", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("−", on_click=lambda: on_zoom("out") if on_zoom else None, size="2"),
-                    console_button("+", on_click=lambda: on_zoom("in") if on_zoom else None, size="2"),
-                    console_button("FIT", on_click=lambda: on_zoom("fit") if on_zoom else None, size="2"),
+                    console_button("−", on_click=lambda: on_zoom("out"), size="2"),
+                    console_button("+", on_click=lambda: on_zoom("in"), size="2"),
+                    console_button("FIT", on_click=lambda: on_zoom("fit"), size="2"),
                     spacing="2",
                 ),
             ),
@@ -242,11 +242,10 @@ def off_centering_controls(on_pan=None, on_zoom=None, on_rotate=None, on_center=
             rx.box(
                 rx.text("ROTATE", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("↶", on_click=lambda: on_rotate("ccw") if on_rotate else None, size="2"),
-                    console_button("N", on_click=lambda: on_rotate("reset") if on_rotate else None, size="2"),
-                    console_button("↷", on_click=lambda: on_rotate("cw") if on_rotate else None, size="2"),
-                    spacing="2",
-                ),
+                    console_button("↶", on_click=lambda: on_rotate("ccw"), size="2"),
+                    console_button("N", on_click=lambda: on_rotate("reset"), size="2"),
+                    console_button("↷", on_click=lambda: on_rotate("cw"), size="2"),
+                    spacing="2"),
             ),
             
             spacing="3",
@@ -286,7 +285,7 @@ def bright_dim_control(brightness: float, on_brightness_change=None, on_preset=N
                 min=20,
                 max=100,
                 step=5,
-                on_change=lambda val: on_brightness_change(val) if on_brightness_change else None,
+                on_change=on_brightness_change if on_brightness_change else None,
                 color_scheme="green",
             ),
             
@@ -302,9 +301,9 @@ def bright_dim_control(brightness: float, on_brightness_change=None, on_preset=N
             
             # Quick presets
             rx.hstack(
-                console_button("DIM", on_click=lambda: on_preset("dim") if on_preset else None, size="1"),
-                console_button("MED", on_click=lambda: on_preset("med") if on_preset else None, size="1"),
-                console_button("BRIGHT", on_click=lambda: on_preset("bright") if on_preset else None, size="1"),
+                console_button("DIM", on_click=lambda: on_preset("dim"), size="1"),
+                console_button("MED", on_click=lambda: on_preset("med"), size="1"),
+                console_button("BRIGHT", on_click=lambda: on_preset("bright"), size="1"),
                 spacing="2",
                 justify="center",
             ),

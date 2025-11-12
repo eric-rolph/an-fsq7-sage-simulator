@@ -344,9 +344,10 @@ class InteractiveSageState(rx.State):
                 )
             )
     
-    def set_brightness_percent(self, percent: float):
-        """Set brightness from percentage (0-100)"""
-        self.brightness = max(0.2, min(1.0, percent / 100.0))
+    def set_brightness_percent(self, percent: list[float]):
+        """Set brightness from percentage (0-100) - rx.slider passes list"""
+        value = percent[0] if percent else 75.0
+        self.brightness = max(0.2, min(1.0, value / 100.0))
         
         # Log brightness change
         self.system_messages_log.append(
@@ -354,7 +355,7 @@ class InteractiveSageState(rx.State):
                 timestamp=datetime.now(),
                 category="ACTION",
                 message="Brightness Set",
-                details=f"{int(percent)}%"
+                details=f"{int(value)}%"
             )
         )
     
