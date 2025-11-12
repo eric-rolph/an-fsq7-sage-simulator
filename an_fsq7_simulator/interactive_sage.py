@@ -235,6 +235,7 @@ class InteractiveSageState(rx.State):
     
     def toggle_filter(self, filter_name: str):
         """Toggle a category filter (S1-S13 buttons)"""
+        #  Known issue: Reflex passes event dict, needs investigation
         if filter_name in self.active_filters:
             self.active_filters.remove(filter_name)
             action = "disabled"
@@ -545,7 +546,15 @@ def index() -> rx.Component:
                     sd_console.sd_console_master_panel(
                         InteractiveSageState.active_filters,
                         InteractiveSageState.active_overlays,
-                        InteractiveSageState.brightness
+                        InteractiveSageState.brightness,
+                        on_toggle_filter=InteractiveSageState.toggle_filter,
+                        on_toggle_overlay=InteractiveSageState.toggle_overlay,
+                        on_pan=InteractiveSageState.pan_scope,
+                        on_zoom=InteractiveSageState.zoom_scope,
+                        on_rotate=InteractiveSageState.rotate_scope,
+                        on_center=InteractiveSageState.center_scope,
+                        on_brightness_change=InteractiveSageState.set_brightness_percent,
+                        on_preset=InteractiveSageState.set_brightness_preset,
                     ),
                     tube_maintenance.tube_maintenance_panel(
                         InteractiveSageState.maintenance

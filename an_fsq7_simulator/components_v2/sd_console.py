@@ -56,10 +56,14 @@ def console_button(
     )
 
 
-def category_select_panel(active_filters: Set[str]) -> rx.Component:
+def category_select_panel(active_filters: Set[str], on_toggle_filter=None) -> rx.Component:
     """
     Category Select Switches (S1-S13)
     Filter what appears on radar scope
+    
+    Args:
+        active_filters: Set of currently active filter keys
+        on_toggle_filter: Event handler for toggle_filter(filter_key: str)
     """
     categories = [
         ("S1", "ALL", "all"),
@@ -98,7 +102,7 @@ def category_select_panel(active_filters: Set[str]) -> rx.Component:
                 console_button(
                     f"{switch} {name}",
                     active=active_filters.contains(filter_key),
-                    # on_click=  # TODO: Wire up toggle_filter event handler
+                    on_click=lambda fk=filter_key: on_toggle_filter(fk),
                     size="1",
                 )
                 for switch, name, filter_key in categories
@@ -115,10 +119,14 @@ def category_select_panel(active_filters: Set[str]) -> rx.Component:
     )
 
 
-def feature_select_panel(active_overlays: Set[str]) -> rx.Component:
+def feature_select_panel(active_overlays: Set[str], on_toggle_overlay=None) -> rx.Component:
     """
     Feature Select Switches (S20-S24)
     Toggle display overlays
+    
+    Args:
+        active_overlays: Set of currently enabled overlay keys
+        on_toggle_overlay: Callback function to toggle an overlay, receives overlay_key
     """
     features = [
         ("S20", "FLIGHT PATHS", "flight_paths", "Show trailing paths behind targets"),
@@ -150,7 +158,7 @@ def feature_select_panel(active_overlays: Set[str]) -> rx.Component:
                     console_button(
                         f"{switch} {name}",
                         active=active_overlays.contains(overlay_key),
-                        # on_click=  # TODO: Wire up toggle_overlay event handler
+                        on_click=lambda ok=overlay_key: on_toggle_overlay(ok) if on_toggle_overlay else None,
                         size="2",
                     ),
                     rx.text(
@@ -174,10 +182,16 @@ def feature_select_panel(active_overlays: Set[str]) -> rx.Component:
     )
 
 
-def off_centering_controls() -> rx.Component:
+def off_centering_controls(on_pan=None, on_zoom=None, on_rotate=None, on_center=None) -> rx.Component:
     """
     Off-Centering Pushbuttons
     Pan and zoom the radar view
+    
+    Args:
+        on_pan: Callback for pan direction, receives direction string ("up", "down", "left", "right")
+        on_zoom: Callback for zoom, receives action string ("in", "out", "fit")
+        on_rotate: Callback for rotation, receives direction string ("ccw", "reset", "cw")
+        on_center: Callback to center the view
     """
     return rx.box(
         rx.heading(
@@ -194,13 +208,13 @@ def off_centering_controls() -> rx.Component:
                 rx.text("PAN VIEW", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.grid(
                     rx.box(),  # Empty corner
-                    console_button("↑", size="2"),  # TODO: Wire up pan_scope handler
+                    console_button("↑", on_click=lambda: on_pan("up") if on_pan else None, size="2"),
                     rx.box(),  # Empty corner
-                    console_button("←", size="2"),  # TODO: Wire up pan_scope handler
-                    console_button("⊙", size="2"),  # TODO: Wire up center_scope handler
-                    console_button("→", size="2"),  # TODO: Wire up pan_scope handler
+                    console_button("←", on_click=lambda: on_pan("left") if on_pan else None, size="2"),
+                    console_button("⊙", on_click=lambda: on_center() if on_center else None, size="2"),
+                    console_button("→", on_click=lambda: on_pan("right") if on_pan else None, size="2"),
                     rx.box(),  # Empty corner
-                    console_button("↓", size="2"),  # TODO: Wire up pan_scope handler
+                    console_button("↓", on_click=lambda: on_pan("down") if on_pan else None, size="2"),
                     rx.box(),  # Empty corner
                     columns="3",
                     spacing="1",
@@ -215,9 +229,9 @@ def off_centering_controls() -> rx.Component:
             rx.box(
                 rx.text("ZOOM", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("−", size="2"),  # TODO: Wire up zoom_scope handler
-                    console_button("+", size="2"),  # TODO: Wire up zoom_scope handler
-                    console_button("FIT", size="2"),  # TODO: Wire up zoom_scope handler
+                    console_button("−", on_click=lambda: on_zoom("out") if on_zoom else None, size="2"),
+                    console_button("+", on_click=lambda: on_zoom("in") if on_zoom else None, size="2"),
+                    console_button("FIT", on_click=lambda: on_zoom("fit") if on_zoom else None, size="2"),
                     spacing="2",
                 ),
             ),
@@ -228,9 +242,9 @@ def off_centering_controls() -> rx.Component:
             rx.box(
                 rx.text("ROTATE", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("↶", size="2"),  # TODO: Wire up rotate_scope handler
-                    console_button("N", size="2"),  # TODO: Wire up rotate_scope handler
-                    console_button("↷", size="2"),  # TODO: Wire up rotate_scope handler
+                    console_button("↶", on_click=lambda: on_rotate("ccw") if on_rotate else None, size="2"),
+                    console_button("N", on_click=lambda: on_rotate("reset") if on_rotate else None, size="2"),
+                    console_button("↷", on_click=lambda: on_rotate("cw") if on_rotate else None, size="2"),
                     spacing="2",
                 ),
             ),
@@ -246,10 +260,15 @@ def off_centering_controls() -> rx.Component:
     )
 
 
-def bright_dim_control(brightness: float) -> rx.Component:
+def bright_dim_control(brightness: float, on_brightness_change=None, on_preset=None) -> rx.Component:
     """
     Bright-Dim Control (S20 & S25)
     Adjust scope brightness
+    
+    Args:
+        brightness: Current brightness value (0.0 to 1.0)
+        on_brightness_change: Callback for slider change, receives percentage value (0-100)
+        on_preset: Callback for preset buttons, receives preset name ("dim", "med", "bright")
     """
     return rx.box(
         rx.heading(
@@ -267,7 +286,7 @@ def bright_dim_control(brightness: float) -> rx.Component:
                 min=20,
                 max=100,
                 step=5,
-                # on_change=  # TODO: Wire up set_brightness_percent handler
+                on_change=lambda val: on_brightness_change(val) if on_brightness_change else None,
                 color_scheme="green",
             ),
             
@@ -283,9 +302,9 @@ def bright_dim_control(brightness: float) -> rx.Component:
             
             # Quick presets
             rx.hstack(
-                console_button("DIM", size="1"),  # TODO: Wire up set_brightness_preset handler
-                console_button("MED", size="1"),  # TODO: Wire up set_brightness_preset handler
-                console_button("BRIGHT", size="1"),  # TODO: Wire up set_brightness_preset handler
+                console_button("DIM", on_click=lambda: on_preset("dim") if on_preset else None, size="1"),
+                console_button("MED", on_click=lambda: on_preset("med") if on_preset else None, size="1"),
+                console_button("BRIGHT", on_click=lambda: on_preset("bright") if on_preset else None, size="1"),
                 spacing="2",
                 justify="center",
             ),
@@ -352,10 +371,31 @@ def sd_console_master_panel(
     active_filters: Set[str],
     active_overlays: Set[str],
     brightness: float,
+    on_toggle_filter=None,
+    on_toggle_overlay=None,
+    on_pan=None,
+    on_zoom=None,
+    on_rotate=None,
+    on_center=None,
+    on_brightness_change=None,
+    on_preset=None,
 ) -> rx.Component:
     """
     Complete SD Console Control Panel
     Combines all console controls in one place
+    
+    Args:
+        active_filters: Set of active filter keys
+        active_overlays: Set of active overlay keys
+        brightness: Current brightness (0.0 to 1.0)
+        on_toggle_filter: Callback to toggle a filter
+        on_toggle_overlay: Callback to toggle an overlay
+        on_pan: Callback for pan direction
+        on_zoom: Callback for zoom action
+        on_rotate: Callback for rotation
+        on_center: Callback to center view
+        on_brightness_change: Callback for brightness slider
+        on_preset: Callback for brightness presets
     """
     return rx.box(
         rx.heading(
@@ -371,10 +411,10 @@ def sd_console_master_panel(
         
         # Control sections
         rx.vstack(
-            category_select_panel(active_filters),
-            feature_select_panel(active_overlays),
-            off_centering_controls(),
-            bright_dim_control(brightness),
+            category_select_panel(active_filters, on_toggle_filter),
+            feature_select_panel(active_overlays, on_toggle_overlay),
+            off_centering_controls(on_pan, on_zoom, on_rotate, on_center),
+            bright_dim_control(brightness, on_brightness_change, on_preset),
             spacing="4",
             width="100%",
         ),
