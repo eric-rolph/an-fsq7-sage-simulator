@@ -103,8 +103,28 @@ class InteractiveSageState(rx.State):
         """Pause simulation"""
         self.is_running = False
     
+    @rx.event(background=True)
+    async def simulation_tick_loop(self):
+        """
+        Background task that updates track positions every 1 second.
+        Runs continuously to animate radar tracks.
+        """
+        while True:
+            await asyncio.sleep(1.0)  # Update every 1 second
+            
+            async with self:
+                # Update all track positions based on velocity
+                self.update_track_positions(dt=1.0)
+                
+                # Increment world time
+                self.world_time += 1000  # milliseconds
+                
+                # Optional: Check tube degradation periodically
+                if self.world_time % 10000 == 0:  # Every 10 seconds
+                    self.degrade_tubes()
+    
     async def tick_loop(self):
-        """Main simulation loop - runs every 500ms"""
+        """Legacy main simulation loop - replaced by simulation_tick_loop"""
         while self.is_running:
             await asyncio.sleep(0.5)
             self.world_time += 500
@@ -132,6 +152,34 @@ class InteractiveSageState(rx.State):
                 tube.status = "degrading"
                 tube.health = 50
     
+    def update_track_positions(self, dt: float = 1.0):
+        """
+        Update all track positions based on velocity.
+        
+        Args:
+            dt: Time delta in seconds (default 1.0 second per update)
+        """
+        for track in self.tracks:
+            # Save current position to trail (keep last 20 positions)
+            track.trail.append((track.x, track.y))
+            if len(track.trail) > 20:
+                track.trail = track.trail[-20:]
+            
+            # Update position based on velocity
+            track.x += track.vx * dt
+            track.y += track.vy * dt
+            
+            # Wrap around boundaries (0.0 to 1.0 normalized space)
+            if track.x < 0.0:
+                track.x += 1.0
+            elif track.x > 1.0:
+                track.x -= 1.0
+                
+            if track.y < 0.0:
+                track.y += 1.0
+            elif track.y > 1.0:
+                track.y -= 1.0
+    
     def load_scenario(self, scenario_name: str):
         """Load a scenario and convert RadarTarget objects to Track objects"""
         if scenario_name not in sim_scenarios.SCENARIOS:
@@ -142,10 +190,23 @@ class InteractiveSageState(rx.State):
         # Convert RadarTarget to Track
         self.tracks = []
         for rt in scenario.targets:
+            # Calculate velocity components from speed and heading
+            # Speed in knots, heading in degrees (0=East, 90=North in radar coords)
+            # Convert to normalized screen units per second
+            import math
+            heading_rad = math.radians(rt.heading)
+            # Scale factor: knots to normalized coords/sec (tuned for visual effect)
+            # 1 knot ≈ 0.00005 normalized units/sec for reasonable on-screen movement
+            speed_scale = 0.00005
+            vx = math.cos(heading_rad) * rt.speed * speed_scale
+            vy = math.sin(heading_rad) * rt.speed * speed_scale
+            
             track = state_model.Track(
                 id=rt.target_id,
                 x=rt.x / 800.0,  # Normalize to 0.0-1.0 for radar scope renderer
                 y=rt.y / 800.0,  # Normalize to 0.0-1.0 for radar scope renderer
+                vx=vx,
+                vy=vy,
                 altitude=rt.altitude,
                 speed=int(rt.speed),
                 heading=int(rt.heading),
@@ -168,6 +229,8 @@ class InteractiveSageState(rx.State):
     def on_page_load(self):
         """Called when the page loads - initialize demo scenario"""
         self.load_scenario("Demo 1 - Three Inbound")
+        # Start the simulation tick loop automatically
+        return InteractiveSageState.simulation_tick_loop
     
     
     # ========================

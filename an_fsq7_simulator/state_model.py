@@ -22,16 +22,20 @@ from enum import Enum
 class Track:
     """Radar track (target) information"""
     id: str
-    x: float  # Position in degrees latitude
-    y: float  # Position in degrees longitude
-    altitude: int  # Feet
-    speed: int  # Knots
-    heading: int  # Degrees (0-359)
-    track_type: str  # "hostile", "friendly", "unknown", "missile"
-    threat_level: str  # "CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"
+    x: float  # Position in normalized coordinates (0.0-1.0)
+    y: float  # Position in normalized coordinates (0.0-1.0)
+    vx: float = 0.0  # Velocity X component (normalized units/sec)
+    vy: float = 0.0  # Velocity Y component (normalized units/sec)
+    altitude: int = 0  # Feet
+    speed: int = 0  # Knots
+    heading: int = 0  # Degrees (0-359)
+    track_type: str = "unknown"  # "hostile", "friendly", "unknown", "missile"
+    threat_level: str = "UNKNOWN"  # "CRITICAL", "HIGH", "MEDIUM", "LOW", "NONE"
     designation: str = ""  # Operator designation
     interceptor_assigned: bool = False
     time_detected: float = 0.0  # Seconds since scenario start
+    selected: bool = False  # Light gun selection state
+    trail: List[tuple[float, float]] = field(default_factory=list)  # Position history for trail rendering
 
 
 @dataclass
