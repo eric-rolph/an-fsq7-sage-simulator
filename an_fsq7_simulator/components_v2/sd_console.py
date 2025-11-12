@@ -297,9 +297,9 @@ def bright_dim_control(brightness: float, state_class) -> rx.Component:
             
             # Quick presets
             rx.hstack(
-                console_button("DIM", on_click=lambda _: state_class.set_brightness_preset("dim"), size="1"),
-                console_button("MED", on_click=lambda _: state_class.set_brightness_preset("med"), size="1"),
-                console_button("BRIGHT", on_click=lambda _: state_class.set_brightness_preset("bright"), size="1"),
+                console_button("DIM", on_click=lambda _: state_class.set_brightness_preset(0.3), size="1"),
+                console_button("MED", on_click=lambda _: state_class.set_brightness_preset(0.5), size="1"),
+                console_button("BRIGHT", on_click=lambda _: state_class.set_brightness_preset(0.9), size="1"),
                 spacing="2",
                 justify="center",
             ),
