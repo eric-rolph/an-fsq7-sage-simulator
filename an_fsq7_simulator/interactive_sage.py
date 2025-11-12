@@ -18,6 +18,7 @@ import json
 from typing import List, Set, Optional
 from datetime import datetime
 import asyncio
+from .components_v2 import script_loader
 
 # Import state model
 from . import state_model
@@ -143,8 +144,8 @@ class InteractiveSageState(rx.State):
         for rt in scenario.targets:
             track = state_model.Track(
                 id=rt.target_id,
-                x=rt.x,
-                y=rt.y,
+                x=rt.x / 800.0,  # Normalize to 0.0-1.0 for radar scope renderer
+                y=rt.y / 800.0,  # Normalize to 0.0-1.0 for radar scope renderer
                 altitude=rt.altitude,
                 speed=int(rt.speed),
                 heading=int(rt.heading),
@@ -645,70 +646,15 @@ def index() -> rx.Component:
             padding="20px"
         ),
         
-        # Load external radar scope JavaScript
-        rx.html('<script src="/radar_scope.js"></script>'),
-        
-        # Embed track data directly in page (reactive - updates on state change)
-        rx.html(
-            f'<script>window.SAGE_TRACKS_JSON = {InteractiveSageState.tracks_json_var};</script>'
+        # Embed track data as hidden div with data attribute (reactive)
+        rx.el.div(
+            id="sage-track-data",
+            data_tracks=InteractiveSageState.tracks_json_var,
+            style={"display": "none"}
         ),
         
-        # Auto-initialize radar scope after external script loads
-        rx.html('''<script>
-(function autoInitRadar() {
-    // Poll for radar scope initialization
-    function initWhenReady() {
-        if (typeof window.initRadarScope !== 'undefined' && document.getElementById('radar-scope-canvas')) {
-            console.log('[SAGE] Auto-initializing radar scope...');
-            window.initRadarScope('radar-scope-canvas');
-            
-            // Wire up track click handler for light gun selection
-            if (window.radarScope) {
-                window.radarScope.onTrackClick = function(track) {
-                    console.log('[SAGE] Track clicked:', track.id);
-                    
-                    // Send track selection event to Reflex backend
-                    fetch('/_event', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            events: [{
-                                name: 'interactive_sage_state.select_track',
-                                payload: {values: [track.id]}
-                            }]
-                        })
-                    })
-                    .then(r => r.json())
-                    .then(data => {
-                        console.log('[SAGE] Track selection response:', data);
-                    })
-                    .catch(err => console.error('[SAGE] Track selection failed:', err));
-                };
-            }
-            
-            // Load tracks from embedded data (reactive state)
-            setTimeout(function loadTracksFromState() {
-                if (window.radarScope && window.SAGE_TRACKS_JSON) {
-                    console.log('[SAGE] Loading tracks from embedded state data...');
-                    var tracks = JSON.parse(window.SAGE_TRACKS_JSON);
-                    console.log('[SAGE] Loaded', tracks.length, 'tracks from state');
-                    window.radarScope.updateTracks(tracks);
-                }
-            }, 500);
-        } else {
-            // Retry after 100ms
-            setTimeout(initWhenReady, 100);
-        }
-    }
-    
-    // Start initialization check after page load
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initWhenReady);
-    } else {
-        initWhenReady();
-    }
-})();
-</script>'''),
+        # Load and initialize radar scope using proper dynamic script loading
+        script_loader.load_radar_scope(),
         
         # Inject CSS and scripts
         rx.html(radar_scope.RADAR_SCOPE_CSS),
