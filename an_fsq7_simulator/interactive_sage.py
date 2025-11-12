@@ -550,14 +550,7 @@ def index() -> rx.Component:
                         InteractiveSageState.active_filters,
                         InteractiveSageState.active_overlays,
                         InteractiveSageState.brightness,
-                        on_toggle_filter=InteractiveSageState.toggle_filter,
-                        on_toggle_overlay=InteractiveSageState.toggle_overlay,
-                        on_pan=InteractiveSageState.pan_scope,
-                        on_zoom=InteractiveSageState.zoom_scope,
-                        on_rotate=InteractiveSageState.rotate_scope,
-                        on_center=InteractiveSageState.center_scope,
-                        on_brightness_change=InteractiveSageState.set_brightness_percent,
-                        on_preset=InteractiveSageState.set_brightness_preset,
+                        InteractiveSageState,
                     ),
                     tube_maintenance.tube_maintenance_panel(
                         InteractiveSageState.maintenance
