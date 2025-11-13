@@ -790,7 +790,9 @@ def index() -> rx.Component:
                     # Tutorial sidebar (collapsible)
                     rx.cond(
                         InteractiveSageState.tutorial_active,
-                        tutorial_system.tutorial_sidebar_compact()
+                        tutorial_system.tutorial_sidebar_compact(
+                            on_open=InteractiveSageState.open_full_tutorial
+                        )
                     ),
                     
                     width="820px",
@@ -812,9 +814,13 @@ def index() -> rx.Component:
                     ),
                     light_gun.track_detail_panel(
                         InteractiveSageState.selected_track,
-                        InteractiveSageState.lightgun_armed
+                        InteractiveSageState.lightgun_armed,
+                        on_launch=InteractiveSageState.launch_intercept,
+                        on_clear=InteractiveSageState.clear_selection
                     ),
-                    light_gun.light_gun_controls(),
+                    light_gun.light_gun_controls(
+                        on_arm=InteractiveSageState.arm_lightgun
+                    ),
                     width="350px",
                     spacing="4"
                 ),

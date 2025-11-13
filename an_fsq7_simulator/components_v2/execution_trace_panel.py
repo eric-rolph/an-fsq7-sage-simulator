@@ -113,15 +113,17 @@ def register_view(registers: CpuRegisters) -> rx.Component:
     )
 
 
-def speed_controls() -> rx.Component:
-    """Speed control buttons for execution"""
-    from ..interactive_sage import InteractiveSageState
+def speed_controls(on_set_speed=None) -> rx.Component:
+    """Speed control buttons for execution
     
+    Args:
+        on_set_speed: Callback when speed button clicked, receives speed name (callable or None)
+    """
     return rx.hstack(
         rx.text("SPEED:", color="#00ff00", font_weight="bold"),
         rx.button(
             "Real-time",
-            on_click=lambda: InteractiveSageState.set_execution_speed("realtime"),
+            on_click=lambda: on_set_speed("realtime") if on_set_speed else None,
             background="#003300",
             color="#00ff00",
             border="1px solid #00ff00",
@@ -130,7 +132,7 @@ def speed_controls() -> rx.Component:
         ),
         rx.button(
             "Slow",
-            on_click=lambda: InteractiveSageState.set_execution_speed("slow"),
+            on_click=lambda: on_set_speed("slow") if on_set_speed else None,
             background="#003300",
             color="#00ff00",
             border="1px solid #00ff00",
@@ -139,7 +141,7 @@ def speed_controls() -> rx.Component:
         ),
         rx.button(
             "Step",
-            on_click=lambda: InteractiveSageState.set_execution_speed("step"),
+            on_click=lambda: on_set_speed("step") if on_set_speed else None,
             background="#003300",
             color="#00ff00",
             border="1px solid #00ff00",
@@ -238,7 +240,7 @@ def final_result_banner(trace: CpuTrace) -> rx.Component:
     )
 
 
-def execution_trace_panel(trace: CpuTrace) -> rx.Component:
+def execution_trace_panel(trace: CpuTrace, on_set_speed=None) -> rx.Component:
     """
     Main Execution Trace Panel
     
@@ -248,6 +250,9 @@ def execution_trace_panel(trace: CpuTrace) -> rx.Component:
     - Register state
     - Final result banner
     - Speed controls
+    
+    Args:
+        on_set_speed: Callback when speed changed (callable or None)
     """
     return rx.box(
         # Panel header
@@ -263,7 +268,7 @@ def execution_trace_panel(trace: CpuTrace) -> rx.Component:
         program_header(trace),
         
         # Speed controls
-        speed_controls(),
+        speed_controls(on_set_speed=on_set_speed),
         
         # Step list (scrollable)
         rx.box(

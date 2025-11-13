@@ -412,22 +412,26 @@ def sd_console_master_panel(
 def sd_console_compact(
     active_filters: Set[str],
     active_overlays: Set[str],
+    on_toggle_filter=None,
+    on_toggle_overlay=None,
 ) -> rx.Component:
     """
     Compact SD Console for embedding in main layout
     Shows most-used controls only
-    """
-    from ..interactive_sage import InteractiveSageState
     
+    Args:
+        on_toggle_filter: Callback when filter button clicked, receives filter name (callable or None)
+        on_toggle_overlay: Callback when overlay button clicked, receives overlay name (callable or None)
+    """
     return rx.box(
         rx.heading("CONSOLE", size="4", color="#00ff00", margin_bottom="0.5rem"),
         
         # Quick filters
         rx.flex(
-            console_button("ALL", active=active_filters.contains("all"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("all")),
-            console_button("HOSTILE", active=active_filters.contains("hostile"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("hostile")),
-            console_button("FRIENDLY", active=active_filters.contains("friendly"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("friendly")),
-            console_button("MISSILE", active=active_filters.contains("missile"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("missile")),
+            console_button("ALL", active=active_filters.contains("all"), size="1", on_click=lambda: on_toggle_filter("all") if on_toggle_filter else None),
+            console_button("HOSTILE", active=active_filters.contains("hostile"), size="1", on_click=lambda: on_toggle_filter("hostile") if on_toggle_filter else None),
+            console_button("FRIENDLY", active=active_filters.contains("friendly"), size="1", on_click=lambda: on_toggle_filter("friendly") if on_toggle_filter else None),
+            console_button("MISSILE", active=active_filters.contains("missile"), size="1", on_click=lambda: on_toggle_filter("missile") if on_toggle_filter else None),
             wrap="wrap",
             spacing="1",
         ),
@@ -436,9 +440,9 @@ def sd_console_compact(
         
         # Quick overlays
         rx.flex(
-            console_button("PATHS", active=active_overlays.contains("flight_paths"), size="1", on_click=lambda: InteractiveSageState.toggle_overlay("flight_paths")),
-            console_button("RINGS", active=active_overlays.contains("range_rings"), size="1", on_click=lambda: InteractiveSageState.toggle_overlay("range_rings")),
-            console_button("COAST", active=active_overlays.contains("coastlines"), size="1", on_click=lambda: InteractiveSageState.toggle_overlay("coastlines")),
+            console_button("PATHS", active=active_overlays.contains("flight_paths"), size="1", on_click=lambda: on_toggle_overlay("flight_paths") if on_toggle_overlay else None),
+            console_button("RINGS", active=active_overlays.contains("range_rings"), size="1", on_click=lambda: on_toggle_overlay("range_rings") if on_toggle_overlay else None),
+            console_button("COAST", active=active_overlays.contains("coastlines"), size="1", on_click=lambda: on_toggle_overlay("coastlines") if on_toggle_overlay else None),
             wrap="wrap",
             spacing="1",
         ),

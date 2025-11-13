@@ -285,12 +285,15 @@ def mission_progress_bar(current_step: int, total_steps: int) -> rx.Component:
     )
 
 
-def mission_panel(mission: Mission, current_step_index: int, completed_steps: List[int]) -> rx.Component:
+def mission_panel(mission: Mission, current_step_index: int, completed_steps: List[int], on_previous=None, on_next=None, on_skip=None) -> rx.Component:
     """
     Tutorial mission panel showing objectives and progress
-    """
-    from ..interactive_sage import InteractiveSageState
     
+    Args:
+        on_previous: Callback for previous mission button
+        on_next: Callback for next mission button
+        on_skip: Callback for skip tutorial button
+    """
     is_complete = current_step_index >= len(mission.steps)
     
     return rx.box(
@@ -372,7 +375,7 @@ def mission_panel(mission: Mission, current_step_index: int, completed_steps: Li
         rx.hstack(
             rx.button(
                 "← Previous Mission",
-                on_click=lambda: InteractiveSageState.previous_mission,
+                on_click=on_previous if on_previous else lambda: None,
                 background="#003300",
                 color="#00ff00",
                 border="1px solid #00ff00",
@@ -382,7 +385,7 @@ def mission_panel(mission: Mission, current_step_index: int, completed_steps: Li
             ),
             rx.button(
                 "Next Mission →" if not is_complete else "✓ Continue",
-                on_click=lambda: InteractiveSageState.next_mission,
+                on_click=on_next if on_next else lambda: None,
                 background="#003300",
                 color="#00ff00",
                 border="1px solid #00ff00",
@@ -391,7 +394,7 @@ def mission_panel(mission: Mission, current_step_index: int, completed_steps: Li
             ),
             rx.button(
                 "Skip Tutorial",
-                on_click=lambda: InteractiveSageState.skip_tutorial,
+                on_click=on_skip if on_skip else lambda: None,
                 background="#330000",
                 color="#ff8888",
                 border="1px solid #ff0000",
@@ -411,13 +414,14 @@ def mission_panel(mission: Mission, current_step_index: int, completed_steps: Li
     )
 
 
-def tutorial_sidebar_compact() -> rx.Component:
+def tutorial_sidebar_compact(on_open=None) -> rx.Component:
     """
     Compact tutorial sidebar for main layout
     Shows current objective without taking much space
-    """
-    from ..interactive_sage import InteractiveSageState
     
+    Args:
+        on_open: Callback when tutorial is clicked to open (callable or None)
+    """
     return rx.box(
         rx.hstack(
             rx.box(
@@ -464,17 +468,20 @@ def tutorial_sidebar_compact() -> rx.Component:
             "background": "#002200",
             "border_color": "#00ff00",
         },
-        on_click=lambda: InteractiveSageState.open_full_tutorial,
+        on_click=on_open if on_open else lambda: None,
     )
 
 
-def welcome_modal(show: bool) -> rx.Component:
+def welcome_modal(show: bool, on_start=None, on_skip=None) -> rx.Component:
     """
     Welcome modal on first visit
     Offers to start tutorial or skip to operation
-    """
-    from ..interactive_sage import InteractiveSageState
     
+    Args:
+        show: Whether to show the modal
+        on_start: Callback when "Start Training" is clicked (callable or None)
+        on_skip: Callback when "Skip to Operation" is clicked (callable or None)
+    """
     if not show:
         return rx.box()
     
@@ -530,7 +537,7 @@ def welcome_modal(show: bool) -> rx.Component:
                 rx.hstack(
                     rx.button(
                         "▶ START TRAINING MODE",
-                        on_click=lambda: InteractiveSageState.start_mission(0),
+                        on_click=on_start if on_start else lambda: None,
                         background="#003300",
                         color="#00ff00",
                         border="2px solid #00ff00",
@@ -540,7 +547,7 @@ def welcome_modal(show: bool) -> rx.Component:
                     ),
                     rx.button(
                         "SKIP TO OPERATION",
-                        on_click=lambda: InteractiveSageState.skip_tutorial,
+                        on_click=on_skip if on_skip else lambda: None,
                         background="#111111",
                         color="#888888",
                         border="1px solid #444444",

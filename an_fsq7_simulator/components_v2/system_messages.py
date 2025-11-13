@@ -115,12 +115,15 @@ def message_row(msg: SystemMessage) -> rx.Component:
     )
 
 
-def system_messages_panel(messages: List[SystemMessage], max_height: str = "300px") -> rx.Component:
+def system_messages_panel(messages: List[SystemMessage], max_height: str = "300px", on_clear=None) -> rx.Component:
     """
     Complete system messages panel with scrollable log
     
     Shows chronological log of all user actions and system events.
     Auto-scrolls to bottom on new messages.
+    
+    Args:
+        on_clear: Callback when clear button is clicked (callable or None)
     """
     return rx.box(
         rx.vstack(
@@ -143,7 +146,7 @@ def system_messages_panel(messages: List[SystemMessage], max_height: str = "300p
                     size="1",
                     variant="soft",
                     color_scheme="red",
-                    on_click=lambda: InteractiveSageState.clear_system_messages,
+                    on_click=on_clear if on_clear else lambda: None,
                     style={
                         "font_family": "Courier New",
                         "font_size": "10px"

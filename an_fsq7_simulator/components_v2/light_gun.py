@@ -62,7 +62,7 @@ def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
     )
 
 
-def _track_detail_content(track: Track, armed: bool) -> rx.Component:
+def _track_detail_content(track: Track, armed: bool, on_launch=None, on_clear=None) -> rx.Component:
     """Helper function for track detail content when track exists"""
     # Color coding by hostility - can't use dict.get() with Vars, use rx.match instead
     type_color = rx.match(
@@ -220,7 +220,7 @@ def _track_detail_content(track: Track, armed: bool) -> rx.Component:
         rx.vstack(
             rx.button(
                 "🚀 LAUNCH INTERCEPT",
-                on_click=lambda: InteractiveSageState.launch_intercept,
+                on_click=on_launch if on_launch else lambda: None,
                 background="#003300",
                 color="#00ff00",
                 border="2px solid #00ff00",
@@ -231,7 +231,7 @@ def _track_detail_content(track: Track, armed: bool) -> rx.Component:
             ),
             rx.button(
                 "✕ CLEAR SELECTION",
-                on_click=lambda: InteractiveSageState.clear_selection,
+                on_click=on_clear if on_clear else lambda: None,
                 background="#330000",
                 color="#ff0000",
                 border="1px solid #ff0000",
@@ -297,10 +297,12 @@ def light_gun_status_indicator(armed: bool, selected_id: Optional[str]) -> rx.Co
         return rx.box()
 
 
-def light_gun_controls() -> rx.Component:
-    """Control panel for light gun"""
-    from ..interactive_sage import InteractiveSageState
+def light_gun_controls(on_arm=None) -> rx.Component:
+    """Control panel for light gun
     
+    Args:
+        on_arm: Callback for ARM LIGHT GUN button
+    """
     return rx.box(
         rx.heading("LIGHT GUN", size="4", color="#00ff00", margin_bottom="0.5rem"),
         
@@ -308,7 +310,7 @@ def light_gun_controls() -> rx.Component:
             # Arm/Disarm button
             rx.button(
                 "🎯 ARM LIGHT GUN (D)",
-                on_click=lambda: InteractiveSageState.arm_lightgun,
+                on_click=on_arm if on_arm else lambda: None,
                 background="#003300",
                 color="#00ff00",
                 border="2px solid #00ff00",
