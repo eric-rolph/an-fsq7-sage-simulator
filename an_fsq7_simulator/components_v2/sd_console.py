@@ -417,15 +417,17 @@ def sd_console_compact(
     Compact SD Console for embedding in main layout
     Shows most-used controls only
     """
+    from ..interactive_sage import InteractiveSageState
+    
     return rx.box(
         rx.heading("CONSOLE", size="4", color="#00ff00", margin_bottom="0.5rem"),
         
         # Quick filters
         rx.flex(
-            console_button("ALL", active=active_filters.contains("all"), size="1"),  # TODO: Wire up event handler
-            console_button("HOSTILE", active=active_filters.contains("hostile"), size="1"),  # TODO: Wire up event handler
-            console_button("FRIENDLY", active=active_filters.contains("friendly"), size="1"),  # TODO: Wire up event handler
-            console_button("MISSILE", active=active_filters.contains("missile"), size="1"),  # TODO: Wire up event handler
+            console_button("ALL", active=active_filters.contains("all"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("all")),
+            console_button("HOSTILE", active=active_filters.contains("hostile"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("hostile")),
+            console_button("FRIENDLY", active=active_filters.contains("friendly"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("friendly")),
+            console_button("MISSILE", active=active_filters.contains("missile"), size="1", on_click=lambda: InteractiveSageState.toggle_filter("missile")),
             wrap="wrap",
             spacing="1",
         ),
@@ -434,9 +436,9 @@ def sd_console_compact(
         
         # Quick overlays
         rx.flex(
-            console_button("PATHS", active=active_overlays.contains("flight_paths"), size="1"),  # TODO: Wire up event handler
-            console_button("RINGS", active=active_overlays.contains("range_rings"), size="1"),  # TODO: Wire up event handler
-            console_button("COAST", active=active_overlays.contains("coastlines"), size="1"),  # TODO: Wire up event handler
+            console_button("PATHS", active=active_overlays.contains("flight_paths"), size="1", on_click=lambda: InteractiveSageState.toggle_overlay("flight_paths")),
+            console_button("RINGS", active=active_overlays.contains("range_rings"), size="1", on_click=lambda: InteractiveSageState.toggle_overlay("range_rings")),
+            console_button("COAST", active=active_overlays.contains("coastlines"), size="1", on_click=lambda: InteractiveSageState.toggle_overlay("coastlines")),
             wrap="wrap",
             spacing="1",
         ),
