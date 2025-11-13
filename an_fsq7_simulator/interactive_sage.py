@@ -18,6 +18,7 @@ import json
 from typing import List, Set, Optional
 from datetime import datetime
 import asyncio
+import time
 from .components_v2 import script_loader
 
 # Import state model
@@ -56,6 +57,7 @@ class InteractiveSageState(rx.State):
     current_scenario_name: str = "Demo 1 - Three Inbound"
     is_paused: bool = False
     speed_multiplier: float = 1.0
+    _background_task_started: bool = False  # Track if simulation loop is running
     
     # ===== CPU STATE =====
     current_program: str = ""
@@ -287,8 +289,11 @@ class InteractiveSageState(rx.State):
     def on_page_load(self):
         """Called when the page loads - initialize demo scenario"""
         self.load_scenario("Demo 1 - Three Inbound")
-        # Start the simulation tick loop automatically
-        return InteractiveSageState.simulation_tick_loop
+        # Start the simulation tick loop only if not already running
+        if not self._background_task_started:
+            self._background_task_started = True
+            return InteractiveSageState.simulation_tick_loop
+        return None
     
     
     # ========================
