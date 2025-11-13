@@ -816,7 +816,7 @@ def index() -> rx.Component:
                         InteractiveSageState.selected_track,
                         InteractiveSageState.lightgun_armed,
                         on_launch=InteractiveSageState.launch_intercept,
-                        on_clear=InteractiveSageState.clear_selection
+                        on_clear=InteractiveSageState.disarm_lightgun
                     ),
                     light_gun.light_gun_controls(
                         on_arm=InteractiveSageState.arm_lightgun

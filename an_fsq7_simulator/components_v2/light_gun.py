@@ -31,15 +31,19 @@ def crosshair_cursor() -> rx.Component:
     )
 
 
-def track_detail_panel(track: Optional[Track], armed: bool) -> rx.Component:
+def track_detail_panel(track: Optional[Track], armed: bool, on_launch=None, on_clear=None) -> rx.Component:
     """
     Track Detail Panel (DD CRT equivalent)
     Shows selected target information
+    
+    Args:
+        on_launch: Callback when launch button clicked (callable or None)
+        on_clear: Callback when clear button clicked (callable or None)
     """
     # Can't use Python if with Vars - use rx.cond instead
     return rx.cond(
         track != None,
-        _track_detail_content(track, armed),
+        _track_detail_content(track, armed, on_launch=on_launch, on_clear=on_clear),
         rx.box(
             rx.heading("TARGET DETAIL", size="4", color="#00ff00", margin_bottom="0.5rem"),
             rx.box(
