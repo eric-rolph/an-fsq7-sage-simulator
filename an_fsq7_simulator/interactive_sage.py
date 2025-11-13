@@ -684,11 +684,36 @@ class InteractiveSageState(rx.State):
     
     def get_geo_json(self) -> str:
         """Serialize geographic data"""
-        # Return basic GeoJSON structure for now
+        from .components_v2 import geographic_overlays
+        
+        # Build coastlines data
+        coastlines = []
+        for coastline in [geographic_overlays.EAST_COAST_OUTLINE, 
+                         geographic_overlays.GREAT_LAKES_OUTLINE]:
+            coastlines.append({
+                "name": coastline.name,
+                "style": coastline.style,
+                "points": [[p.x, p.y] for p in coastline.points]
+            })
+        
+        # Build cities data
+        cities = [{
+            "label": city.label,
+            "x": city.x,
+            "y": city.y
+        } for city in geographic_overlays.MAJOR_CITIES]
+        
+        # Build range rings data (already dicts, just copy)
+        range_rings = geographic_overlays.RANGE_RINGS
+        
+        # Build bearing markers (already dicts, just copy)
+        bearing_markers = geographic_overlays.BEARING_MARKERS
+        
         return json.dumps({
-            "coastlines": [],
-            "cities": [],
-            "range_rings": []
+            "coastlines": coastlines,
+            "cities": cities,
+            "range_rings": range_rings,
+            "bearing_markers": bearing_markers
         })
     
     def apply_filters(self, tracks: List[state_model.Track]) -> List[state_model.Track]:
@@ -735,6 +760,11 @@ class InteractiveSageState(rx.State):
     def world_time_seconds(self) -> float:
         """Convert world_time from milliseconds to seconds for UI display"""
         return self.world_time / 1000.0
+    
+    @rx.var
+    def geo_json_var(self) -> str:
+        """Embed geographic data as JSON for JavaScript access (computed var)"""
+        return self.get_geo_json()
 
 
 # ========================
@@ -833,20 +863,74 @@ def index() -> rx.Component:
             padding="20px"
         ),
         
-        # Embed track data as hidden div with data attribute (reactive)
+        # Embed track data and geo data as hidden divs with data attributes (reactive)
         rx.el.div(
             id="sage-track-data",
             data_tracks=InteractiveSageState.tracks_json_var,
             style={"display": "none"}
         ),
-        
-        # Load and initialize radar scope using proper dynamic script loading
-        script_loader.load_radar_scope(),
+        rx.el.div(
+            id="sage-geo-data",
+            data_geo=InteractiveSageState.geo_json_var,
+            style={"display": "none"}
+        ),
         
         # Inject CSS and scripts
         rx.html(radar_scope.RADAR_SCOPE_CSS),
         rx.html(tube_maintenance.TUBE_ANIMATIONS_CSS),
         rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
+        
+        # Initialize radar scope inline (React-safe approach)
+        rx.script("""
+            console.log('[SAGE] Inline script executing...');
+            
+            // Wait for external radar_scope.js to load
+            function initRadarWhenReady() {
+                if (typeof window.initRadarScope === 'function') {
+                    console.log('[SAGE] initRadarScope available, initializing...');
+                    const canvas = document.getElementById('radar-scope-canvas');
+                    if (canvas && !window.radarScope) {
+                        window.initRadarScope('radar-scope-canvas');
+                        console.log('[SAGE] Radar scope initialized');
+                        
+                        // Load geographic data
+                        setTimeout(() => {
+                            const geoDataDiv = document.getElementById('sage-geo-data');
+                            if (geoDataDiv && geoDataDiv.dataset.geo && window.radarScope) {
+                                const geoData = JSON.parse(geoDataDiv.dataset.geo);
+                                window.radarScope.updateGeoData(geoData);
+                                console.log('[SAGE] Geographic data loaded');
+                            }
+                            
+                            // Load initial tracks
+                            const trackDataDiv = document.getElementById('sage-track-data');
+                            if (trackDataDiv && trackDataDiv.dataset.tracks && window.radarScope) {
+                                const tracks = JSON.parse(trackDataDiv.dataset.tracks);
+                                window.radarScope.updateTracks(tracks);
+                                console.log('[SAGE] Initial tracks loaded:', tracks.length);
+                            }
+                        }, 100);
+                    }
+                } else {
+                    console.log('[SAGE] Waiting for radar_scope.js...');
+                    setTimeout(initRadarWhenReady, 200);
+                }
+            }
+            
+            // Start initialization after a short delay
+            setTimeout(initRadarWhenReady, 500);
+            
+            // Also set up periodic track updates
+            setInterval(() => {
+                if (window.radarScope) {
+                    const trackDataDiv = document.getElementById('sage-track-data');
+                    if (trackDataDiv && trackDataDiv.dataset.tracks) {
+                        const tracks = JSON.parse(trackDataDiv.dataset.tracks);
+                        window.radarScope.updateTracks(tracks);
+                    }
+                }
+            }, 1000);
+        """),
         
         max_width="100%",
         background="#000000",
