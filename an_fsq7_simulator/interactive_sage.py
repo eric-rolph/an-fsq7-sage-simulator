@@ -39,6 +39,7 @@ from .components_v2 import (
     radar_scope,
     system_messages,  # NEW: Operator goal flow requirement #2
     scenario_selector,  # NEW: Scenario switching UI
+    simulation_controls,  # NEW: Pause/play/speed controls
 )
 
 
@@ -53,6 +54,8 @@ class InteractiveSageState(rx.State):
     world_time: int = 0  # milliseconds since start
     is_running: bool = False
     current_scenario_name: str = "Demo 1 - Three Inbound"
+    is_paused: bool = False
+    speed_multiplier: float = 1.0
     
     # ===== CPU STATE =====
     current_program: str = ""
@@ -96,10 +99,8 @@ class InteractiveSageState(rx.State):
     # ========================
     
     def start_simulation(self):
-        """Start the 500ms world tick loop"""
+        """Resume simulation"""
         self.is_running = True
-        # TODO: Start asyncio task for tick loop
-        # asyncio.create_task(self.tick_loop())
     
     def stop_simulation(self):
         """Pause simulation"""
@@ -108,20 +109,25 @@ class InteractiveSageState(rx.State):
     @rx.event(background=True)
     async def simulation_tick_loop(self):
         """
-        Background task that updates track positions every 1 second.
-        Runs continuously to animate radar tracks.
+        Background task that updates track positions.
+        Respects pause flag and speed multiplier.
         """
         while True:
-            await asyncio.sleep(1.0)  # Update every 1 second
+            await asyncio.sleep(1.0)  # Always sleep 1 second
             
             async with self:
-                # Update all track positions based on velocity
-                self.update_track_positions(dt=1.0)
+                # Skip update if paused
+                if self.is_paused:
+                    continue
                 
-                # Increment world time
-                self.world_time += 1000  # milliseconds
+                # Update positions with speed multiplier applied
+                dt = 1.0 * self.speed_multiplier
+                self.update_track_positions(dt=dt)
                 
-                # Optional: Check tube degradation periodically
+                # Increment world time (milliseconds)
+                self.world_time += int(1000 * self.speed_multiplier)
+                
+                # Check tube degradation periodically
                 if self.world_time % 10000 == 0:  # Every 10 seconds
                     self.degrade_tubes()
     
@@ -239,6 +245,42 @@ class InteractiveSageState(rx.State):
                 category="SCENARIO",
                 message=f"Scenario changed to: {scenario_name}",
                 details=f"{len(self.tracks)} tracks loaded"
+            )
+        )
+    
+    def pause_simulation(self):
+        """Pause the simulation loop"""
+        self.is_paused = True
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="SIMULATION",
+                message="Simulation PAUSED",
+                details=""
+            )
+        )
+    
+    def resume_simulation(self):
+        """Resume the simulation loop"""
+        self.is_paused = False
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="SIMULATION",
+                message="Simulation RESUMED",
+                details=""
+            )
+        )
+    
+    def set_speed_multiplier(self, speed: float):
+        """Set simulation speed multiplier"""
+        self.speed_multiplier = speed
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="SIMULATION",
+                message=f"Speed set to {speed}x",
+                details=""
             )
         )
     
@@ -646,6 +688,11 @@ class InteractiveSageState(rx.State):
     def tracks_json_var(self) -> str:
         """Embed filtered tracks as JSON for JavaScript access (computed var)"""
         return self.get_tracks_json()
+    
+    @rx.var
+    def world_time_seconds(self) -> float:
+        """Convert world_time from milliseconds to seconds for UI display"""
+        return self.world_time / 1000.0
 
 
 # ========================
@@ -668,7 +715,7 @@ def index() -> rx.Component:
             
             # Main layout: 3 columns
             rx.hstack(
-                # LEFT COLUMN: SD Console + Maintenance + Scenario Selector
+                # LEFT COLUMN: Scenario + Simulation Controls + SD Console + Maintenance
                 rx.vstack(
                     scenario_selector.scenario_selector_panel(
                         InteractiveSageState.current_scenario_name,
@@ -708,8 +755,16 @@ def index() -> rx.Component:
                     spacing="4"
                 ),
                 
-                # RIGHT COLUMN: CPU Trace + Light Gun
+                # RIGHT COLUMN: Simulation Controls + CPU Trace + Light Gun
                 rx.vstack(
+                    simulation_controls.simulation_control_panel(
+                        InteractiveSageState.is_paused,
+                        InteractiveSageState.speed_multiplier,
+                        InteractiveSageState.world_time,
+                        InteractiveSageState.pause_simulation,
+                        InteractiveSageState.resume_simulation,
+                        InteractiveSageState.set_speed_multiplier
+                    ),
                     execution_trace_panel.execution_trace_panel_compact(
                         InteractiveSageState.cpu_trace
                     ),
