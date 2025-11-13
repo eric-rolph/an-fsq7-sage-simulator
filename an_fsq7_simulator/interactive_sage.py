@@ -618,6 +618,26 @@ class InteractiveSageState(rx.State):
         # if step.check_condition(self):
         #     self.current_step_num += 1
     
+    def previous_mission(self):
+        """Navigate to the previous tutorial mission"""
+        if self.current_mission_id > 0:
+            self.current_mission_id -= 1
+            self.current_step_num = 0
+            self.add_system_message(f"Mission {self.current_mission_id + 1}: {tutorial_system.TRAINING_MISSIONS[self.current_mission_id].title}")
+    
+    def next_mission(self):
+        """Navigate to the next tutorial mission"""
+        if self.current_mission_id < len(tutorial_system.TRAINING_MISSIONS) - 1:
+            self.current_mission_id += 1
+            self.current_step_num = 0
+            self.add_system_message(f"Mission {self.current_mission_id + 1}: {tutorial_system.TRAINING_MISSIONS[self.current_mission_id].title}")
+    
+    def open_full_tutorial(self):
+        """Open the full tutorial view"""
+        self.tutorial_active = True
+        self.show_welcome = False
+        self.add_system_message("Tutorial opened")
+    
     def next_mission_step(self):
         """Manually advance to next step (for testing)"""
         mission = tutorial_system.TRAINING_MISSIONS[self.current_mission_id]
