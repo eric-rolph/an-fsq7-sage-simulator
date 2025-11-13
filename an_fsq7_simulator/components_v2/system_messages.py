@@ -143,7 +143,7 @@ def system_messages_panel(messages: List[SystemMessage], max_height: str = "300p
                     size="1",
                     variant="soft",
                     color_scheme="red",
-                    on_click=lambda: [],  # TODO: Wire to clear_messages()
+                    on_click=lambda: InteractiveSageState.clear_system_messages,
                     style={
                         "font_family": "Courier New",
                         "font_size": "10px"

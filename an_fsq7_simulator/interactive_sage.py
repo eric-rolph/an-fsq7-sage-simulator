@@ -556,6 +556,10 @@ class InteractiveSageState(rx.State):
         # For now, this is a placeholder for future rotation feature
         pass
     
+    def clear_system_messages(self):
+        """Clear all system messages from the log"""
+        self.system_messages_log = []
+    
     
     # ========================
     # TUBE MAINTENANCE
