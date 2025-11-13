@@ -582,6 +582,11 @@ class InteractiveSageState(rx.State):
         failed_count = sum(1 for t in self.maintenance.tubes if t.status == "failed")
         self.maintenance.performance_penalty = failed_count / 64.0
     
+    def close_tube_modal(self):
+        """Close the tube replacement modal without replacing"""
+        self.replacing_tube_id = -1
+        self.add_system_message("Tube replacement cancelled")
+    
     
     # ========================
     # TUTORIAL SYSTEM

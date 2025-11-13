@@ -220,7 +220,7 @@ def _track_detail_content(track: Track, armed: bool) -> rx.Component:
         rx.vstack(
             rx.button(
                 "🚀 LAUNCH INTERCEPT",
-                # on_click: TODO: Wire to launch_intercept
+                on_click=lambda: InteractiveSageState.launch_intercept,
                 background="#003300",
                 color="#00ff00",
                 border="2px solid #00ff00",
@@ -231,7 +231,7 @@ def _track_detail_content(track: Track, armed: bool) -> rx.Component:
             ),
             rx.button(
                 "✕ CLEAR SELECTION",
-                # on_click: TODO: Wire to clear_selection
+                on_click=lambda: InteractiveSageState.clear_selection,
                 background="#330000",
                 color="#ff0000",
                 border="1px solid #ff0000",
@@ -299,6 +299,8 @@ def light_gun_status_indicator(armed: bool, selected_id: Optional[str]) -> rx.Co
 
 def light_gun_controls() -> rx.Component:
     """Control panel for light gun"""
+    from ..interactive_sage import InteractiveSageState
+    
     return rx.box(
         rx.heading("LIGHT GUN", size="4", color="#00ff00", margin_bottom="0.5rem"),
         
@@ -306,7 +308,7 @@ def light_gun_controls() -> rx.Component:
             # Arm/Disarm button
             rx.button(
                 "🎯 ARM LIGHT GUN (D)",
-                # on_click: TODO: Wire to toggle_light_gun
+                on_click=lambda: InteractiveSageState.arm_lightgun,
                 background="#003300",
                 color="#00ff00",
                 border="2px solid #00ff00",

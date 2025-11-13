@@ -101,6 +101,8 @@ def tube_replacement_modal(tube: TubeState, show: bool) -> rx.Component:
     Modal dialog for tube replacement sequence
     Shows: Pull tube → Insert new → Warmup animation
     """
+    from ..interactive_sage import InteractiveSageState
+    
     if not show:
         return rx.box()
     
@@ -151,7 +153,7 @@ def tube_replacement_modal(tube: TubeState, show: bool) -> rx.Component:
                 rx.hstack(
                     rx.button(
                         "🔧 REPLACE TUBE",
-                        on_click=lambda: None,  # TODO: Wire to start_replacement(tube.id)
+                        on_click=lambda: InteractiveSageState.start_tube_replacement(tube.id),
                         background="#003300",
                         color="#00ff00",
                         border="2px solid #00ff00",
@@ -160,7 +162,7 @@ def tube_replacement_modal(tube: TubeState, show: bool) -> rx.Component:
                     ),
                     rx.button(
                         "CANCEL",
-                        on_click=lambda: None,  # TODO: Wire to close_modal
+                        on_click=lambda: InteractiveSageState.close_tube_modal,
                         background="#330000",
                         color="#ff0000",
                         border="1px solid #ff0000",
