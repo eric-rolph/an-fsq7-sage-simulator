@@ -346,6 +346,14 @@ class InteractiveSageState(rx.State):
         self.cpu_trace.final_result = "59"
         self.cpu_trace.elapsed_ms = 150
     
+    def set_execution_speed(self, speed: str):
+        """Change CPU execution speed (realtime, slow, or step)"""
+        if speed in ["realtime", "slow", "step"]:
+            self.execution_speed = speed
+            self.add_system_message(f"CPU execution speed: {speed.upper()}")
+        else:
+            self.add_system_message(f"Invalid speed: {speed}")
+    
     
     # ========================
     # LIGHT GUN

@@ -12,8 +12,11 @@ Features:
 """
 
 import reflex as rx
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TYPE_CHECKING
 from ..state_model import CpuTrace, ExecutionStep, CpuRegisters
+
+if TYPE_CHECKING:
+    from ..interactive_sage import InteractiveSageState
 
 
 def execution_step_row(step: ExecutionStep, index: int) -> rx.Component:
@@ -112,11 +115,13 @@ def register_view(registers: CpuRegisters) -> rx.Component:
 
 def speed_controls() -> rx.Component:
     """Speed control buttons for execution"""
+    from ..interactive_sage import InteractiveSageState
+    
     return rx.hstack(
         rx.text("SPEED:", color="#00ff00", font_weight="bold"),
         rx.button(
             "Real-time",
-            on_click=lambda: None,  # TODO: Wire to state
+            on_click=lambda: InteractiveSageState.set_execution_speed("realtime"),
             background="#003300",
             color="#00ff00",
             border="1px solid #00ff00",
@@ -125,7 +130,7 @@ def speed_controls() -> rx.Component:
         ),
         rx.button(
             "Slow",
-            on_click=lambda: None,  # TODO: Wire to state
+            on_click=lambda: InteractiveSageState.set_execution_speed("slow"),
             background="#003300",
             color="#00ff00",
             border="1px solid #00ff00",
@@ -134,7 +139,7 @@ def speed_controls() -> rx.Component:
         ),
         rx.button(
             "Step",
-            on_click=lambda: None,  # TODO: Wire to state
+            on_click=lambda: InteractiveSageState.set_execution_speed("step"),
             background="#003300",
             color="#00ff00",
             border="1px solid #00ff00",
