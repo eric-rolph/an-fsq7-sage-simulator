@@ -224,7 +224,8 @@ Current roadmap priorities:
 
 - ✅ Priority 1: Track Correlation System (COMPLETE)
 - ✅ Priority 2: Interceptor Assignment System (COMPLETE - visualization added)
-- ⏳ Priority 3: System Inspector Overlay (NEXT)
+- ✅ Priority 3: System Inspector Overlay (COMPLETE - Shift+I toggle)
+- ⏳ Priority 4: Additional features (see DEVELOPMENT_ROADMAP.md)
 
 When implementing new features:
 1. Update `sim/models.py` for core domain models
