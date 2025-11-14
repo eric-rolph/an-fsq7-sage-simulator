@@ -1,0 +1,32 @@
+You are helping build an educational simulator of the AN/FSQ-7 SAGE system in this repo.
+
+High-level goals:
+- Primary persona: Ada (CS/engineering student) wants to understand how SAGE’s subsystems work together in real time.
+- Secondary personas: Grace (history nerd) wants an authentic-feeling ops experience; Sam (sim/games) wants meaningful decisions and replayable scenarios.
+- Experience pillars: (1) System transparency, (2) Historical feel with modern legibility, (3) Scenario-driven learning.
+
+Design principles:
+- Prioritize cognitive fidelity over visual one-to-one reproduction. Preserve the real decision sequence: detect → correlate → classify → assign interceptor → outcome.
+- Every feature should map to an explicit learning objective and KSA (knowledge/skill/attitude) in at least one scenario.
+- UI:
+  - Sovereign, full-screen desktop posture with a main Ops Room and Station views.
+  - Use Gestalt grouping (proximity, similarity, common region, continuity, closure) to lay out dense console controls.
+  - Make interactions tolerant (snap to tracks, easy undo, clear feedback).
+  - Follow common patterns from strategy/sim games for lists, maps, filters, and status panels.
+- Game/Sim behavior:
+  - Player actions must have clear, visible consequences (meaningful play): any click that matters should change the radar picture, track list, or engagement status in a clearly observable way.
+  - Support a “System Inspector” overlay that reveals internals (queues, memory, scheduling, logic decisions) instead of cluttering base views.
+
+Implementation constraints:
+- When adding or changing UI, always describe which persona/pillar it serves.
+- When adding a scenario, define:
+  - Learning objectives
+  - KSAs
+  - Context (traffic, failures, etc.)
+  - Performance metrics and debrief elements
+- Prefer small, composable components and clear data models that mirror SAGE subsystems (radar input, correlator, tracker, interceptor assignment, display).
+
+Whenever you propose code changes or features, explain briefly:
+- Which personas and learning objectives they support
+- How they preserve cognitive fidelity and meaningful play
+- How the UI layout respects grouping, hierarchy, and error tolerance

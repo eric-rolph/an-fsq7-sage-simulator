@@ -41,7 +41,10 @@ from .components_v2 import (
     system_messages,  # NEW: Operator goal flow requirement #2
     scenario_selector,  # NEW: Scenario switching UI
     simulation_controls,  # NEW: Pause/play/speed controls
+    crt_effects,  # NEW: Authentic P7 phosphor CRT display effects
 )
+from .components_v2.radar_scope_native import radar_scope_with_init
+from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
 
 
 class InteractiveSageState(rx.State):
@@ -773,11 +776,12 @@ class InteractiveSageState(rx.State):
 
 def index() -> rx.Component:
     """Main SAGE simulator page"""
-    return rx.container(
-        # Welcome modal (first visit) - Temporarily disabled due to lambda event handler issues
-        # rx.cond(
-        #     InteractiveSageState.show_welcome,
-        #     tutorial_system.welcome_modal(True)
+    return rx.fragment(
+        rx.container(
+            # Welcome modal (first visit) - Temporarily disabled due to lambda event handler issues
+            # rx.cond(
+            #     InteractiveSageState.show_welcome,
+            #     tutorial_system.welcome_modal(True)
         # ),
         
         rx.vstack(
@@ -808,9 +812,9 @@ def index() -> rx.Component:
                 
                 # CENTER COLUMN: Radar Scope + Tutorial
                 rx.vstack(
-                    # Radar scope (main display)
+                    # Radar scope (Canvas with inline initialization)
                     rx.box(
-                        rx.html(radar_scope.get_radar_scope_html()),
+                        radar_scope_with_init(),
                         width="800px",
                         height="800px",
                         border="2px solid #00ff00",
@@ -863,78 +867,25 @@ def index() -> rx.Component:
             padding="20px"
         ),
         
-        # Embed track data and geo data as hidden divs with data attributes (reactive)
-        rx.el.div(
-            id="sage-track-data",
-            data_tracks=InteractiveSageState.tracks_json_var,
-            style={"display": "none"}
-        ),
-        rx.el.div(
-            id="sage-geo-data",
-            data_geo=InteractiveSageState.geo_json_var,
-            style={"display": "none"}
-        ),
+        # Native React component handles data via props - no hidden divs needed!
         
         # Inject CSS and scripts
+        rx.html(crt_effects.CRT_DISPLAY_CSS),  # Authentic P7 phosphor CRT effects
         rx.html(radar_scope.RADAR_SCOPE_CSS),
         rx.html(tube_maintenance.TUBE_ANIMATIONS_CSS),
-        rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
+        # Hidden divs for JavaScript integration
+        rx.html('<div id="sage-track-data" data-tracks="{}" style="display:none"></div>'),
+        rx.html('<div id="sage-geo-data" data-geo="{}" style="display:none"></div>'),
         
-        # Initialize radar scope inline (React-safe approach)
-        rx.script("""
-            console.log('[SAGE] Inline script executing...');
-            
-            // Wait for external radar_scope.js to load
-            function initRadarWhenReady() {
-                if (typeof window.initRadarScope === 'function') {
-                    console.log('[SAGE] initRadarScope available, initializing...');
-                    const canvas = document.getElementById('radar-scope-canvas');
-                    if (canvas && !window.radarScope) {
-                        window.initRadarScope('radar-scope-canvas');
-                        console.log('[SAGE] Radar scope initialized');
-                        
-                        // Load geographic data
-                        setTimeout(() => {
-                            const geoDataDiv = document.getElementById('sage-geo-data');
-                            if (geoDataDiv && geoDataDiv.dataset.geo && window.radarScope) {
-                                const geoData = JSON.parse(geoDataDiv.dataset.geo);
-                                window.radarScope.updateGeoData(geoData);
-                                console.log('[SAGE] Geographic data loaded');
-                            }
-                            
-                            // Load initial tracks
-                            const trackDataDiv = document.getElementById('sage-track-data');
-                            if (trackDataDiv && trackDataDiv.dataset.tracks && window.radarScope) {
-                                const tracks = JSON.parse(trackDataDiv.dataset.tracks);
-                                window.radarScope.updateTracks(tracks);
-                                console.log('[SAGE] Initial tracks loaded:', tracks.length);
-                            }
-                        }, 100);
-                    }
-                } else {
-                    console.log('[SAGE] Waiting for radar_scope.js...');
-                    setTimeout(initRadarWhenReady, 200);
-                }
-            }
-            
-            // Start initialization after a short delay
-            setTimeout(initRadarWhenReady, 500);
-            
-            // Also set up periodic track updates
-            setInterval(() => {
-                if (window.radarScope) {
-                    const trackDataDiv = document.getElementById('sage-track-data');
-                    if (trackDataDiv && trackDataDiv.dataset.tracks) {
-                        const tracks = JSON.parse(trackDataDiv.dataset.tracks);
-                        window.radarScope.updateTracks(tracks);
-                    }
-                }
-            }, 1000);
-        """),
+        # Enhanced CRT Radar scope with P7 phosphor simulation - external script
+        crt_effects.load_crt_script(),
+        
+        rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
         
         max_width="100%",
         background="#000000",
         on_mount=InteractiveSageState.on_page_load
+        )
     )
 
 
@@ -942,6 +893,9 @@ def index() -> rx.Component:
 app = rx.App(
     stylesheets=[
         "https://fonts.googleapis.com/css2?family=Courier+New:wght@400;700&display=swap"
+    ],
+    head_components=[
+        rx.script(src="/crt_radar.js")
     ]
 )
 app.add_page(index, route="/")

@@ -69,9 +69,18 @@ def load_radar_scope() -> rx.Component:
                 console.log('[SAGE] Canvas found, initializing radar scope...');
                 window.initRadarScope('radar-scope-canvas');
                 
-                // Step 3: Load tracks and overlays from embedded data attribute
+                // Step 3: Load geographic data, tracks, and overlays from embedded data attributes
                 setTimeout(function() {
                     if (window.radarScope) {
+                        // Load geographic data (coastlines, cities, range rings)
+                        var geoDataDiv = document.getElementById('sage-geo-data');
+                        if (geoDataDiv && geoDataDiv.dataset.geo) {
+                            var geoData = JSON.parse(geoDataDiv.dataset.geo);
+                            window.radarScope.updateGeoData(geoData);
+                            console.log('[SAGE] Geographic data loaded');
+                        }
+                        
+                        // Load tracks
                         var trackDataDiv = document.getElementById('sage-track-data');
                         if (trackDataDiv && trackDataDiv.dataset.tracks) {
                             var tracks = JSON.parse(trackDataDiv.dataset.tracks);
@@ -79,9 +88,17 @@ def load_radar_scope() -> rx.Component:
                             window.radarScope.updateTracks(tracks);
                         }
                         
-                        // Update overlays to include flight_paths by default
-                        window.radarScope.updateOverlays(['range_rings', 'coastlines', 'flight_paths']);
-                        console.log('[SAGE] Overlays initialized with flight paths enabled');
+                        // Set up periodic track updates (1 second interval)
+                        setInterval(function() {
+                            if (window.radarScope) {
+                                var trackDiv = document.getElementById('sage-track-data');
+                                if (trackDiv && trackDiv.dataset.tracks) {
+                                    window.radarScope.updateTracks(JSON.parse(trackDiv.dataset.tracks));
+                                }
+                            }
+                        }, 1000);
+                        
+                        console.log('[SAGE] Radar scope fully initialized');
                     }
                 }, 100);
                 

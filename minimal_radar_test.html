@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Radar Test</title>
+    <script>
+        // Inline the entire RadarScope class and init
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing radar...');
+            
+            const canvas = document.getElementById('test-canvas');
+            if (!canvas) {
+                console.error('Canvas not found!');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            let angle = 0;
+            
+            function render() {
+                // Clear
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, 800, 800);
+                
+                // Draw sweep line
+                ctx.strokeStyle = '#00ff00';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(400, 400);
+                const endX = 400 + Math.cos(angle) * 380;
+                const endY = 400 + Math.sin(angle) * 380;
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                
+                // Draw range rings
+                ctx.strokeStyle = 'rgba(0, 255, 0, 0.3)';
+                ctx.lineWidth = 1;
+                for (let r = 100; r <= 400; r += 100) {
+                    ctx.beginPath();
+                    ctx.arc(400, 400, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                angle += 0.02;
+                requestAnimationFrame(render);
+            }
+            
+            render();
+            console.log('Radar animation started!');
+        });
+    </script>
+</head>
+<body style="background: #000; margin: 0; padding: 20px;">
+    <h1 style="color: #00ff00; font-family: monospace;">Minimal Radar Test</h1>
+    <canvas id="test-canvas" width="800" height="800" style="border: 2px solid #00ff00;"></canvas>
+</body>
+</html>
