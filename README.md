@@ -2,7 +2,7 @@
 
 A fully interactive web-based simulator of the AN/FSQ-7 computer, the massive vacuum tube computer used in the SAGE (Semi-Automatic Ground Environment) air defense system during the Cold War era (1958-1983).
 
-**🎮 NOW FULLY INTERACTIVE!** Experience Cold War air defense with working light gun, functional console controls, realistic radar scenarios, and hands-on vacuum tube maintenance.
+**🎮 NOW FULLY INTERACTIVE!** Experience Cold War air defense with working radar display, track visualization, authentic P7 phosphor CRT rendering, and hands-on vacuum tube maintenance.
 
 ## About the AN/FSQ-7
 
@@ -413,6 +413,18 @@ Contributions welcome! Areas for enhancement:
 - [ ] Network teletype simulation
 - [ ] Alarm system with bells
 - [ ] Printer output simulation
+
+## Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick installation and first run guide
+- **[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md)** - Planned features and development priorities
+- **[docs/](docs/)** - Detailed technical and design documentation:
+  - `DESIGN_NOTES` - Educational framework, personas, learning objectives
+  - `VISUAL_REFERENCE.md` - P7 phosphor CRT design language
+  - `RADAR_ARCHITECTURE.md` - Technical implementation details
+  - `ARCHITECTURE.md` - System architecture overview
+  - `HISTORY.md` - SAGE system historical context
+  - `archive/` - Historical session notes and implementation details
 
 ## License
 
