@@ -42,6 +42,7 @@ from .components_v2 import (
     scenario_selector,  # NEW: Scenario switching UI
     simulation_controls,  # NEW: Pause/play/speed controls
     crt_effects,  # NEW: Authentic P7 phosphor CRT display effects
+    track_classification_panel,  # NEW: Manual track classification UI
 )
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
@@ -70,6 +71,11 @@ class InteractiveSageState(rx.State):
     # ===== LIGHT GUN STATE =====
     lightgun_armed: bool = False
     selected_track_id: str = ""
+    
+    # ===== TRACK CLASSIFICATION PANEL STATE =====
+    show_classification_panel: bool = False
+    classifying_track_id: str = ""
+    show_correlation_help: bool = False
     
     # ===== SD CONSOLE STATE =====
     active_filters: Set[str] = set()
@@ -132,6 +138,9 @@ class InteractiveSageState(rx.State):
                 # Increment world time (milliseconds)
                 self.world_time += int(1000 * self.speed_multiplier)
                 
+                # Process track correlation
+                self.process_track_correlation(dt=dt)
+                
                 # Check tube degradation periodically
                 if self.world_time % 10000 == 0:  # Every 10 seconds
                     self.degrade_tubes()
@@ -192,6 +201,72 @@ class InteractiveSageState(rx.State):
                 track.y += 1.0
             elif track.y > 1.0:
                 track.y -= 1.0
+    
+    def process_track_correlation(self, dt: float = 1.0):
+        """
+        Auto-correlation timer: uncorrelated → correlating → correlated.
+        Simulates SAGE correlation subsystem processing radar returns.
+        
+        Real SAGE used:
+        - IFF (Identify Friend or Foe) transponder responses
+        - Velocity profile matching (compare to known aircraft)
+        - Flight plan database lookup
+        
+        For educational simulation, we auto-correlate after 2-3 seconds
+        unless track has anomalous characteristics requiring manual classification.
+        """
+        import random
+        
+        current_time = self.world_time / 1000.0  # Convert ms to seconds
+        
+        for track in self.tracks:
+            # Skip already correlated tracks
+            if track.correlation_state == "correlated":
+                continue
+            
+            # New track: Start as uncorrelated
+            if track.correlation_state == "" or track.correlation_state == "uncorrelated":
+                # Check if enough time has passed to start correlating (0.5-1 second delay)
+                time_since_detection = current_time - track.time_detected
+                if time_since_detection > 0.5:
+                    # Start correlation process
+                    track.correlation_state = "correlating"
+            
+            # Correlating: Attempt auto-classification after 2-3 seconds
+            elif track.correlation_state == "correlating":
+                time_since_detection = current_time - track.time_detected
+                
+                # Determine if auto-correlation succeeds or fails
+                # Success criteria (simulated):
+                can_auto_classify = True
+                confidence = "high"
+                reason = "auto_iff"
+                
+                # Anomalous characteristics requiring manual classification:
+                if track.speed > 600:  # Hypersonic (likely missile)
+                    can_auto_classify = False
+                    confidence = "low"
+                elif track.altitude > 60000:  # Extreme altitude
+                    can_auto_classify = False
+                    confidence = "low"
+                elif track.track_type == "unknown":  # No IFF response
+                    # 50% chance manual classification required
+                    if random.random() < 0.5:
+                        can_auto_classify = False
+                        confidence = "medium"
+                
+                # Auto-correlate after 2-3 seconds if possible
+                if time_since_detection > (2.0 + random.random()):
+                    if can_auto_classify:
+                        track.correlation_state = "correlated"
+                        track.confidence_level = confidence
+                        track.correlation_reason = reason
+                        track.classification_time = current_time
+                    else:
+                        # Stays in correlating or goes back to uncorrelated
+                        # (operator must manually classify)
+                        track.correlation_state = "uncorrelated"
+                        track.confidence_level = confidence
     
     def load_scenario(self, scenario_name: str):
         """Load a scenario and convert RadarTarget objects to Track objects"""
@@ -381,6 +456,12 @@ class InteractiveSageState(rx.State):
         # Mark track as selected in state
         for track in self.tracks:
             track.selected = (track.id == track_id)
+        
+        # If track is uncorrelated, open classification panel
+        target = next((t for t in self.tracks if t.id == track_id), None)
+        if target and target.correlation_state in ["uncorrelated", "correlating"]:
+            self.show_classification_panel = True
+            self.classifying_track_id = track_id
     
     def launch_intercept(self):
         """Launch interceptor at selected hostile track"""
@@ -406,6 +487,119 @@ class InteractiveSageState(rx.State):
                 details=f"Interceptor dispatched toward {target.track_type} at {target.altitude} ft"
             )
         )
+    
+    
+    # ========================
+    # TRACK CLASSIFICATION
+    # ========================
+    
+    def classify_track_hostile(self):
+        """Manually classify track as hostile"""
+        if not self.classifying_track_id:
+            return
+        
+        track = next((t for t in self.tracks if t.id == self.classifying_track_id), None)
+        if track:
+            track.track_type = "hostile"
+            track.correlation_state = "correlated"
+            track.confidence_level = "high"
+            track.correlation_reason = "manual"
+            track.classification_time = self.world_time / 1000.0
+            
+            self.system_messages_log.append(
+                system_messages.SystemMessage(
+                    timestamp=datetime.now().strftime("%H:%M:%S"),
+                    level="warning",
+                    category="classification",
+                    message=f"HOSTILE CLASSIFIED: {track.id}",
+                    details=f"Manual classification by operator"
+                )
+            )
+        
+        self.show_classification_panel = False
+        self.classifying_track_id = ""
+    
+    def classify_track_friendly(self):
+        """Manually classify track as friendly"""
+        if not self.classifying_track_id:
+            return
+        
+        track = next((t for t in self.tracks if t.id == self.classifying_track_id), None)
+        if track:
+            track.track_type = "friendly"
+            track.correlation_state = "correlated"
+            track.confidence_level = "high"
+            track.correlation_reason = "manual"
+            track.classification_time = self.world_time / 1000.0
+            
+            self.system_messages_log.append(
+                system_messages.SystemMessage(
+                    timestamp=datetime.now().strftime("%H:%M:%S"),
+                    level="info",
+                    category="classification",
+                    message=f"FRIENDLY CLASSIFIED: {track.id}",
+                    details=f"Manual classification by operator"
+                )
+            )
+        
+        self.show_classification_panel = False
+        self.classifying_track_id = ""
+    
+    def classify_track_unknown(self):
+        """Manually classify track as unknown"""
+        if not self.classifying_track_id:
+            return
+        
+        track = next((t for t in self.tracks if t.id == self.classifying_track_id), None)
+        if track:
+            track.track_type = "unknown"
+            track.correlation_state = "correlated"
+            track.confidence_level = "medium"
+            track.correlation_reason = "manual"
+            track.classification_time = self.world_time / 1000.0
+            
+            self.system_messages_log.append(
+                system_messages.SystemMessage(
+                    timestamp=datetime.now().strftime("%H:%M:%S"),
+                    level="info",
+                    category="classification",
+                    message=f"UNKNOWN CLASSIFIED: {track.id}",
+                    details=f"Manual classification by operator"
+                )
+            )
+        
+        self.show_classification_panel = False
+        self.classifying_track_id = ""
+    
+    def ignore_track(self):
+        """Mark track to be ignored (remove from display)"""
+        if not self.classifying_track_id:
+            return
+        
+        # Remove track from list
+        self.tracks = [t for t in self.tracks if t.id != self.classifying_track_id]
+        
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now().strftime("%H:%M:%S"),
+                level="info",
+                category="classification",
+                message=f"TRACK IGNORED: {self.classifying_track_id}",
+                details=f"Track removed from scope by operator"
+            )
+        )
+        
+        self.show_classification_panel = False
+        self.classifying_track_id = ""
+    
+    def close_classification_panel(self):
+        """Close classification panel without action"""
+        self.show_classification_panel = False
+        self.classifying_track_id = ""
+    
+    def toggle_correlation_help(self):
+        """Toggle correlation help panel"""
+        self.show_correlation_help = not self.show_correlation_help
     
     
     # ========================
@@ -678,7 +872,10 @@ class InteractiveSageState(rx.State):
             "threat_level": t.threat_level,
             "selected": getattr(t, 'selected', False),
             "designation": getattr(t, 'designation', ''),
-            "trail": getattr(t, 'trail', [])  # Include trail history for rendering
+            "trail": getattr(t, 'trail', []),  # Include trail history for rendering
+            "correlation_state": getattr(t, 'correlation_state', 'correlated'),
+            "confidence_level": getattr(t, 'confidence_level', 'high'),
+            "correlation_reason": getattr(t, 'correlation_reason', ''),
         } for t in filtered_tracks])
     
     def get_overlays_json(self) -> str:
@@ -753,6 +950,25 @@ class InteractiveSageState(rx.State):
             if track.id == self.selected_track_id:
                 return track
         return None
+    
+    @rx.var
+    def classifying_track(self) -> Optional[state_model.Track]:
+        """Get track being classified in classification panel (computed var)"""
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track
+        # Return default empty track if not found
+        return state_model.Track(
+            id="",
+            x=0.0,
+            y=0.0,
+            altitude=0,
+            speed=0,
+            heading=0,
+            track_type="unknown",
+            correlation_state="uncorrelated",
+            confidence_level="unknown"
+        )
     
     @rx.var
     def tracks_json_var(self) -> str:
@@ -865,6 +1081,32 @@ def index() -> rx.Component:
             
             spacing="5",
             padding="20px"
+        ),
+        
+        # Overlay panels (fixed position)
+        rx.cond(
+            InteractiveSageState.show_classification_panel,
+            track_classification_panel.track_classification_panel(
+                track_id=InteractiveSageState.classifying_track.id,
+                track_type=InteractiveSageState.classifying_track.track_type,
+                correlation_state=InteractiveSageState.classifying_track.correlation_state,
+                confidence_level=InteractiveSageState.classifying_track.confidence_level,
+                altitude=InteractiveSageState.classifying_track.altitude,
+                speed=InteractiveSageState.classifying_track.speed,
+                heading=InteractiveSageState.classifying_track.heading,
+                x=InteractiveSageState.classifying_track.x,
+                y=InteractiveSageState.classifying_track.y,
+                on_classify_hostile=InteractiveSageState.classify_track_hostile,
+                on_classify_friendly=InteractiveSageState.classify_track_friendly,
+                on_classify_unknown=InteractiveSageState.classify_track_unknown,
+                on_ignore=InteractiveSageState.ignore_track,
+                on_close=InteractiveSageState.close_classification_panel
+            )
+        ),
+        
+        rx.cond(
+            InteractiveSageState.show_correlation_help,
+            track_classification_panel.correlation_help_panel()
         ),
         
         # Native React component handles data via props - no hidden divs needed!
