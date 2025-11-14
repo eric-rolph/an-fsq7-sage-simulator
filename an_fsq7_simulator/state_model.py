@@ -45,6 +45,34 @@ class Track:
 
 
 @dataclass
+class Interceptor:
+    """Interceptor aircraft available for assignment"""
+    id: str
+    aircraft_type: str  # "F-89 Scorpion", "F-102 Delta Dagger", "F-106 Delta Dart"
+    base_name: str      # "Otis AFB", "Hanscom Field", "McGuire AFB"
+    base_x: float       # Base location in normalized coordinates (0.0-1.0)
+    base_y: float
+    x: float = 0.0      # Current position (starts at base)
+    y: float = 0.0
+    status: str = "READY"  # READY, SCRAMBLING, AIRBORNE, ENGAGING, RETURNING, REFUELING
+    fuel_percent: int = 100
+    max_speed: int = 600  # knots
+    current_speed: int = 0
+    altitude: int = 0
+    heading: int = 0  # degrees
+    weapon_type: str = "AIM-4 Falcon"
+    weapons_remaining: int = 4
+    assigned_target_id: Optional[str] = None
+    engagement_range: float = 10.0 / 600.0  # 10 nautical miles in normalized units
+    
+    def __post_init__(self):
+        """Initialize position at base if not set"""
+        if self.x == 0.0 and self.y == 0.0:
+            self.x = self.base_x
+            self.y = self.base_y
+
+
+@dataclass
 class UIState:
     """UI interaction state"""
     lightgun_armed: bool = False

@@ -1,3 +1,33 @@
+// Execute SAGE data scripts on page load (Reflex rx.html() doesn't auto-execute script innerHTML)
+(function() {
+    // Wait for DOM to be ready
+    function executeSAGEScripts() {
+        var scripts = Array.from(document.querySelectorAll('script'));
+        var executed = 0;
+        scripts.forEach(function(s) {
+            var text = s.innerHTML || '';
+            if (text.includes('__SAGE_')) {
+                try {
+                    eval(text);
+                    executed++;
+                } catch(e) {
+                    console.error('[SAGE] Error executing data script:', e);
+                }
+            }
+        });
+        if (executed > 0) {
+            console.log('[SAGE] Executed ' + executed + ' data injection scripts');
+        }
+    }
+    
+    // Execute immediately if DOM ready, otherwise wait
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', executeSAGEScripts);
+    } else {
+        executeSAGEScripts();
+    }
+})();
+
 // Enhanced CRT rendering with P7 phosphor simulation
 class CRTRadarScope {
     constructor(canvasId) {
@@ -45,6 +75,10 @@ class CRTRadarScope {
         console.log('[CRT] Persistence decay:', this.persistenceDecay);
         console.log('[CRT] Overlays:', Array.from(this.overlays));
         
+        // Light gun click handler
+        this.onTrackClick = null;
+        this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        
         this.animationId = null;
         this.stopped = false;
         this.animationId = requestAnimationFrame(() => this.render());
@@ -56,6 +90,47 @@ class CRTRadarScope {
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
+        }
+    }
+    
+    handleClick(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const clickX = (e.clientX - rect.left) / rect.width;
+        const clickY = (e.clientY - rect.top) / rect.height;
+        
+        console.log('[CRT] Canvas clicked at:', clickX.toFixed(3), clickY.toFixed(3));
+        
+        // Find nearest track within threshold
+        let nearestTrack = null;
+        let nearestDist = 0.05;  // 5% of screen
+        
+        if (this.tracks && this.tracks.length > 0) {
+            this.tracks.forEach(track => {
+                const dx = track.x - clickX;
+                const dy = track.y - clickY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearestTrack = track;
+                }
+            });
+        }
+        
+        if (nearestTrack) {
+            // Deselect all tracks first
+            this.tracks.forEach(t => t.selected = false);
+            // Select the clicked track
+            nearestTrack.selected = true;
+            
+            // Call callback if set
+            if (this.onTrackClick) {
+                this.onTrackClick(nearestTrack);
+            }
+            
+            console.log('[CRT] Track selected:', nearestTrack.id, 'at distance:', nearestDist.toFixed(3));
+        } else {
+            console.log('[CRT] No track found near click (tracks:', this.tracks ? this.tracks.length : 0, ')');
         }
     }
     
@@ -269,6 +344,20 @@ function initCRTWhenReady() {
             }
             
             window.crtRadarScope = new CRTRadarScope('radar-scope-canvas');
+            
+            // Set up light gun callback to communicate with Reflex
+            window.crtRadarScope.onTrackClick = function(track) {
+                console.log('[CRT] Track clicked, sending to Reflex:', track.id);
+                
+                // Trigger Reflex state update by calling the global event handler
+                // This function is injected by Reflex's rx.script() on the page
+                if (typeof window.__reflex_track_selected !== 'undefined' && window.__reflex_track_selected) {
+                    window.__reflex_track_selected(track.id);
+                } else {
+                    console.warn('[CRT] Reflex track selection handler not found');
+                }
+            };
+            
             console.log('[CRT] ✓ Radar scope initialized with P7 phosphor');
         }
         
@@ -279,26 +368,46 @@ function initCRTWhenReady() {
 }
 
 // Data update loop (separate from initialization)
+// Updated to use global variables instead of data attributes to avoid JSON corruption
+var sageScriptsExecuted = false;
 setInterval(function() {
+    // Execute SAGE data scripts if not already done (fallback for hot reload)
+    if (!sageScriptsExecuted && !window.__SAGE_TRACKS__) {
+        var scripts = Array.from(document.querySelectorAll('script'));
+        var executed = 0;
+        scripts.forEach(function(s) {
+            var text = s.innerHTML || '';
+            if (text.includes('__SAGE_')) {
+                try {
+                    eval(text);
+                    executed++;
+                } catch(e) {
+                    console.error('[SAGE] Error executing data script:', e);
+                }
+            }
+        });
+        if (executed > 0) {
+            console.log('[SAGE] Executed ' + executed + ' data injection scripts (hot reload fallback)');
+            sageScriptsExecuted = true;
+        }
+    }
+    
     if (window.crtRadarScope) {
-        var trackDiv = document.getElementById('sage-track-data');
-        var geoDiv = document.getElementById('sage-geo-data');
-        
-        if (trackDiv && trackDiv.dataset.tracks) {
+        // Read track data from global variable injected by Python state
+        if (window.__SAGE_TRACKS__ && Array.isArray(window.__SAGE_TRACKS__)) {
             try {
-                var tracks = JSON.parse(trackDiv.dataset.tracks);
-                window.crtRadarScope.updateTracks(tracks);
+                window.crtRadarScope.updateTracks(window.__SAGE_TRACKS__);
             } catch(e) {
-                console.error('[CRT] Error parsing tracks:', e);
+                console.error('[CRT] Error updating tracks:', e);
             }
         }
         
-        if (geoDiv && geoDiv.dataset.geo) {
+        // Read geo data from global variable injected by Python state
+        if (window.__SAGE_GEO__) {
             try {
-                var geo = JSON.parse(geoDiv.dataset.geo);
-                window.crtRadarScope.updateGeoData(geo);
+                window.crtRadarScope.updateGeoData(window.__SAGE_GEO__);
             } catch(e) {
-                console.error('[CRT] Error parsing geo data:', e);
+                console.error('[CRT] Error updating geo data:', e);
             }
         }
     }

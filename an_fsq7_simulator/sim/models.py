@@ -90,6 +90,72 @@ class VacuumTubeBank:
 
 
 @dataclass
+class Interceptor:
+    """Represents an interceptor aircraft that can be assigned to engage targets."""
+    
+    interceptor_id: str
+    aircraft_type: str  # F-89, F-102, F-106, etc.
+    base_name: str      # Otis AFB, Hanscom Field, etc.
+    base_x: float       # Base location on radar scope (normalized 0-1)
+    base_y: float
+    x: float = 0.0      # Current location (starts at base)
+    y: float = 0.0
+    status: str = "READY"  # READY, SCRAMBLING, AIRBORNE, ENGAGING, RETURNING, REFUELING
+    fuel_percent: int = 100
+    max_speed: int = 600  # knots
+    current_speed: int = 0
+    altitude: int = 0
+    weapon_type: str = "AIM-4 Falcon"
+    weapons_remaining: int = 4
+    assigned_target_id: Optional[str] = None
+    heading: float = 0.0  # degrees
+    
+    def __post_init__(self):
+        """Initialize current position at base."""
+        if self.x == 0.0 and self.y == 0.0:
+            self.x = self.base_x
+            self.y = self.base_y
+    
+    def distance_to_target(self, target_x: float, target_y: float) -> float:
+        """Calculate distance to a target in screen units."""
+        return math.sqrt((self.x - target_x) ** 2 + (self.y - target_y) ** 2)
+    
+    def move_toward_target(self, target_x: float, target_y: float, dt: float):
+        """Move interceptor toward assigned target."""
+        # Calculate heading to target
+        dx = target_x - self.x
+        dy = target_y - self.y
+        distance = math.sqrt(dx*dx + dy*dy)
+        
+        if distance < 0.001:  # Already at target
+            return
+        
+        # Update heading
+        self.heading = math.degrees(math.atan2(dy, dx))
+        
+        # Speed in knots, dt in seconds, convert to normalized screen units
+        # Screen is 0-1 normalized, roughly represents 600 nautical miles
+        # So 1 knot = 1/600 screen units per hour = 1/600/3600 per second
+        speed_factor = (self.current_speed / 600.0) * dt * 20  # Adjusted for frame rate
+        
+        # Move toward target
+        heading_rad = math.radians(self.heading)
+        self.x += math.cos(heading_rad) * speed_factor
+        self.y += math.sin(heading_rad) * speed_factor
+        
+        # Consume fuel (rough approximation)
+        fuel_consumption = 0.001 * dt  # 0.1% per second at full speed
+        self.fuel_percent = max(0, self.fuel_percent - fuel_consumption)
+    
+    def is_in_weapon_range(self, target_x: float, target_y: float) -> bool:
+        """Check if target is within weapon range."""
+        distance = self.distance_to_target(target_x, target_y)
+        # Weapon range is roughly 10 nautical miles = 10/600 screen units
+        weapon_range = 10.0 / 600.0
+        return distance <= weapon_range
+
+
+@dataclass
 class MissionClock:
     """Tracks mission elapsed time."""
     

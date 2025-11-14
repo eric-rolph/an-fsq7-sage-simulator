@@ -43,6 +43,7 @@ from .components_v2 import (
     simulation_controls,  # NEW: Pause/play/speed controls
     crt_effects,  # NEW: Authentic P7 phosphor CRT display effects
     track_classification_panel,  # NEW: Manual track classification UI
+    interceptor_panel,  # NEW: Interceptor assignment system
 )
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
@@ -56,6 +57,7 @@ class InteractiveSageState(rx.State):
     
     # ===== SIMULATION STATE =====
     tracks: List[state_model.Track] = []
+    interceptors: List[state_model.Interceptor] = []
     world_time: int = 0  # milliseconds since start
     is_running: bool = False
     current_scenario_name: str = "Demo 1 - Three Inbound"
@@ -135,6 +137,9 @@ class InteractiveSageState(rx.State):
                 dt = 1.0 * self.speed_multiplier
                 self.update_track_positions(dt=dt)
                 
+                # Update interceptor positions and status
+                self.update_interceptor_positions(dt=dt)
+                
                 # Increment world time (milliseconds)
                 self.world_time += int(1000 * self.speed_multiplier)
                 
@@ -201,6 +206,154 @@ class InteractiveSageState(rx.State):
                 track.y += 1.0
             elif track.y > 1.0:
                 track.y -= 1.0
+    
+    def update_interceptor_positions(self, dt: float = 1.0):
+        """
+        Update interceptor positions, handle status transitions, check for engagements.
+        
+        Args:
+            dt: Time delta in seconds
+        """
+        import math
+        
+        for interceptor in self.interceptors:
+            # Skip if at base or refueling
+            if interceptor.status in ["READY", "REFUELING"]:
+                continue
+            
+            # Find assigned target
+            if not interceptor.assigned_target_id:
+                continue
+            
+            target = next((t for t in self.tracks if t.id == interceptor.assigned_target_id), None)
+            if not target:
+                # Target lost, return to base
+                interceptor.status = "RETURNING"
+                interceptor.assigned_target_id = None
+                continue
+            
+            # Handle status transitions
+            if interceptor.status == "SCRAMBLING":
+                # Accelerate to cruise speed
+                interceptor.current_speed = min(interceptor.current_speed + 50 * dt, interceptor.max_speed * 0.8)
+                interceptor.altitude = min(interceptor.altitude + 500 * dt, 40000)  # Climb to 40k ft
+                
+                # Transition to AIRBORNE after 10 seconds (rough simulation)
+                if interceptor.current_speed >= interceptor.max_speed * 0.5:
+                    interceptor.status = "AIRBORNE"
+                    self.system_messages_log.append(
+                        system_messages.SystemMessage(
+                            timestamp=datetime.now().strftime("%H:%M:%S"),
+                            category="INTERCEPT",
+                            message=f"{interceptor.id} AIRBORNE",
+                            details=f"Proceeding to intercept {target.id}"
+                        )
+                    )
+            
+            elif interceptor.status == "AIRBORNE":
+                # Move toward target
+                dx = target.x - interceptor.x
+                dy = target.y - interceptor.y
+                distance = math.sqrt(dx*dx + dy*dy)
+                
+                if distance < 0.001:  # Already at target
+                    continue
+                
+                # Update heading
+                interceptor.heading = int(math.degrees(math.atan2(dy, dx)))
+                
+                # Speed in knots, dt in seconds, convert to normalized screen units
+                # Screen is 0-1 normalized, roughly represents 600 nautical miles
+                speed_factor = (interceptor.current_speed / 600.0) * dt
+                
+                # Move toward target
+                heading_rad = math.radians(interceptor.heading)
+                interceptor.x += math.cos(heading_rad) * speed_factor
+                interceptor.y += math.sin(heading_rad) * speed_factor
+                
+                # Consume fuel (rough approximation)
+                fuel_consumption = 0.1 * dt  # 0.1% per second at full speed
+                interceptor.fuel_percent = max(0, interceptor.fuel_percent - fuel_consumption)
+                
+                # Check weapon range
+                if distance <= interceptor.engagement_range:
+                    interceptor.status = "ENGAGING"
+                    self.system_messages_log.append(
+                        system_messages.SystemMessage(
+                            timestamp=datetime.now().strftime("%H:%M:%S"),
+                            category="INTERCEPT",
+                            message=f"{interceptor.id} ENGAGING {target.id}",
+                            details=f"Target in weapon range. Distance: {distance * 600:.1f} nm"
+                        )
+                    )
+            
+            elif interceptor.status == "ENGAGING":
+                # Simulate engagement (simplified)
+                # In real system this would involve weapons release, tracking, etc.
+                if interceptor.weapons_remaining > 0:
+                    # Fire weapon (simplified)
+                    import random
+                    hit_probability = 0.7  # 70% hit rate
+                    if random.random() < hit_probability:
+                        # Hit! Remove target
+                        self.tracks = [t for t in self.tracks if t.id != target.id]
+                        self.system_messages_log.append(
+                            system_messages.SystemMessage(
+                                timestamp=datetime.now().strftime("%H:%M:%S"),
+                                category="INTERCEPT",
+                                message=f"SPLASH ONE: {target.id} DESTROYED",
+                                details=f"{interceptor.id} successful engagement"
+                            )
+                        )
+                        interceptor.status = "RETURNING"
+                        interceptor.assigned_target_id = None
+                        interceptor.weapons_remaining -= 1
+                    else:
+                        # Miss, try again
+                        self.system_messages_log.append(
+                            system_messages.SystemMessage(
+                                timestamp=datetime.now().strftime("%H:%M:%S"),
+                                category="INTERCEPT",
+                                message=f"{interceptor.id} WEAPON MISS",
+                                details=f"Re-engaging {target.id}"
+                            )
+                        )
+                        interceptor.weapons_remaining -= 1
+                        if interceptor.weapons_remaining == 0:
+                            interceptor.status = "RETURNING"
+                            interceptor.assigned_target_id = None
+                else:
+                    # Out of weapons
+                    interceptor.status = "RETURNING"
+                    interceptor.assigned_target_id = None
+            
+            elif interceptor.status == "RETURNING":
+                # Return to base
+                dx = interceptor.base_x - interceptor.x
+                dy = interceptor.base_y - interceptor.y
+                distance = math.sqrt(dx*dx + dy*dy)
+                
+                if distance < 0.01:  # Close to base
+                    interceptor.status = "REFUELING"
+                    interceptor.current_speed = 0
+                    interceptor.altitude = 0
+                    interceptor.x = interceptor.base_x
+                    interceptor.y = interceptor.base_y
+                    self.system_messages_log.append(
+                        system_messages.SystemMessage(
+                            timestamp=datetime.now().strftime("%H:%M:%S"),
+                            category="INTERCEPT",
+                            message=f"{interceptor.id} LANDED",
+                            details=f"Returned to {interceptor.base_name}"
+                        )
+                    )
+                else:
+                    # Fly home
+                    heading_rad = math.atan2(dy, dx)
+                    interceptor.heading = int(math.degrees(heading_rad))
+                    speed_factor = (interceptor.current_speed / 600.0) * dt
+                    interceptor.x += math.cos(heading_rad) * speed_factor
+                    interceptor.y += math.sin(heading_rad) * speed_factor
     
     def process_track_correlation(self, dt: float = 1.0):
         """
@@ -305,13 +458,50 @@ class InteractiveSageState(rx.State):
             )
             self.tracks.append(track)
         
+        # Initialize interceptors at nearby airbases
+        self.interceptors = [
+            state_model.Interceptor(
+                id="INT-001",
+                aircraft_type="F-106 Delta Dart",
+                base_name="Otis AFB",
+                base_x=0.85, base_y=0.25,  # Cape Cod area
+                status="READY",
+                fuel_percent=100,
+                max_speed=1525,  # Mach 2+
+                weapon_type="AIM-4 Falcon",
+                weapons_remaining=4
+            ),
+            state_model.Interceptor(
+                id="INT-002",
+                aircraft_type="F-102 Delta Dagger",
+                base_name="Hanscom Field",
+                base_x=0.82, base_y=0.30,  # Bedford, MA
+                status="READY",
+                fuel_percent=100,
+                max_speed=825,
+                weapon_type="AIM-4 Falcon",
+                weapons_remaining=6
+            ),
+            state_model.Interceptor(
+                id="INT-003",
+                aircraft_type="F-89 Scorpion",
+                base_name="Suffolk County AFB",
+                base_x=0.75, base_y=0.15,  # Long Island
+                status="REFUELING",
+                fuel_percent=45,
+                max_speed=636,
+                weapon_type="MB-1 Genie",
+                weapons_remaining=2
+            ),
+        ]
+        
         # Log scenario load
         self.system_messages_log.append(
             system_messages.SystemMessage(
                 timestamp=datetime.now(),
                 category="SCENARIO",
                 message=f"Loaded: {scenario.name}",
-                details=f"{len(self.tracks)} tracks initialized"
+                details=f"{len(self.tracks)} tracks, {len(self.interceptors)} interceptors"
             )
         )
     
@@ -446,6 +636,14 @@ class InteractiveSageState(rx.State):
         self.lightgun_armed = False
         self.selected_track_id = ""
     
+    def handle_track_click(self):
+        """Handle track click from canvas - reads track ID from button data attribute"""
+        # Get track ID from the hidden button's data attribute
+        # This is set by JavaScript when canvas is clicked
+        # Note: In Reflex, we can't directly read DOM attributes during event handling
+        # Instead, we'll use a different approach - pass track ID via event payload
+        pass  # Will be handled by JavaScript directly calling select_track
+    
     def select_track(self, track_id: str):
         """User clicked a track with armed light gun"""
         if not self.lightgun_armed:
@@ -462,6 +660,82 @@ class InteractiveSageState(rx.State):
         if target and target.correlation_state in ["uncorrelated", "correlating"]:
             self.show_classification_panel = True
             self.classifying_track_id = track_id
+    
+    def assign_interceptor(self, interceptor_id: str, track_id: str = ""):
+        """Assign an interceptor to engage a hostile track"""
+        # Use selected track if no track_id provided
+        target_id = track_id if track_id else self.selected_track_id
+        if not target_id:
+            return
+        
+        # Find target track
+        target = next((t for t in self.tracks if t.id == target_id), None)
+        if not target:
+            return
+        
+        # Find interceptor
+        interceptor = next((i for i in self.interceptors if i.id == interceptor_id), None)
+        if not interceptor or interceptor.status != "READY":
+            return
+        
+        # Assign interceptor to target
+        interceptor.assigned_target_id = target_id
+        interceptor.status = "SCRAMBLING"
+        target.interceptor_assigned = True
+        
+        # Calculate distance for logging
+        import math
+        distance = math.sqrt((interceptor.x - target.x)**2 + (interceptor.y - target.y)**2)
+        # Convert normalized distance to nautical miles (screen is ~600nm)
+        distance_nm = distance * 600
+        
+        # Log assignment
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now().strftime("%H:%M:%S"),
+                category="INTERCEPT",
+                message=f"INTERCEPTOR ASSIGNED: {interceptor_id} → {target_id}",
+                details=f"{interceptor.aircraft_type} scrambling from {interceptor.base_name}. Distance: {distance_nm:.0f} nm"
+            )
+        )
+    
+    def get_best_interceptor_for_track(self, track_id: str) -> str:
+        """
+        Auto-suggest best interceptor for a track based on:
+        - Distance (closer is better)
+        - Fuel (more fuel is better)
+        - Status (READY only)
+        - Speed (faster gets there sooner)
+        """
+        target = next((t for t in self.tracks if t.id == track_id), None)
+        if not target:
+            return ""
+        
+        import math
+        best_interceptor = None
+        best_score = -1
+        
+        for interceptor in self.interceptors:
+            if interceptor.status != "READY":
+                continue
+            
+            # Calculate distance
+            distance = math.sqrt((interceptor.x - target.x)**2 + (interceptor.y - target.y)**2)
+            
+            # Scoring: lower distance, higher fuel, higher speed = better score
+            # Normalize distance (0-1 screen units), invert so closer is better
+            distance_score = 1.0 - min(distance, 1.0)
+            fuel_score = interceptor.fuel_percent / 100.0
+            speed_score = interceptor.max_speed / 2000.0  # Normalize to typical max speed
+            
+            # Weighted combination (distance is most important)
+            total_score = (distance_score * 0.6) + (fuel_score * 0.2) + (speed_score * 0.2)
+            
+            if total_score > best_score:
+                best_score = total_score
+                best_interceptor = interceptor
+        
+        return best_interceptor.id if best_interceptor else ""
     
     def launch_intercept(self):
         """Launch interceptor at selected hostile track"""
@@ -1016,6 +1290,11 @@ class InteractiveSageState(rx.State):
         return self.get_tracks_json()
     
     @rx.var
+    def tracks_script_tag(self) -> str:
+        """Return complete script tag with tracks data - for rx.html injection"""
+        return f"<script>window.__SAGE_TRACKS__ = {self.get_tracks_json()};</script>"
+    
+    @rx.var
     def world_time_seconds(self) -> float:
         """Convert world_time from milliseconds to seconds for UI display"""
         return self.world_time / 1000.0
@@ -1024,6 +1303,11 @@ class InteractiveSageState(rx.State):
     def geo_json_var(self) -> str:
         """Embed geographic data as JSON for JavaScript access (computed var)"""
         return self.get_geo_json()
+    
+    @rx.var
+    def geo_script_tag(self) -> str:
+        """Return complete script tag with geo data - for rx.html injection"""
+        return f"<script>window.__SAGE_GEO__ = {self.get_geo_json()};</script>"
     
     # Helper vars for classification panel (avoid nested property access issues)
     @rx.var
@@ -1146,7 +1430,7 @@ def index() -> rx.Component:
                     spacing="4"
                 ),
                 
-                # RIGHT COLUMN: Simulation Controls + CPU Trace + Light Gun
+                # RIGHT COLUMN: Simulation Controls + CPU Trace + Light Gun + Interceptors
                 rx.vstack(
                     simulation_controls.simulation_control_panel(
                         InteractiveSageState.is_paused,
@@ -1156,9 +1440,6 @@ def index() -> rx.Component:
                         InteractiveSageState.resume_simulation,
                         InteractiveSageState.set_speed_multiplier
                     ),
-                    execution_trace_panel.execution_trace_panel_compact(
-                        InteractiveSageState.cpu_trace
-                    ),
                     light_gun.track_detail_panel(
                         InteractiveSageState.selected_track,
                         InteractiveSageState.lightgun_armed,
@@ -1167,6 +1448,10 @@ def index() -> rx.Component:
                     ),
                     light_gun.light_gun_controls(
                         on_arm=InteractiveSageState.arm_lightgun
+                    ),
+                    interceptor_panel.interceptor_panel(),
+                    execution_trace_panel.execution_trace_panel_compact(
+                        InteractiveSageState.cpu_trace
                     ),
                     width="350px",
                     spacing="4"
@@ -1212,14 +1497,24 @@ def index() -> rx.Component:
         rx.html(crt_effects.CRT_DISPLAY_CSS),  # Authentic P7 phosphor CRT effects
         rx.html(radar_scope.RADAR_SCOPE_CSS),
         rx.html(tube_maintenance.TUBE_ANIMATIONS_CSS),
-        # Hidden divs for JavaScript integration
-        rx.html('<div id="sage-track-data" data-tracks="{}" style="display:none"></div>'),
-        rx.html('<div id="sage-geo-data" data-geo="{}" style="display:none"></div>'),
+        # Inject track data as complete script tags via computed vars
+        rx.html(InteractiveSageState.tracks_script_tag),
+        rx.html(InteractiveSageState.geo_script_tag),
         
         # Enhanced CRT Radar scope with P7 phosphor simulation - external script
         crt_effects.load_crt_script(),
         
         rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
+        
+        # Bridge canvas track clicks to Reflex event handlers via localStorage
+        rx.script("""
+            window.__reflex_track_selected = function(trackId) {
+                console.log('[Reflex Bridge] Track selected:', trackId);
+                // Store in localStorage and trigger a state sync
+                localStorage.setItem('sage_selected_track', trackId);
+                localStorage.setItem('sage_track_click_timestamp', Date.now().toString());
+            };
+        """),
         
         max_width="100%",
         background="#000000",
