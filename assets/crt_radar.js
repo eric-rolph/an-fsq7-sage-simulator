@@ -111,18 +111,14 @@ class CRTRadarScope {
         const rings = [50, 100, 150, 200, 250, 300, 350];
         
         // Draw DIRECTLY to main canvas (static overlay, always visible)
-        this.ctx.strokeStyle = 'rgba(0, 255, 100, 0.8)';  // BRIGHT green for visibility
-        this.ctx.lineWidth = 2;  // Thicker for debugging
+        this.ctx.strokeStyle = 'rgba(0, 255, 100, 0.4)';  // Authentic P7 green phosphor
+        this.ctx.lineWidth = 1;  // Thin lines like real CRT
         
         rings.forEach(radius => {
             this.ctx.beginPath();
             this.ctx.arc(this.centerX, this.centerY, radius, 0, Math.PI * 2);
             this.ctx.stroke();
         });
-        
-        // Debug: Draw a bright test marker at center
-        this.ctx.fillStyle = 'rgba(255, 0, 0, 1.0)';  // RED dot at center
-        this.ctx.fillRect(this.centerX - 5, this.centerY - 5, 10, 10);
     }
     
     addSweepToPersistence() {
