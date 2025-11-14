@@ -10,7 +10,7 @@ Defines all data structures used by components:
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from enum import Enum
 
 
@@ -36,6 +36,12 @@ class Track:
     time_detected: float = 0.0  # Seconds since scenario start
     selected: bool = False  # Light gun selection state
     trail: List[tuple[float, float]] = field(default_factory=list)  # Position history for trail rendering
+    
+    # Correlation state (for system transparency and learning)
+    correlation_state: str = "uncorrelated"  # "uncorrelated", "correlating", "correlated"
+    confidence_level: str = "unknown"  # "low", "medium", "high", "unknown"
+    correlation_reason: str = ""  # Why classified: "auto_iff", "auto_velocity", "manual", "visual"
+    classification_time: Optional[float] = None  # When track was classified
 
 
 @dataclass
@@ -167,6 +173,6 @@ class ScenarioDefinition:
     initial_tracks: int
     spawn_rate: float  # Tracks per minute
     duration: int  # Seconds
-    success_criteria: Dict[str, any]
+    success_criteria: Dict[str, Any]
     special_conditions: List[str]
     briefing: str

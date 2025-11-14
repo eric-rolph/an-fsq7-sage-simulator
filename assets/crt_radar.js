@@ -178,11 +178,28 @@ class CRTRadarScope {
             const x = this.centerX + track.x;
             const y = this.centerY + track.y;
             
+            // Color based on correlation state
+            let trackColor = this.phosphorSlow;  // Default green
+            if (track.correlation_state === 'uncorrelated') {
+                trackColor = 'rgba(255, 255, 0, 0.8)';  // Yellow for uncorrelated
+            } else if (track.correlation_state === 'correlating') {
+                trackColor = 'rgba(255, 165, 0, 0.8)';  // Orange for correlating
+            }
+            
             // Add to persistence layer
-            this.persistenceCtx.fillStyle = this.phosphorSlow;
+            this.persistenceCtx.fillStyle = trackColor;
             this.persistenceCtx.beginPath();
             this.persistenceCtx.arc(x, y, 4, 0, Math.PI * 2);
             this.persistenceCtx.fill();
+            
+            // Add question mark symbol for uncorrelated tracks
+            if (track.correlation_state === 'uncorrelated') {
+                this.persistenceCtx.fillStyle = 'rgba(255, 255, 0, 1.0)';
+                this.persistenceCtx.font = '14px "Courier New", monospace';
+                this.persistenceCtx.textAlign = 'center';
+                this.persistenceCtx.textBaseline = 'middle';
+                this.persistenceCtx.fillText('?', x + 12, y - 10);
+            }
         });
     }
     
@@ -195,8 +212,21 @@ class CRTRadarScope {
             const x = this.centerX + track.x;
             const y = this.centerY + track.y;
             
+            // Color based on correlation state
+            let brightColor = this.phosphorFast;  // Default blue-white
+            let shadowColor = this.phosphorSlow;  // Default green glow
+            
+            if (track.correlation_state === 'uncorrelated') {
+                brightColor = 'rgba(255, 255, 0, 1.0)';  // Yellow bright
+                shadowColor = 'rgba(255, 255, 0, 0.8)';  // Yellow glow
+            } else if (track.correlation_state === 'correlating') {
+                brightColor = 'rgba(255, 200, 0, 1.0)';  // Orange bright
+                shadowColor = 'rgba(255, 165, 0, 0.8)';  // Orange glow
+            }
+            
             // Draw bright spot with glow
-            this.ctx.fillStyle = this.phosphorFast;
+            this.ctx.fillStyle = brightColor;
+            this.ctx.shadowColor = shadowColor;
             this.ctx.shadowBlur = 15;
             this.ctx.shadowColor = this.phosphorSlow;
             this.ctx.beginPath();
