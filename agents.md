@@ -1,191 +1,86 @@
 # Agent Development Guide
 
-This document contains critical patterns, commands, and gotchas for AI agents working on this SAGE simulator project.
+Critical patterns and gotchas for AI agents working on this SAGE simulator project.
 
-## Environment & Tools
+## UV Package Manager (CRITICAL)
 
-### Python Environment - UV Package Manager
-
-**CRITICAL**: This project uses `uv` for Python package management, NOT conda/pip/poetry.
+This project uses `uv` for Python - NOT conda/pip/poetry.
 
 ```powershell
-# ✅ CORRECT - Run commands with uv
+# ✅ CORRECT
 uv run reflex run
 uv run python script.py
-uv run pytest
 
-# ❌ WRONG - Do not use these
-reflex run                    # Will fail: command not found
-python script.py              # Uses wrong Python/packages
-pip install package           # Installs to wrong environment
+# ❌ WRONG  
+reflex run        # Command not found
+python script.py  # Wrong environment
 ```
 
-### Starting the Development Server
-
+**Common Issues**:
 ```powershell
-# Method 1: Direct uv command (PREFERRED)
-uv run reflex run
+# Server won't start - kill zombie processes
+Get-Process -Name python* -ErrorAction SilentlyContinue | Stop-Process -Force
 
-# Method 2: Using setup script
-.\setup.ps1 run
+# Changes not reflected - clear cache
+Remove-Item -Path .\.reflex -Recurse -Force -ErrorAction SilentlyContinue
 
-# Method 3: Manual with logging
-uv run reflex run --loglevel info
+# Test imports
+uv run python -c "import an_fsq7_simulator.interactive_sage; print('OK')"
 ```
 
-**Common Server Issues**:
-- If server won't start, check for zombie Python processes:
-  ```powershell
-  Get-Process -Name python* -ErrorAction SilentlyContinue | Stop-Process -Force
-  ```
-- If changes aren't reflected, clear Reflex cache:
-  ```powershell
-  Remove-Item -Path .\.reflex -Recurse -Force -ErrorAction SilentlyContinue
-  ```
+## Reflex Framework Rules
 
-### Testing Python Imports
-
-```powershell
-# Test if module imports successfully
-uv run python -c "import an_fsq7_simulator.interactive_sage; print('Import successful')"
-
-# Test specific functionality
-uv run python -c "from an_fsq7_simulator import interactive_sage; state = interactive_sage.InteractiveSageState(); print(f'Interceptors: {len(state.interceptors)}')"
-```
-
-## Reflex Framework Patterns
-
-### Critical Reflex Rules
-
-**NEVER use Python conditionals/operators with Reflex Var types**:
+**NEVER use Python operators with Reflex Var types** (causes VarTypeError):
 
 ```python
-# ❌ WRONG - Will cause VarTypeError
-color = "green" if fuel_percent > 60 else "red"
+# ❌ WRONG
+color = "green" if fuel > 60 else "red"
 disabled = (status != "READY") and (fuel < 50)
-items = [x for x in my_list if x.status == "READY"]
 
-# ✅ CORRECT - Use Reflex operators and components
-color = rx.cond(fuel_percent > 60, "green", "red")
-disabled = (status != "READY") | (fuel < 50)  # Use bitwise operators
-items = rx.foreach(my_list, lambda x: rx.cond(x.status == "READY", render_item(x), rx.fragment()))
+# ✅ CORRECT
+color = rx.cond(fuel > 60, "green", "red")  # Use rx.cond
+disabled = (status != "READY") | (fuel < 50)  # Use | & ~ operators
+items = rx.foreach(list, lambda x: ...)  # Not list comprehension
 ```
 
-### Nested Conditionals
-
-```python
-# ✅ CORRECT - Nested rx.cond for multiple conditions
-rx.cond(
-    fuel_percent > 60,
-    rx.progress(color_scheme="green", ...),
-    rx.cond(
-        fuel_percent > 30,
-        rx.progress(color_scheme="yellow", ...),
-        rx.progress(color_scheme="red", ...)
-    )
-)
-```
-
-### Reflex Boolean Operators
-
-```python
-# Use bitwise operators with Reflex Var types
-disabled = (condition1) | (condition2)      # OR
-disabled = (condition1) & (condition2)      # AND
-disabled = ~(condition1)                    # NOT
-```
-
-### Computed Vars for JavaScript Injection
-
+**JavaScript Data Injection**:
 ```python
 @rx.var
 def data_script_tag(self) -> str:
-    """Return complete script tag for JavaScript injection"""
-    return f"<script>window.__SAGE_DATA__ = {self.get_data_json()};</script>"
+    return f"<script>window.__DATA__ = {self.get_json()};</script>"
 
-# Then inject in the page:
-rx.html(InteractiveSageState.data_script_tag)
+# In page: rx.html(InteractiveSageState.data_script_tag)
 ```
 
-## JavaScript Integration Patterns
+## JavaScript Integration
 
-### Data Injection from Python to JavaScript
-
-**Pattern**: Python state → JSON → window global → JavaScript reads periodically
+**Data Flow**: Python → JSON → window global → JS polls every 100ms
 
 ```python
-# Step 1: Create JSON serialization method
-def get_interceptors_json(self) -> str:
-    data = [{"id": i.id, "x": i.x, "y": i.y} for i in self.interceptors]
-    return json.dumps(data)
+def get_data_json(self) -> str:
+    return json.dumps([{"id": i.id, "x": i.x} for i in self.items])
 
-# Step 2: Create computed var for script tag
 @rx.var
-def interceptors_script_tag(self) -> str:
-    return f"<script>window.__SAGE_INTERCEPTORS__ = {self.get_interceptors_json()};</script>"
-
-# Step 3: Inject in page (interactive_sage.py ~line 1520)
-rx.html(InteractiveSageState.interceptors_script_tag)
+def data_script_tag(self) -> str:
+    return f"<script>window.__SAGE_DATA__ = {self.get_data_json()};</script>"
 ```
 
 ```javascript
-// Step 4: JavaScript reads data periodically (assets/crt_radar.js ~line 480)
-setInterval(function() {
-    if (window.crtRadarScope && window.__SAGE_INTERCEPTORS__) {
-        window.crtRadarScope.updateInterceptors(window.__SAGE_INTERCEPTORS__);
+// JavaScript polls window globals
+setInterval(() => {
+    if (window.__SAGE_DATA__) {
+        scope.updateData(window.__SAGE_DATA__);
     }
-}, 100);  // Poll every 100ms
+}, 100);
 ```
 
-### Hot Reload Fallback
+## File Locations
 
-```javascript
-// Execute inline scripts on hot reload (crt_radar.js ~line 457)
-if (!sageScriptsExecuted && !window.__SAGE_TRACKS__) {
-    var scripts = Array.from(document.querySelectorAll('script'));
-    scripts.forEach(function(s) {
-        var text = s.innerHTML || '';
-        if (text.includes('__SAGE_')) {
-            eval(text);
-        }
-    });
-    sageScriptsExecuted = true;
-}
-```
-
-## Common File Locations
-
-### Key Files for Data Flow
-
-1. **State Management**: `an_fsq7_simulator/interactive_sage.py`
-   - Main Reflex state class (InteractiveSageState)
-   - Event handlers and simulation logic
-   - JSON serialization methods (~line 1290+)
-   - Script tag injection (~line 1526)
-
-2. **Data Models**: 
-   - `an_fsq7_simulator/sim/models.py` - Core simulation models
-   - `an_fsq7_simulator/state_model.py` - Reflex-compatible dataclasses
-
-3. **UI Components**: `an_fsq7_simulator/components_v2/*.py`
-   - Each component is a separate module
-   - Import with: `from an_fsq7_simulator.components_v2 import component_name`
-
-4. **JavaScript Assets**: `assets/*.js`
-   - `crt_radar.js` - Main radar scope rendering
-   - Must be loaded via `rx.script()` or external file
-
-### Component Registration
-
-```python
-# In components_v2/__init__.py
-from .new_component import new_component_panel
-
-__all__ = ["new_component_panel", ...]
-
-# Then import in interactive_sage.py
-from an_fsq7_simulator.components_v2 import new_component_panel
-```
+- `an_fsq7_simulator/interactive_sage.py` - State, handlers, JSON serialization (~1290), injection (~1526)
+- `an_fsq7_simulator/sim/models.py` - Core simulation models
+- `an_fsq7_simulator/state_model.py` - Reflex dataclasses
+- `an_fsq7_simulator/components_v2/*.py` - UI components (register in `__init__.py`)
+- `assets/crt_radar.js` - Radar rendering
 
 ## Git Workflow
 
@@ -204,128 +99,112 @@ git diff
 git diff --staged
 ```
 
-## Debugging Patterns
+## Debugging
 
-### Server Won't Start
+**Server Issues**:
+1. Syntax: `uv run python -c "import an_fsq7_simulator.interactive_sage"`
+2. Zombies: `Get-Process -Name python* -ErrorAction SilentlyContinue | Stop-Process -Force`
+3. Cache: `Remove-Item .\.reflex -Recurse -Force; uv run reflex run`
 
-1. Check for Python syntax errors:
-   ```powershell
-   uv run python -c "import an_fsq7_simulator.interactive_sage"
-   ```
+**WebSocket Warnings** (`Attempting to send delta to disconnected client`): **HARMLESS** - normal during refresh/hot reload. Ignore unless persistent >30s.
 
-2. Check for zombie processes:
-   ```powershell
-   Get-Process -Name python* -ErrorAction SilentlyContinue
-   ```
+**JS Not Getting Data**: F12 console → check `window.__SAGE_*` exists → verify polling in crt_radar.js
 
-3. Clear Reflex cache and restart:
-   ```powershell
-   Remove-Item -Path .\.reflex -Recurse -Force -ErrorAction SilentlyContinue
-   uv run reflex run
-   ```
+**VarTypeError**: Use `rx.cond()` not `if/else`, use `| & ~` not `and or not`
 
-### JavaScript Not Receiving Data
 
-1. Check browser console for errors (F12)
-2. Verify window global exists: `console.log(window.__SAGE_TRACKS__)`
-3. Verify script tag is in DOM: Check "Elements" tab for `<script>` with `window.__SAGE_`
-4. Check polling interval is running in crt_radar.js
-
-### Reflex VarTypeError
-
-**Symptom**: `TypeError: cannot use Python operator with Var type`
-
-**Solution**: Replace Python boolean operators with Reflex equivalents:
-- `if/else` → `rx.cond()`
-- `and` → `&`
-- `or` → `|`
-- `not` → `~`
-- List comprehension → `rx.foreach()` with lambda
-
-## Project Architecture Patterns
-
-### State Machine Pattern
-
-Used for interceptor status transitions:
-
-```python
-def update_interceptor_positions(self, dt: float = 1.0):
-    for i in range(len(self.interceptors)):
-        interceptor = self.interceptors[i]
-        
-        if interceptor.status == "SCRAMBLING":
-            # Accelerate and climb
-            interceptor.current_speed += 50 * dt
-            interceptor.altitude += 500 * dt
-            if interceptor.current_speed >= interceptor.max_speed * 0.9:
-                interceptor.status = "AIRBORNE"
-        
-        elif interceptor.status == "AIRBORNE":
-            # Move toward target
-            if interceptor.assigned_target_id:
-                target = self.get_track_by_id(interceptor.assigned_target_id)
-                if target and interceptor.is_in_weapon_range(target.x, target.y):
-                    interceptor.status = "ENGAGING"
-        
-        # ... more states
-```
-
-### Distance-Based Selection Algorithm
-
-```python
-def get_best_interceptor_for_track(self, track_id: str) -> Optional[str]:
-    track = self.get_track_by_id(track_id)
-    ready_interceptors = [i for i in self.interceptors if i.status == "READY"]
-    
-    best_score = -1
-    best_interceptor = None
-    
-    for interceptor in ready_interceptors:
-        distance = interceptor.distance_to_target(track.x, track.y)
-        
-        # Weighted scoring: distance 60%, fuel 20%, speed 20%
-        distance_score = max(0, 1.0 - distance / 1.0)
-        fuel_score = interceptor.fuel_percent / 100.0
-        speed_score = interceptor.max_speed / 1600.0
-        
-        total_score = (distance_score * 0.6 + 
-                      fuel_score * 0.2 + 
-                      speed_score * 0.2)
-        
-        if total_score > best_score:
-            best_score = total_score
-            best_interceptor = interceptor
-    
-    return best_interceptor.id if best_interceptor else None
-```
 
 ## Testing Checklist
 
-Before committing major features:
-
 - [ ] `uv run python -c "import an_fsq7_simulator.interactive_sage"` succeeds
-- [ ] Server starts without errors: `uv run reflex run`
+- [ ] Server starts: `uv run reflex run`
 - [ ] Browser loads at http://localhost:3000
-- [ ] UI components render correctly
-- [ ] JavaScript console shows no errors (F12)
-- [ ] Data flows from Python to JavaScript (check window globals)
-- [ ] Interactive elements respond to clicks
-- [ ] Simulation loop runs without crashes
+- [ ] UI renders, no console errors (F12)
+- [ ] Data flows to JavaScript (check window globals)
+- [ ] Interactive elements respond
 
-## Performance Considerations
+## Browser Testing with Playwright MCP
 
-### Reflex State Updates
+### Activating Browser Testing Tools
 
-- Minimize computed var calculations - they run on every render
-- Use `@rx.var(cache=True)` for expensive computations
-- Batch state updates when possible
+```typescript
+activate_browser_interaction_tools()      // Click, type, navigate
+activate_page_capture_tools_2()          // Screenshots, snapshots
+```
 
-### JavaScript Rendering
+### Common Testing Patterns
 
-- Use `requestAnimationFrame` for smooth animations
-- Throttle data polling to 100ms (not faster)
-- Clear old canvas paths before drawing new ones
-- Use separate canvases for persistence and bright overlays
+**Navigate to the app**:
+```javascript
+mcp_playwright-ex_browser_navigate({ url: "http://localhost:3000" })
+```
+
+**Take a screenshot**:
+```javascript
+mcp_playwright-ex_browser_take_screenshot({
+  fullPage: true,
+  filename: "test-screenshots/feature-name.png"
+})
+```
+
+**Check page structure**:
+```javascript
+mcp_playwright-ex_browser_snapshot()  // Returns refs for clicking
+```
+
+**Click an element**:
+```javascript
+mcp_playwright-ex_browser_click({
+  ref: "e202",  // From snapshot
+  element: "ARM LIGHT GUN button"
+})
+```
+
+**Execute JavaScript in browser**:
+```javascript
+mcp_playwright-ex_browser_evaluate({
+  function: "() => { return window.__SAGE_INTERCEPTORS__; }"
+})
+```
+
+### Verifying Data Injection
+
+```javascript
+// Check window globals
+mcp_playwright-ex_browser_evaluate({
+  function: `() => ({ tracks: window.__SAGE_TRACKS__, interceptors: window.__SAGE_INTERCEPTORS__ })`
+})
+
+// Check CRT radar scope
+mcp_playwright-ex_browser_evaluate({
+  function: `() => window.crtRadarScope ? { interceptors: window.crtRadarScope.interceptors } : 'not found'`
+})
+```
+
+### Canvas Interaction
+
+```javascript
+// Click on radar at normalized coords (0.875, 0.125)
+mcp_playwright-ex_browser_evaluate({
+  function: `() => {
+    const canvas = document.getElementById('radar-scope-canvas');
+    const rect = canvas.getBoundingClientRect();
+    const x = rect.left + rect.width * 0.875;
+    const y = rect.top + rect.height * 0.125;
+    canvas.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x, clientY: y }));
+    return { clickedAt: { x, y } };
+  }`
+})
+```
+
+### Common Issues
+
+1. **Page not loading**: Wait for initial compilation
+2. **Canvas not found**: Wait for `[CRT] ✓ Radar scope initialized`
+3. **Elements disabled**: Check prereqs (light gun armed, track selected)
+4. **Data missing**: Check console for `[SAGE] Executed N data injection scripts`
+
+
 
 ## Common Gotchas
 
@@ -337,6 +216,7 @@ Before committing major features:
 6. **Type hints** - Lint errors are often non-blocking in Reflex
 7. **Canvas coordinates** - Normalized 0.0-1.0, multiply by width/height
 8. **Heading angles** - In degrees, convert to radians for JavaScript: `* Math.PI / 180`
+9. **WebSocket warnings** - "Attempting to send delta to disconnected client" warnings are normal during refreshes/hot reloads and can be safely ignored
 
 ## Priority System
 
