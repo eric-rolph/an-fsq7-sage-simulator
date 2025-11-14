@@ -9,17 +9,17 @@
 ## ✅ COMPLETED: Radar Display Foundation
 
 ### Achievements
-- **P7 Phosphor CRT Simulation**: Authentic dual-layer phosphor (blue fast + green slow persistence)
-- **React Lifecycle Solution**: Canvas replacement detection survives state updates
-- **Geographic Overlays**: Coastlines, cities, range rings from historical data
-- **Rotating Sweep**: 6° per second with persistence trails
-- **Track Rendering**: Color-coded by type with 1.5-second phosphor trails
+- **P7 Phosphor CRT Simulation**: Authentic dual-layer canvas (blue fast decay + green slow persistence, 0.012 decay rate)
+- **React Lifecycle Solution**: Canvas replacement detection (100ms polling) survives React re-renders
+- **Geographic Overlays**: East Coast, Great Lakes, range rings, cities, bearing markers
+- **Rotating Sweep**: 6° per second with additive phosphor trails
+- **Track Rendering**: Color-coded dots with 1.5-second phosphor persistence trails
 
 ### Technical Foundation
-- Canvas 2D rendering @ 60 FPS
-- Continuous canvas monitoring (100ms polling)
-- Clean separation: Python state → JSON → JavaScript → Canvas
-- Production-ready initialization (no manual commands needed)
+- Canvas 2D rendering @ 60 FPS with dual-layer persistence
+- Continuous canvas monitoring (100ms polling) detects React replacements
+- Clean separation: Python state → JSON (data divs) → JavaScript (crt_radar.js) → Canvas
+- Automatic initialization on page load (no manual console commands)
 
 ---
 

@@ -1,33 +1,35 @@
 # Radar Scope Architecture
 
-## Current Implementation (Canvas 2D)
+## Current Implementation (Canvas 2D with P7 Phosphor)
 
-Despite references to "WebGL" in documentation and comments, the radar scope currently uses **HTML5 Canvas 2D API** for rendering.
+The radar scope uses **HTML5 Canvas 2D API** with dual-layer rendering to simulate P7 phosphor persistence.
 
 ### Technology Stack
 
-- **Rendering Engine**: Canvas 2D API (via `canvas.getContext('2d')`)
-- **Animation**: RequestAnimationFrame loop targeting 60 FPS
-- **Data Flow**: Python (Reflex State) → JSON → JavaScript → Canvas rendering
-- **File**: `assets/radar_scope.js` (429 lines standalone JavaScript)
+- **Rendering Engine**: Canvas 2D API with dual-layer persistence simulation
+- **Phosphor Model**: P7 CRT phosphor (blue fast + green slow decay)
+- **Animation**: RequestAnimationFrame loop @ 60 FPS with delta time
+- **Data Flow**: Python (Reflex State) → JSON (data divs) → JavaScript → Canvas rendering
+- **File**: `assets/crt_radar.js` (283 lines, production-ready)
 
 ### Why Canvas 2D Instead of WebGL?
 
 The project documentation notes: *"CSS provides 80% of visual effect with 20% effort"*
 
-**Advantages:**
-- ✅ Simpler to implement and debug
+**Current Implementation (Canvas 2D + Dual-Layer):**
+- ✅ True phosphor persistence via dual-layer rendering
+- ✅ P7 phosphor simulation (0.012 decay rate = ~1.5s trails)
 - ✅ Sufficient performance for current track counts (~50 tracks)
-- ✅ Good browser compatibility
-- ✅ Easier team onboarding (no shader programming required)
+- ✅ Good browser compatibility (no WebGL required)
+- ✅ Simpler to implement and debug than shaders
+- ✅ React lifecycle handled via canvas replacement detection
 
 **Limitations:**
-- ❌ No true phosphor persistence (decay effect)
-- ❌ Limited post-processing capabilities (no bloom, CRT effects)
-- ❌ May struggle with 200+ tracks simultaneously
-- ❌ No hardware acceleration for complex effects
+- ❌ May struggle with 200+ tracks simultaneously (not GPU accelerated)
+- ❌ No bloom/glow post-processing (CSS shadows only)
+- ❌ Limited advanced CRT effects (scan lines, curvature require CSS)
 
-**Future Enhancement:** WebGL upgrade noted as "future enhancement" for advanced CRT effects.
+**Future Enhancement:** WebGL upgrade possible for GPU acceleration at high track counts, but current implementation meets all requirements.
 
 ---
 
@@ -60,10 +62,11 @@ JavaScript (RadarScope class)
 
 | File | Purpose | Lines | Technology |
 |------|---------|-------|------------|
-| `assets/radar_scope.js` | Standalone Canvas 2D renderer | 429 | JavaScript (ES6 class) |
-| `components_v2/radar_scope.py` | Reflex wrapper, HTML/CSS strings | 600 | Python + HTML templates |
+| `assets/crt_radar.js` | P7 phosphor CRT renderer with React lifecycle handling | 283 | JavaScript (ES6 class) |
+| `components_v2/radar_scope_native.py` | Minimal canvas wrapper (no competing JS) | 26 | Python (plain HTML) |
 | `components_v2/geographic_overlays.py` | Geographic data (coastlines, cities, rings) | 367 | Python dataclasses |
 | `interactive_sage.py` | State management, JSON serialization | 943 | Reflex State class |
+| `components_v2/radar_scope.py` | Legacy/deprecated (not currently used) | 600 | Python + HTML templates |
 
 ---
 
@@ -101,50 +104,50 @@ default:      #888888  (gray)
 
 ## Initialization Flow
 
-### ⚠️ Known Limitation: Manual Initialization Required
+### ✅ Automatic Initialization (Production)
 
-**Root Cause:** Reflex's React-based architecture prevents automatic script execution:
+**Current Implementation:** Automatic canvas detection with React lifecycle handling
 
-1. **React innerHTML Security**: `rx.html()` strips `<script>` tags (XSS protection)
-2. **rx.script() Doesn't Render**: No HTML output, scripts don't reach browser
-3. **Vite Plugin Bypass**: React Router SSR bypasses `transformIndexHtml` hook
-4. **Auto-Regeneration**: `.web/app/_document.js` regenerated on every server start
+**How It Works:**
+1. `crt_radar.js` included via `<script src="/crt_radar.js"></script>` in component
+2. Script runs `initCRTWhenReady()` immediately on load
+3. Continuous polling (100ms) checks for canvas element availability
+4. Once canvas found, creates `new CRTRadarScope('radar-scope-canvas')`
+5. Canvas replacement detection monitors for React re-renders
+6. Automatic re-initialization if React replaces canvas DOM element
 
-### Official Solution: Manual Browser Initialization
+### Initialization Sequence
 
-**Current Working Method:**
-- Run server with `reflex run`
-- Open browser console (F12)
-- Execute: `initRadarScope('radar-scope-canvas')`
-- Radar scope renders immediately and works perfectly
+1. **Page Load** - Reflex renders HTML with plain canvas element (no competing JS)
+2. **Script Load** - Browser loads `/crt_radar.js` from assets folder
+3. **Canvas Detection** - Polls for `#radar-scope-canvas` every 100ms
+4. **Scope Creation** - Instantiates `CRTRadarScope` class with P7 phosphor layers
+5. **Animation Start** - `requestAnimationFrame()` loop begins at 60 FPS
+6. **Continuous Monitoring** - Detects canvas replacement every 100ms
+7. **Auto Recovery** - Re-initializes when React replaces canvas
 
-**Why This Works:**
-- ✅ `radar_scope.js` properly served from `/assets/radar_scope.js`
-- ✅ Canvas element `#radar-scope-canvas` exists in DOM
-- ✅ Data divs (`#sage-track-data`, `#sage-geo-data`) populated with JSON
-- ✅ Manual call bypasses React's security restrictions
-- ✅ Animation loop starts and updates continuously
+### React Lifecycle Handling
 
-### Initialization Sequence (Manual)
+Key innovation: Continuous canvas validity checking prevents "disappearing radar" bug
 
-1. **Page Load** - Reflex renders HTML with canvas element and hidden data divs
-2. **External JS Load** - Browser fetches `/assets/radar_scope.js` automatically
-3. **User Intervention** - Manual `initRadarScope()` call in browser console
-4. **Scope Creation** - `new RadarScope('radar-scope-canvas')` instantiates renderer
-5. **Data Loading** - Reads JSON from data attributes, calls `updateGeoData()` and `updateTracks()`
-6. **Animation Start** - `requestAnimationFrame()` loop begins at 60 FPS
-7. **Periodic Updates** - JavaScript polls data divs every 1 second for track updates
+```javascript
+// In render loop
+if (!this.canvas || !document.body.contains(this.canvas)) {
+    console.warn('[CRT] Canvas replaced by React, stopping');
+    this.stop();
+    return;
+}
 
-### Attempted Solutions (All Failed)
-
-| Approach | Why It Failed |
-|----------|---------------|
-| `rx.script(src="/radar_scope.js")` | Doesn't render any HTML tags |
-| `rx.html('<script src="...">...</script>')` | React innerHTML strips scripts |
-| Vite plugin with `transformIndexHtml` | React Router SSR bypasses hook (never called) |
-| Direct `.web/app/_document.js` modification | File auto-regenerated on every `reflex run` |
-
-**Conclusion:** Reflex's architecture intentionally prevents script injection for security. Manual initialization is the reliable workaround until Reflex adds official script injection API.
+// Continuous polling
+setInterval(() => {
+    const currentCanvas = document.getElementById('radar-scope-canvas');
+    if (currentCanvas && currentCanvas !== scope.canvas) {
+        console.log('[CRT] Detected new canvas, re-initializing');
+        scope.stop();
+        scope = new CRTRadarScope('radar-scope-canvas');
+    }
+}, 100);
+```
 
 ---
 
