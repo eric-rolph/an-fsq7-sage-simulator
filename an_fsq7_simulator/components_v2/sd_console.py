@@ -101,7 +101,7 @@ def category_select_panel(active_filters: Set[str], state_class) -> rx.Component
             *[
                 console_button(
                     f"{switch} {name}",
-                    active=active_filters.contains(filter_key),
+                    active=active_filters.contains_(filter_key),
                     on_click=lambda _event, fk=filter_key: state_class.toggle_filter(fk),
                     size="1",
                 )
@@ -157,7 +157,7 @@ def feature_select_panel(active_overlays: Set[str], state_class) -> rx.Component
                 rx.box(
                     console_button(
                         f"{switch} {name}",
-                        active=active_overlays.contains(overlay_key),
+                        active=active_overlays.contains_(overlay_key),
                         on_click=lambda _event, ok=overlay_key: state_class.toggle_overlay(ok),
                         size="2",
                     ),

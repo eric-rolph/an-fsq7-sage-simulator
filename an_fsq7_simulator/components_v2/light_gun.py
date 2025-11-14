@@ -66,7 +66,7 @@ def track_detail_panel(track: Optional[Track], armed: bool, on_launch=None, on_c
     )
 
 
-def _track_detail_content(track: Track, armed: bool, on_launch=None, on_clear=None) -> rx.Component:
+def _track_detail_content(track: Track | None, armed: bool, on_launch=None, on_clear=None) -> rx.Component:
     """Helper function for track detail content when track exists"""
     # Color coding by hostility - can't use dict.get() with Vars, use rx.match instead
     type_color = rx.match(

@@ -69,7 +69,7 @@ def tube_status_indicator(tube: TubeState, on_click=None) -> rx.Component:
         align_items="center",
         justify_content="center",
         background=bg_color,
-        border="2px solid " + border_color,
+        border=f"2px solid {border_color}",
         border_radius="4px",
         cursor=rx.cond((tube.status == "failed") | (tube.status == "degrading"), "pointer", "default"),
         transition="all 0.2s",

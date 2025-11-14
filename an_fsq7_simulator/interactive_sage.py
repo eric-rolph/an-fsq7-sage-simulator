@@ -1245,46 +1245,6 @@ class InteractiveSageState(rx.State):
         )
     
     @rx.var
-    def classifying_track_type(self) -> str:
-        track = self.classifying_track
-        return track.track_type if track else "unknown"
-    
-    @rx.var
-    def classifying_correlation_state(self) -> str:
-        track = self.classifying_track
-        return track.correlation_state if track else "uncorrelated"
-    
-    @rx.var
-    def classifying_confidence_level(self) -> str:
-        track = self.classifying_track
-        return track.confidence_level if track else "unknown"
-    
-    @rx.var
-    def classifying_altitude(self) -> int:
-        track = self.classifying_track
-        return track.altitude if track else 0
-    
-    @rx.var
-    def classifying_speed(self) -> int:
-        track = self.classifying_track
-        return track.speed if track else 0
-    
-    @rx.var
-    def classifying_heading(self) -> int:
-        track = self.classifying_track
-        return track.heading if track else 0
-    
-    @rx.var
-    def classifying_x(self) -> float:
-        track = self.classifying_track
-        return track.x if track else 0.0
-    
-    @rx.var
-    def classifying_y(self) -> float:
-        track = self.classifying_track
-        return track.y if track else 0.0
-    
-    @rx.var
     def tracks_json_var(self) -> str:
         """Embed filtered tracks as JSON for JavaScript access (computed var)"""
         return self.get_tracks_json()
