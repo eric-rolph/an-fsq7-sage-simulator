@@ -44,6 +44,7 @@ from .components_v2 import (
     crt_effects,  # NEW: Authentic P7 phosphor CRT display effects
     track_classification_panel,  # NEW: Manual track classification UI
     interceptor_panel,  # NEW: Interceptor assignment system
+    system_inspector,  # NEW: System Inspector Overlay (Priority 3)
 )
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
@@ -104,6 +105,23 @@ class InteractiveSageState(rx.State):
     show_welcome: bool = True
     tutorial_active: bool = False
     
+    # ===== SYSTEM INSPECTOR STATE (Priority 3) =====
+    show_system_inspector: bool = False
+    # CPU State
+    cpu_accumulator: int = 0
+    cpu_index_register: int = 0
+    cpu_program_counter: int = 0
+    cpu_current_instruction: str = "IDLE"
+    cpu_memory_address: int = 0
+    cpu_instruction_queue_depth: int = 0
+    # Queue State
+    radar_queue_depth: int = 0
+    track_queue_depth: int = 0
+    display_queue_depth: int = 0
+    radar_processing_rate: int = 0
+    track_processing_rate: int = 0
+    display_processing_rate: int = 0
+    
     # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
     
@@ -149,6 +167,9 @@ class InteractiveSageState(rx.State):
                 # Check tube degradation periodically
                 if self.world_time % 10000 == 0:  # Every 10 seconds
                     self.degrade_tubes()
+                
+                # Update system inspector metrics (Priority 3)
+                self.update_system_inspector_metrics()
     
     async def tick_loop(self):
         """Legacy main simulation loop - replaced by simulation_tick_loop"""
@@ -420,6 +441,41 @@ class InteractiveSageState(rx.State):
                         # (operator must manually classify)
                         track.correlation_state = "uncorrelated"
                         track.confidence_level = confidence
+    
+    def update_system_inspector_metrics(self):
+        """
+        Update System Inspector metrics (Priority 3)
+        Simulates SAGE computer internal state for educational transparency
+        """
+        import random
+        
+        # Simulate CPU state (mock values for now - can integrate real CPU core later)
+        self.cpu_accumulator = random.randint(0, 0xFFFFFFFF)
+        self.cpu_index_register = len(self.tracks)  # Use track count as index
+        self.cpu_program_counter = self.world_time % 0xFFFF
+        
+        # Current instruction based on what the simulation is doing
+        if len(self.tracks) > 0:
+            uncorrelated_count = sum(1 for t in self.tracks if t.correlation_state == "uncorrelated")
+            if uncorrelated_count > 0:
+                self.cpu_current_instruction = f"CORRELATE_TRACK ({uncorrelated_count} pending)"
+            else:
+                self.cpu_current_instruction = "UPDATE_POSITIONS"
+        else:
+            self.cpu_current_instruction = "IDLE"
+        
+        self.cpu_memory_address = (self.world_time * 7) % 0xFFFF
+        self.cpu_instruction_queue_depth = min(len(self.tracks) // 2, 15)
+        
+        # Queue metrics
+        self.radar_queue_depth = len(self.tracks) * 2  # Each track has 2 radar returns
+        self.track_queue_depth = sum(1 for t in self.tracks if t.correlation_state != "correlated")
+        self.display_queue_depth = min(len(self.tracks) + len(self.interceptors), 30)
+        
+        # Processing rates (simulated)
+        self.radar_processing_rate = 45 + random.randint(-5, 5)
+        self.track_processing_rate = 12 + random.randint(-2, 2)
+        self.display_processing_rate = 60  # 60 FPS
     
     def load_scenario(self, scenario_name: str):
         """Load a scenario and convert RadarTarget objects to Track objects"""
@@ -916,6 +972,21 @@ class InteractiveSageState(rx.State):
                 category="INFO",
                 message=f"Overlay {action.upper()}",
                 details=f"Display: {overlay_name.replace('_', ' ').upper()}"
+            )
+        )
+    
+    def toggle_system_inspector(self):
+        """Toggle System Inspector Overlay (Shift+I) - Priority 3"""
+        self.show_system_inspector = not self.show_system_inspector
+        
+        # Log the toggle
+        action = "OPENED" if self.show_system_inspector else "CLOSED"
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now(),
+                category="INFO",
+                message=f"System Inspector {action}",
+                details="Press Shift+I to toggle"
             )
         )
     
@@ -1476,6 +1547,24 @@ def index() -> rx.Component:
             track_classification_panel.correlation_help_panel()
         ),
         
+        # System Inspector Overlay (Priority 3) - Toggle with Shift+I
+        system_inspector.system_inspector_overlay(
+            show=InteractiveSageState.show_system_inspector,
+            accumulator=InteractiveSageState.cpu_accumulator,
+            index_register=InteractiveSageState.cpu_index_register,
+            program_counter=InteractiveSageState.cpu_program_counter,
+            current_instruction=InteractiveSageState.cpu_current_instruction,
+            memory_address=InteractiveSageState.cpu_memory_address,
+            instruction_queue_depth=InteractiveSageState.cpu_instruction_queue_depth,
+            radar_queue_depth=InteractiveSageState.radar_queue_depth,
+            track_queue_depth=InteractiveSageState.track_queue_depth,
+            display_queue_depth=InteractiveSageState.display_queue_depth,
+            radar_processing_rate=InteractiveSageState.radar_processing_rate,
+            track_processing_rate=InteractiveSageState.track_processing_rate,
+            display_processing_rate=InteractiveSageState.display_processing_rate,
+            on_close=InteractiveSageState.toggle_system_inspector
+        ),
+        
         # Native React component handles data via props - no hidden divs needed!
         
         # Inject CSS and scripts
@@ -1491,6 +1580,21 @@ def index() -> rx.Component:
         crt_effects.load_crt_script(),
         
         rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
+        
+        # System Inspector keyboard shortcut (Shift+I)
+        rx.script("""
+            document.addEventListener('keydown', function(event) {
+                // Shift+I to toggle System Inspector
+                if (event.shiftKey && event.key === 'I') {
+                    event.preventDefault();
+                    console.log('[System Inspector] Shift+I pressed, toggling...');
+                    // Trigger Reflex event through WebSocket
+                    if (window.__reflex__) {
+                        window.__reflex__.toggle_system_inspector();
+                    }
+                }
+            });
+        """),
         
         # Bridge canvas track clicks to Reflex event handlers via localStorage
         rx.script("""
