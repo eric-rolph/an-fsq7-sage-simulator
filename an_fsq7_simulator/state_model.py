@@ -204,3 +204,70 @@ class ScenarioDefinition:
     success_criteria: Dict[str, Any]
     special_conditions: List[str]
     briefing: str
+
+
+@dataclass
+class ScenarioMetrics:
+    """Performance metrics tracked during scenario execution"""
+    # Detection metrics
+    tracks_detected: int = 0
+    tracks_total: int = 0
+    
+    # Classification metrics
+    correct_classifications: int = 0
+    total_classifications: int = 0
+    
+    # Intercept metrics
+    successful_intercepts: int = 0
+    attempted_intercepts: int = 0
+    
+    # Timing
+    scenario_start_time: float = 0.0
+    scenario_duration: float = 0.0
+    
+    # Objectives
+    objectives: List[str] = field(default_factory=list)
+    completed_objectives: List[bool] = field(default_factory=list)
+    success_criteria: str = ""
+    
+    # Learning moments (mistakes/warnings)
+    learning_moments: List[Dict[str, str]] = field(default_factory=list)
+    
+    # Overall score (0-100)
+    overall_score: float = 0.0
+    
+    def calculate_overall_score(self) -> float:
+        """Calculate overall performance score"""
+        detection_score = (self.tracks_detected / self.tracks_total * 100) if self.tracks_total > 0 else 0
+        classification_score = (self.correct_classifications / self.total_classifications * 100) if self.total_classifications > 0 else 0
+        intercept_score = (self.successful_intercepts / self.attempted_intercepts * 100) if self.attempted_intercepts > 0 else 0
+        
+        # Weighted average: 30% detection, 40% classification, 30% intercepts
+        self.overall_score = (detection_score * 0.3 + classification_score * 0.4 + intercept_score * 0.3)
+        return self.overall_score
+    
+    def add_learning_moment(self, severity: str, title: str, description: str, tip: str):
+        """Add a learning moment (mistake or warning)"""
+        self.learning_moments.append({
+            "severity": severity,  # "warning" or "error"
+            "title": title,
+            "description": description,
+            "tip": tip
+        })
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for Reflex state"""
+        return {
+            "tracks_detected": self.tracks_detected,
+            "tracks_total": self.tracks_total,
+            "correct_classifications": self.correct_classifications,
+            "total_classifications": self.total_classifications,
+            "successful_intercepts": self.successful_intercepts,
+            "attempted_intercepts": self.attempted_intercepts,
+            "scenario_duration": self.scenario_duration,
+            "objectives": self.objectives,
+            "completed_objectives": self.completed_objectives,
+            "success_criteria": self.success_criteria,
+            "learning_moments": self.learning_moments,
+            "overall_score": self.overall_score
+        }

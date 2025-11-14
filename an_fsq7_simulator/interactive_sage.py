@@ -15,7 +15,7 @@ Runs 500ms tick loop for realistic scenario advancement.
 
 import reflex as rx
 import json
-from typing import List, Set, Optional
+from typing import List, Set, Optional, Dict, Any
 from datetime import datetime
 import asyncio
 import time
@@ -45,6 +45,7 @@ from .components_v2 import (
     track_classification_panel,  # NEW: Manual track classification UI
     interceptor_panel,  # NEW: Interceptor assignment system
     system_inspector,  # NEW: System Inspector Overlay (Priority 3)
+    scenario_debrief,  # NEW: Scenario Debrief Panel (Priority 4)
 )
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
@@ -121,6 +122,11 @@ class InteractiveSageState(rx.State):
     radar_processing_rate: int = 0
     track_processing_rate: int = 0
     display_processing_rate: int = 0
+    
+    # ===== SCENARIO DEBRIEF STATE (Priority 4) =====
+    scenario_complete: bool = False
+    scenario_start_time: float = 0.0
+    scenario_metrics: Dict[str, Any] = {}
     
     # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
@@ -990,6 +996,88 @@ class InteractiveSageState(rx.State):
             )
         )
     
+    # ========================
+    # SCENARIO DEBRIEF HANDLERS (Priority 4)
+    # ========================
+    
+    def close_debrief(self):
+        """Close debrief panel and continue to next scenario"""
+        self.scenario_complete = False
+        self.scenario_metrics = {}
+    
+    def restart_scenario(self):
+        """Restart current scenario"""
+        self.scenario_complete = False
+        self.scenario_metrics = {}
+        self.load_scenario(self.current_scenario_name)
+        self.start_simulation()
+    
+    def next_scenario(self):
+        """Load next scenario in sequence"""
+        scenarios = list(sim_scenarios.SCENARIOS.keys())
+        current_idx = scenarios.index(self.current_scenario_name) if self.current_scenario_name in scenarios else 0
+        next_idx = (current_idx + 1) % len(scenarios)
+        next_scenario_name = scenarios[next_idx]
+        
+        self.scenario_complete = False
+        self.scenario_metrics = {}
+        self.load_scenario(next_scenario_name)
+        self.start_simulation()
+    
+    def complete_scenario(self):
+        """Complete current scenario and show debrief"""
+        # Create metrics from current state
+        from .state_model import ScenarioMetrics
+        
+        metrics = ScenarioMetrics()
+        metrics.scenario_duration = time.time() - self.scenario_start_time
+        
+        # Track metrics
+        metrics.tracks_detected = len([t for t in self.tracks])
+        metrics.tracks_total = len(self.tracks)  # TODO: Track this from scenario initial state
+        
+        # Classification metrics
+        metrics.total_classifications = len([t for t in self.tracks if t.correlation_state == "correlated"])
+        # Assume correct if correlated (real version would check against ground truth)
+        metrics.correct_classifications = metrics.total_classifications
+        
+        # Intercept metrics
+        metrics.attempted_intercepts = len([i for i in self.interceptors if i.status != "READY"])
+        metrics.successful_intercepts = len([i for i in self.interceptors if i.status == "ENGAGING"])
+        
+        # Get objectives from scenario
+        scenario = sim_scenarios.SCENARIOS.get(self.current_scenario_name)
+        if scenario:
+            metrics.objectives = scenario.objectives
+            metrics.success_criteria = scenario.success_criteria
+            # Mark all objectives as complete for now (would check actual conditions in real version)
+            metrics.completed_objectives = [True] * len(scenario.objectives)
+        
+        # Add learning moments (examples)
+        if metrics.correct_classifications < metrics.tracks_total:
+            metrics.add_learning_moment(
+                "warning",
+                "Incomplete Classification",
+                f"Only {metrics.correct_classifications}/{metrics.tracks_total} tracks were classified",
+                "Use light gun to manually classify uncorrelated tracks"
+            )
+        
+        if metrics.attempted_intercepts == 0 and metrics.tracks_total > 0:
+            metrics.add_learning_moment(
+                "error",
+                "No Interceptors Assigned",
+                "No interceptors were scrambled to engage threats",
+                "Select hostile tracks and click 'ASSIGN TO TARGET' to scramble interceptors"
+            )
+        
+        # Calculate overall score
+        metrics.calculate_overall_score()
+        
+        # Set state
+        self.scenario_metrics = metrics.to_dict()
+        self.scenario_complete = True
+        self.stop_simulation()
+    
     def pan_scope(self, direction: str):
         """Pan scope view (arrow buttons)"""
         step = 0.05
@@ -1564,6 +1652,9 @@ def index() -> rx.Component:
             display_processing_rate=InteractiveSageState.display_processing_rate,
             on_close=InteractiveSageState.toggle_system_inspector
         ),
+        
+        # Scenario Debrief Panel (Priority 4) - Shows after scenario completion
+        scenario_debrief.scenario_debrief_panel(InteractiveSageState),
         
         # Native React component handles data via props - no hidden divs needed!
         

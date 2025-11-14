@@ -3,19 +3,37 @@ Scenario definitions for the AN/FSQ-7 SAGE simulator.
 
 Each scenario defines initial conditions (target positions, headings, threats)
 to allow quick testing and demonstration of different operational situations.
+
+Updated for Priority 4: Scenario System Enhancement
+- Learning objectives for educational value
+- Success criteria for mission completion
+- Difficulty ratings
 """
 
-from typing import List
+from typing import List, Dict, Any
 from .models import RadarTarget
 
 
 class Scenario:
-    """Defines a mission scenario with initial conditions."""
+    """Defines a mission scenario with initial conditions and learning objectives."""
     
-    def __init__(self, name: str, description: str, targets: List[RadarTarget]):
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        targets: List[RadarTarget],
+        learning_objectives: List[str] = None,
+        success_criteria: str = "Complete all objectives",
+        difficulty: str = "beginner",  # "beginner", "intermediate", "advanced", "expert"
+        objectives: List[str] = None
+    ):
         self.name = name
         self.description = description
         self.targets = targets
+        self.learning_objectives = learning_objectives or []
+        self.success_criteria = success_criteria
+        self.difficulty = difficulty
+        self.objectives = objectives or ["Detect and track all targets", "Classify threats correctly", "Assign interceptors"]
 
 
 # Pre-defined scenarios
@@ -51,6 +69,18 @@ SCENARIOS = {
                 target_type="AIRCRAFT",
                 threat_level="LOW"
             ),
+        ],
+        learning_objectives=[
+            "Practice basic track detection and identification",
+            "Learn to prioritize threats by level",
+            "Master light gun selection and track detail viewing"
+        ],
+        success_criteria="Detect all 3 tracks and correctly identify threat levels",
+        difficulty="beginner",
+        objectives=[
+            "Detect all 3 inbound tracks",
+            "Classify each track by threat level",
+            "Assign interceptors to HIGH threats first"
         ]
     ),
     
