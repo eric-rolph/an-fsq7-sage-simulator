@@ -23,11 +23,12 @@
 
 ---
 
-## 🎯 NEXT PRIORITIES (Based on Design Pillars)
+## ✅ COMPLETED PRIORITIES (Core Features)
 
-### Priority 1: **Track Lifecycle & Correlation** (System Transparency Pillar)
+### Priority 1: **Track Lifecycle & Correlation** ✅ COMPLETE
 **Persona:** Ada (CS/engineering student)  
 **Learning Objective:** Understand detect → correlate → classify workflow
+**Status:** Implemented and committed (commits fd5ec4d, 4c58f60, f5d565e)
 
 #### Features to Implement:
 1. **Track State Visualization**
@@ -54,11 +55,10 @@
 - Create `components_v2/track_classification_panel.py`
 - Update CRT radar to show correlation state visually (different shapes/colors)
 
----
-
-### Priority 2: **Interceptor Assignment** (Meaningful Play Pillar)
+### Priority 2: **Interceptor Assignment** ✅ COMPLETE
 **Persona:** Sam (sim/games player)  
 **Learning Objective:** Make tactical decisions with visible consequences
+**Status:** Implemented and committed (commits c8a8be9, d6dc8bf)
 
 #### Features to Implement:
 1. **Interceptor Launch Panel**
@@ -90,11 +90,15 @@
 - Add intercept vector rendering to `crt_radar.js`
 - Add engagement outcome logic (probability based on distance, weapon type)
 
----
-
-### Priority 3: **System Inspector Overlay** (System Transparency Pillar)
+### Priority 3: **System Inspector Overlay** ✅ COMPLETE
 **Persona:** Ada (CS/engineering student)  
 **Learning Objective:** See "inside" the computer system
+**Status:** Implemented and committed (commit 4db3781)
+**Features:** CPU state panel, 16 memory banks visualization, queue inspector with bottleneck warnings, Shift+I toggle
+
+---
+
+## 🎯 NEXT PRIORITIES (Additional Features)
 
 #### Features to Implement:
 1. **CPU State Panel**
