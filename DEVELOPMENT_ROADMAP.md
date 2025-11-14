@@ -98,56 +98,62 @@
 
 ---
 
-## 🎯 NEXT PRIORITIES (Additional Features)
+### Priority 4: **Scenario System Enhancement** ✅ COMPLETE
+**Persona:** All personas (Ada: learning assessment, Grace: mission realism, Sam: score improvement)
+**Status:** Implemented and committed (commits 3fbc807, 0f95d24)
 
-#### Features to Implement:
-1. **CPU State Panel**
-   - Show current instruction being executed
-   - Program counter, accumulator, index registers
-   - Memory address being accessed
-   - Instruction queue depth
-   - **Toggle on/off** via keyboard shortcut (Shift+I)
+#### Implemented Features:
+1. **Debrief System** ✅
+   - Performance metrics: detection %, classification accuracy, intercept success
+   - Learning moments panel: mistakes with improvement tips
+   - Mission objectives tracker with completion status
+   - Grade panel (A-F) based on weighted scoring (30% detection, 40% classification, 30% intercepts)
+   - Action buttons: Continue, Replay Scenario, Next Scenario
+   - Full-screen modal overlay with SAGE-authentic styling
 
-2. **Memory Visualization**
-   - Show which memory banks are active (visual highlight)
-   - Track which programs are loaded in which banks
-   - Show memory access patterns (hot/cold addresses)
-   - Display vacuum tube health per memory bank
+2. **Enhanced Scenario Model** ✅
+   - `learning_objectives`: Educational goals for each scenario
+   - `success_criteria`: Clear mission completion requirements
+   - `difficulty`: beginner/intermediate/advanced/expert ratings
+   - `objectives`: Specific tasks to complete
 
-3. **Queue Inspector**
-   - Radar input queue: raw returns waiting for correlation
-   - Track processing queue: tracks awaiting classification
-   - Display update queue: pending screen updates
-   - **Show bottlenecks:** Queue depth warnings (red if >80% full)
+3. **Educational Scenarios** ✅
+   - **Demo 1 - Three Inbound** (beginner): Basic detection and threat prioritization
+   - **Scenario 5 - Correlation Training** (intermediate): Manual classification practice
+   - **Scenario 6 - Equipment Degradation** (advanced): Tube failures under pressure
+   - **Scenario 7 - Saturated Defense** (expert): Resource allocation with 8 targets, 3 interceptors
 
-**Implementation:**
-- Add `state_model.py`: `CPUState` with registers, program counter
-- Create `components_v2/system_inspector_overlay.py`
-- Add keyboard shortcut handling for toggle
-- Integrate with existing `cpu_core.py` authentic execution
-- Visual design: Semi-transparent overlay, doesn't block radar view
+4. **Performance Tracking** ✅
+   - `ScenarioMetrics` dataclass: tracks detection, classification, intercepts, timing
+   - Event handlers: `close_debrief()`, `restart_scenario()`, `next_scenario()`, `complete_scenario()`
+   - State fields: `scenario_complete`, `scenario_start_time`, `scenario_metrics`
+
+**Files:**
+- `components_v2/scenario_debrief.py` (362 lines)
+- `state_model.py`: ScenarioMetrics dataclass
+- `sim/scenarios.py`: Enhanced Scenario class + 3 new educational scenarios
+- `interactive_sage.py`: State integration and event handlers
 
 ---
 
-## 📋 Additional Features (Lower Priority)
+## 🎯 NEXT PRIORITIES (Additional Features)
 
-### Scenario System Enhancement
-**Persona:** All personas  
-**Pillars:** Scenario-driven learning, Meaningful play
+### Sound Effects & Audio Feedback
+**Persona:** Sam (immersion), Grace (authenticity)
+**Pillars:** Cognitive fidelity, Meaningful play
 
-- **Pre-built scenarios** with learning objectives:
-  - "Scenario 1: Single Inbound" - Learn basic track detection
-  - "Scenario 2: Multiple Bogeys" - Practice prioritization
-  - "Scenario 3: Equipment Failure" - Handle tube failures mid-engagement
-  - "Scenario 4: Saturated Defense" - Overwhelming enemy attack
+- **Authentic SAGE sounds:**
+  - Radar sweep "ping" (continuous background)
+  - Track detected beep (new contact)
+  - Correlation complete tone (classification success)
+  - Warning klaxon (hostile detected)
+  - Engagement tone (interceptor in range)
   
-- **Debrief System:**
-  - Show performance metrics after scenario
-  - Tracks detected: 12/15 (80%)
-  - Correct classifications: 10/12 (83%)
-  - Successful intercepts: 7/10 (70%)
-  - Time to assignment: avg 45 seconds
-  - **Learning moment:** Show what went wrong on missed intercepts
+- **Implementation:**
+  - Research historical SAGE audio from documentation
+  - Add audio file support to Reflex app
+  - Create audio trigger system in state handlers
+  - Add audio toggle in settings panel
 
 ### Sound Effects & Audio Feedback
 **Persona:** Grace (history nerd)  

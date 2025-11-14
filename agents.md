@@ -223,9 +223,11 @@ mcp_playwright-ex_browser_evaluate({
 Current roadmap priorities:
 
 - ✅ Priority 1: Track Correlation System (COMPLETE)
-- ✅ Priority 2: Interceptor Assignment System (COMPLETE - visualization added)
-- ✅ Priority 3: System Inspector Overlay (COMPLETE - Shift+I toggle)
-- ⏳ Priority 4: Additional features (see DEVELOPMENT_ROADMAP.md)
+- ✅ Priority 2: Interceptor Assignment System (COMPLETE)
+- ✅ Priority 3: System Inspector Overlay (COMPLETE)
+- ✅ Priority 4: Scenario Debrief System (COMPLETE - 7 scenarios with performance tracking)
+- 📋 Priority 5: Sound Effects & Audio Feedback (see DEVELOPMENT_ROADMAP.md)
+- 📋 Priority 6: Network & Station View
 
 When implementing new features:
 1. Update `sim/models.py` for core domain models
