@@ -1309,6 +1309,31 @@ class InteractiveSageState(rx.State):
         """Return complete script tag with geo data - for rx.html injection"""
         return f"<script>window.__SAGE_GEO__ = {self.get_geo_json()};</script>"
     
+    def get_interceptors_json(self) -> str:
+        """Convert interceptors list to JSON for JavaScript"""
+        interceptors_data = [
+            {
+                "id": i.id,
+                "x": i.x,
+                "y": i.y,
+                "heading": i.heading,
+                "status": i.status,
+                "assigned_target_id": i.assigned_target_id if i.assigned_target_id else None,
+            }
+            for i in self.interceptors
+        ]
+        return json.dumps(interceptors_data)
+    
+    @rx.var
+    def interceptors_json_var(self) -> str:
+        """Embed interceptors as JSON for JavaScript access (computed var)"""
+        return self.get_interceptors_json()
+    
+    @rx.var
+    def interceptors_script_tag(self) -> str:
+        """Return complete script tag with interceptors data - for rx.html injection"""
+        return f"<script>window.__SAGE_INTERCEPTORS__ = {self.get_interceptors_json()};</script>"
+    
     # Helper vars for classification panel (avoid nested property access issues)
     @rx.var
     def classifying_track_type(self) -> str:
@@ -1500,6 +1525,7 @@ def index() -> rx.Component:
         # Inject track data as complete script tags via computed vars
         rx.html(InteractiveSageState.tracks_script_tag),
         rx.html(InteractiveSageState.geo_script_tag),
+        rx.html(InteractiveSageState.interceptors_script_tag),
         
         # Enhanced CRT Radar scope with P7 phosphor simulation - external script
         crt_effects.load_crt_script(),

@@ -55,6 +55,7 @@ class CRTRadarScope {
         
         // Radar state
         this.tracks = [];
+        this.interceptors = [];
         this.overlays = new Set(['range_rings', 'coastlines']);
         this.geoData = null;
         this.sweepAngle = 0;
@@ -178,6 +179,9 @@ class CRTRadarScope {
         
         // Draw bright track markers on top
         this.drawTracksBright();
+        
+        // Draw interceptors on top (blue triangles with vectors)
+        this.drawInterceptors();
         
         this.animationId = requestAnimationFrame(() => this.render());
     }
@@ -311,8 +315,86 @@ class CRTRadarScope {
         });
     }
     
+    drawInterceptors() {
+        // Draw interceptor aircraft as blue triangles with heading indicators
+        if (!this.interceptors || !Array.isArray(this.interceptors)) {
+            return;
+        }
+        
+        this.interceptors.forEach(interceptor => {
+            // Only draw if not at base and not READY status
+            if (interceptor.status === 'READY' || interceptor.status === 'REFUELING') {
+                return;
+            }
+            
+            const x = this.centerX + (interceptor.x * this.width);
+            const y = this.centerY + (interceptor.y * this.height);
+            
+            // Draw intercept vector (dashed line to target) if engaging
+            if (interceptor.assigned_target_id && (interceptor.status === 'AIRBORNE' || interceptor.status === 'ENGAGING')) {
+                const target = this.tracks.find(t => t.id === interceptor.assigned_target_id);
+                if (target) {
+                    const targetX = this.centerX + (target.x * this.width);
+                    const targetY = this.centerY + (target.y * this.height);
+                    
+                    this.ctx.strokeStyle = 'rgba(0, 150, 255, 0.6)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.setLineDash([5, 5]);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, y);
+                    this.ctx.lineTo(targetX, targetY);
+                    this.ctx.stroke();
+                    this.ctx.setLineDash([]);
+                }
+            }
+            
+            // Draw interceptor as triangle pointing in heading direction
+            const heading = (interceptor.heading || 0) * Math.PI / 180;
+            const size = 8;
+            
+            this.ctx.save();
+            this.ctx.translate(x, y);
+            this.ctx.rotate(heading);
+            
+            // Status-based colors
+            let color = 'rgba(0, 150, 255, 0.9)';  // Default blue
+            if (interceptor.status === 'ENGAGING') {
+                color = 'rgba(255, 50, 50, 0.9)';  // Red when engaging
+            } else if (interceptor.status === 'RETURNING') {
+                color = 'rgba(100, 100, 255, 0.7)';  // Lighter blue returning
+            }
+            
+            // Draw triangle
+            this.ctx.fillStyle = color;
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(size, 0);  // Nose pointing right (0 degrees)
+            this.ctx.lineTo(-size, size);  // Bottom left
+            this.ctx.lineTo(-size, -size);  // Top left
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+            
+            this.ctx.restore();
+            
+            // Add ID label if active
+            if (interceptor.status === 'AIRBORNE' || interceptor.status === 'ENGAGING') {
+                this.ctx.fillStyle = 'rgba(0, 200, 255, 0.9)';
+                this.ctx.font = '10px "Courier New", monospace';
+                this.ctx.textAlign = 'left';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(interceptor.id, x + 12, y);
+            }
+        });
+    }
+    
     updateTracks(tracks) {
         this.tracks = tracks || [];
+    }
+    
+    updateInterceptors(interceptors) {
+        this.interceptors = interceptors || [];
     }
     
     updateOverlays(overlays) {
@@ -399,6 +481,15 @@ setInterval(function() {
                 window.crtRadarScope.updateTracks(window.__SAGE_TRACKS__);
             } catch(e) {
                 console.error('[CRT] Error updating tracks:', e);
+            }
+        }
+        
+        // Read interceptor data from global variable injected by Python state
+        if (window.__SAGE_INTERCEPTORS__ && Array.isArray(window.__SAGE_INTERCEPTORS__)) {
+            try {
+                window.crtRadarScope.updateInterceptors(window.__SAGE_INTERCEPTORS__);
+            } catch(e) {
+                console.error('[CRT] Error updating interceptors:', e);
             }
         }
         
