@@ -971,6 +971,46 @@ class InteractiveSageState(rx.State):
         )
     
     @rx.var
+    def classifying_track_type(self) -> str:
+        track = self.classifying_track
+        return track.track_type if track else "unknown"
+    
+    @rx.var
+    def classifying_correlation_state(self) -> str:
+        track = self.classifying_track
+        return track.correlation_state if track else "uncorrelated"
+    
+    @rx.var
+    def classifying_confidence_level(self) -> str:
+        track = self.classifying_track
+        return track.confidence_level if track else "unknown"
+    
+    @rx.var
+    def classifying_altitude(self) -> int:
+        track = self.classifying_track
+        return track.altitude if track else 0
+    
+    @rx.var
+    def classifying_speed(self) -> int:
+        track = self.classifying_track
+        return track.speed if track else 0
+    
+    @rx.var
+    def classifying_heading(self) -> int:
+        track = self.classifying_track
+        return track.heading if track else 0
+    
+    @rx.var
+    def classifying_x(self) -> float:
+        track = self.classifying_track
+        return track.x if track else 0.0
+    
+    @rx.var
+    def classifying_y(self) -> float:
+        track = self.classifying_track
+        return track.y if track else 0.0
+    
+    @rx.var
     def tracks_json_var(self) -> str:
         """Embed filtered tracks as JSON for JavaScript access (computed var)"""
         return self.get_tracks_json()
@@ -984,6 +1024,63 @@ class InteractiveSageState(rx.State):
     def geo_json_var(self) -> str:
         """Embed geographic data as JSON for JavaScript access (computed var)"""
         return self.get_geo_json()
+    
+    # Helper vars for classification panel (avoid nested property access issues)
+    @rx.var
+    def classifying_track_type(self) -> str:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.track_type
+        return "unknown"
+    
+    @rx.var
+    def classifying_correlation_state(self) -> str:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.correlation_state
+        return "uncorrelated"
+    
+    @rx.var
+    def classifying_confidence_level(self) -> str:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.confidence_level
+        return "unknown"
+    
+    @rx.var
+    def classifying_altitude(self) -> int:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.altitude
+        return 0
+    
+    @rx.var
+    def classifying_speed(self) -> int:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.speed
+        return 0
+    
+    @rx.var
+    def classifying_heading(self) -> int:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.heading
+        return 0
+    
+    @rx.var
+    def classifying_x(self) -> float:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.x
+        return 0.0
+    
+    @rx.var
+    def classifying_y(self) -> float:
+        for track in self.tracks:
+            if track.id == self.classifying_track_id:
+                return track.y
+        return 0.0
 
 
 # ========================
@@ -1087,15 +1184,15 @@ def index() -> rx.Component:
         rx.cond(
             InteractiveSageState.show_classification_panel,
             track_classification_panel.track_classification_panel(
-                track_id=InteractiveSageState.classifying_track.id,
-                track_type=InteractiveSageState.classifying_track.track_type,
-                correlation_state=InteractiveSageState.classifying_track.correlation_state,
-                confidence_level=InteractiveSageState.classifying_track.confidence_level,
-                altitude=InteractiveSageState.classifying_track.altitude,
-                speed=InteractiveSageState.classifying_track.speed,
-                heading=InteractiveSageState.classifying_track.heading,
-                x=InteractiveSageState.classifying_track.x,
-                y=InteractiveSageState.classifying_track.y,
+                track_id=InteractiveSageState.classifying_track_id,
+                track_type=InteractiveSageState.classifying_track_type,
+                correlation_state=InteractiveSageState.classifying_correlation_state,
+                confidence_level=InteractiveSageState.classifying_confidence_level,
+                altitude=InteractiveSageState.classifying_altitude,
+                speed=InteractiveSageState.classifying_speed,
+                heading=InteractiveSageState.classifying_heading,
+                x=InteractiveSageState.classifying_x,
+                y=InteractiveSageState.classifying_y,
                 on_classify_hostile=InteractiveSageState.classify_track_hostile,
                 on_classify_friendly=InteractiveSageState.classify_track_friendly,
                 on_classify_unknown=InteractiveSageState.classify_track_unknown,

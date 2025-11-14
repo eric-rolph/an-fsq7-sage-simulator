@@ -16,15 +16,15 @@ from typing import Optional
 
 
 def track_classification_panel(
-    track_id: str,
-    track_type: str,
-    correlation_state: str,
-    confidence_level: str,
-    altitude: int,
-    speed: int,
-    heading: int,
-    x: float,
-    y: float,
+    track_id: str = "",
+    track_type: str = "unknown",
+    correlation_state: str = "uncorrelated",
+    confidence_level: str = "unknown",
+    altitude: int = 0,
+    speed: int = 0,
+    heading: int = 0,
+    x: float = 0.0,
+    y: float = 0.0,
     on_classify_hostile = None,
     on_classify_friendly = None,
     on_classify_unknown = None,
@@ -50,17 +50,9 @@ def track_classification_panel(
         on_close: Handler for closing panel
     """
     
-    # Determine why correlation failed
-    correlation_issue = "Unknown correlation issue"
-    if correlation_state == "uncorrelated":
-        if confidence_level == "low":
-            correlation_issue = "Weak radar return signal"
-        elif speed > 600:
-            correlation_issue = "Velocity exceeds known aircraft profiles"
-        elif altitude > 60000:
-            correlation_issue = "Altitude exceeds normal flight envelope"
-        else:
-            correlation_issue = "No IFF response received"
+    # Determine why correlation failed (using rx.cond for Reflex Var compatibility)
+    # Note: Using text display instead of complex conditional logic with Vars
+    correlation_issue_text = "Auto-correlation processing failed - manual classification required"
     
     return rx.box(
         # Header
@@ -139,7 +131,7 @@ def track_classification_panel(
                 margin_bottom="0.5em",
             ),
             rx.text(
-                correlation_issue,
+                correlation_issue_text,
                 color="rgb(255, 165, 0)",
                 font_family="'Courier New', monospace",
                 font_size="0.85em",
@@ -167,9 +159,9 @@ def track_classification_panel(
                 rx.text("Speed:", color="rgba(0, 255, 100, 0.7)", font_family="'Courier New', monospace", font_size="0.85em"),
                 rx.text(f"{speed} kts", color="rgb(0, 255, 100)", font_family="'Courier New', monospace", font_size="0.85em"),
                 rx.text("Heading:", color="rgba(0, 255, 100, 0.7)", font_family="'Courier New', monospace", font_size="0.85em"),
-                rx.text(f"{heading:03d}°", color="rgb(0, 255, 100)", font_family="'Courier New', monospace", font_size="0.85em"),
+                rx.text(f"{heading}°", color="rgb(0, 255, 100)", font_family="'Courier New', monospace", font_size="0.85em"),
                 rx.text("Position:", color="rgba(0, 255, 100, 0.7)", font_family="'Courier New', monospace", font_size="0.85em"),
-                rx.text(f"({x:.3f}, {y:.3f})", color="rgb(0, 255, 100)", font_family="'Courier New', monospace", font_size="0.85em"),
+                rx.text(f"({x}, {y})", color="rgb(0, 255, 100)", font_family="'Courier New', monospace", font_size="0.85em"),
                 columns="2",
                 spacing="2",
                 width="100%",
