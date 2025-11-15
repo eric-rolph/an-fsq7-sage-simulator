@@ -142,6 +142,12 @@ class InteractiveSageState(rx.State):
     selected_station_id: str = ""
     network_stations_data: str = "[]"  # JSON of all stations
     
+    # ===== 7x7 SECTOR GRID STATE (IBM DSP Authentic Feature) =====
+    show_sector_grid: bool = False
+    expansion_level: int = 1  # 1x, 2x, 4x, 8x magnification
+    selected_sector_row: int = 3  # 0-6 (center = 3)
+    selected_sector_col: int = 3  # 0-6 (center = 3)
+    
     # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
     
@@ -999,6 +1005,32 @@ class InteractiveSageState(rx.State):
             )
         )
     
+    # ========================
+    # 7x7 SECTOR GRID CONTROLS
+    # ========================
+    
+    def toggle_sector_grid(self):
+        """Toggle 7x7 sector grid overlay"""
+        self.show_sector_grid = not self.show_sector_grid
+        action = "ENABLED" if self.show_sector_grid else "DISABLED"
+        self.add_system_message(f"7×7 Sector Grid {action}")
+    
+    def select_sector_row(self, row: int):
+        """Select sector row (0-6, displayed as 1-7)"""
+        self.selected_sector_row = row
+        self.add_system_message(f"Selected Row {row + 1}")
+    
+    def select_sector_col(self, col: int):
+        """Select sector column (0-6, displayed as A-G)"""
+        self.selected_sector_col = col
+        self.add_system_message(f"Selected Column {chr(65 + col)}")
+    
+    def set_expansion_level(self, level: int):
+        """Set expansion magnification level (1x/2x/4x/8x)"""
+        self.expansion_level = level
+        sector_label = f"{self.selected_sector_row + 1}-{chr(65 + self.selected_sector_col)}"
+        self.add_system_message(f"Magnification: {level}X | Sector {sector_label}")
+    
     def toggle_system_inspector(self):
         """Toggle System Inspector Overlay (Shift+I) - Priority 3"""
         self.show_system_inspector = not self.show_system_inspector
@@ -1543,6 +1575,17 @@ class InteractiveSageState(rx.State):
         """Return complete script tag with interceptors data - for rx.html injection"""
         return f"<script>window.__SAGE_INTERCEPTORS__ = {self.get_interceptors_json()};</script>"
     
+    @rx.var
+    def sector_grid_script_tag(self) -> str:
+        """Return complete script tag with 7x7 sector grid state - for rx.html injection"""
+        data = {
+            "show_sector_grid": self.show_sector_grid,
+            "expansion_level": self.expansion_level,
+            "selected_sector_row": self.selected_sector_row,
+            "selected_sector_col": self.selected_sector_col,
+        }
+        return f"<script>window.__SAGE_SECTOR_GRID__ = {json.dumps(data)};</script>"
+    
     def get_network_stations_json(self) -> str:
         """Convert network stations to JSON for JavaScript rendering"""
         stations_data = [
@@ -1828,6 +1871,7 @@ def index() -> rx.Component:
         rx.html(InteractiveSageState.tracks_script_tag),
         rx.html(InteractiveSageState.geo_script_tag),
         rx.html(InteractiveSageState.interceptors_script_tag),
+        rx.html(InteractiveSageState.sector_grid_script_tag),  # 7x7 sector grid state
         
         # Network station rendering system (Priority 6)
         rx.script(network_stations.NETWORK_RENDERING_SCRIPT),

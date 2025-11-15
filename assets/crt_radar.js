@@ -63,6 +63,12 @@ class CRTRadarScope {
         this.centerX = this.width / 2;
         this.centerY = this.height / 2;
         
+        // 7x7 Sector Grid State (IBM DSP authentic feature)
+        this.show_sector_grid = false;
+        this.expansion_level = 1;  // 1x, 2x, 4x, 8x
+        this.selected_sector_row = 3;  // 0-6 (center = 3)
+        this.selected_sector_col = 3;  // 0-6 (center = 3)
+        
         // Phosphor persistence decay alpha (how much to fade each frame)
         // P14 phosphor has ~2-3 second visible persistence (orange afterglow)
         // At 60fps, need ~0.008-0.010 for proper P14 decay rate
@@ -199,6 +205,11 @@ class CRTRadarScope {
         // Range rings belong on PPI (Plan Position Indicator) displays at actual radar stations,
         // not on Direction Center SD consoles where "range from where?" is ambiguous.
         
+        // Draw 7x7 sector grid (IBM DSP authentic feature)
+        if (this.show_sector_grid) {
+            this.drawSectorGrid();
+        }
+        
         // Draw network stations overlay (Priority 6) if available
         if (this.networkStations && Array.isArray(this.networkStations) && this.networkStations.length > 0) {
             this.drawNetworkStations();
@@ -214,6 +225,73 @@ class CRTRadarScope {
         this.drawInterceptors();
         
         this.animationId = requestAnimationFrame(() => this.render());
+    }
+    
+    /**
+     * Draw 7x7 sector grid overlay (IBM DSP authentic feature)
+     * 
+     * HISTORICAL CONTEXT:
+     * IBM DSP 1 documentation shows Direction Centers used 7x7 sector grid
+     * with off-centering push-buttons for 8x expansion. This solved the
+     * "symbology overprinting problem" when many tracks clustered together.
+     * 
+     * "16 incidents were related to [symbology overprinting] problem and all
+     * recommendations called for the provision of X8 as a solution."
+     * 
+     * Grid divides display into 49 sectors (7 rows × 7 columns). Operators
+     * select sector via push-buttons, then magnify to 8x for detailed view.
+     */
+    drawSectorGrid() {
+        const sectorWidth = this.width / 7;
+        const sectorHeight = this.height / 7;
+        
+        // Use dim P14 orange for grid lines (low visibility, non-intrusive)
+        this.ctx.strokeStyle = 'rgba(255, 180, 100, 0.15)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([]);  // Solid lines
+        
+        // Draw 6 vertical lines (creates 7 columns)
+        for (let i = 1; i < 7; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i * sectorWidth, 0);
+            this.ctx.lineTo(i * sectorWidth, this.height);
+            this.ctx.stroke();
+        }
+        
+        // Draw 6 horizontal lines (creates 7 rows)
+        for (let i = 1; i < 7; i++) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i * sectorHeight);
+            this.ctx.lineTo(this.width, i * sectorHeight);
+            this.ctx.stroke();
+        }
+        
+        // Highlight selected sector if expansion enabled
+        if (this.expansion_level > 1 && this.selected_sector_row >= 0 && this.selected_sector_col >= 0) {
+            const row = this.selected_sector_row;
+            const col = this.selected_sector_col;
+            
+            // Draw bright outline around selected sector
+            this.ctx.strokeStyle = 'rgba(255, 180, 100, 0.6)';
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(
+                col * sectorWidth,
+                row * sectorHeight,
+                sectorWidth,
+                sectorHeight
+            );
+            
+            // Draw sector label (e.g., "3-D | 8X")
+            const sectorLabel = `SECTOR ${row + 1}-${String.fromCharCode(65 + col)} | ${this.expansion_level}X`;
+            this.ctx.font = '12px monospace';
+            this.ctx.fillStyle = 'rgba(255, 180, 100, 0.9)';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(
+                sectorLabel,
+                col * sectorWidth + sectorWidth / 2,
+                row * sectorHeight + 20
+            );
+        }
     }
     
     // HISTORICAL NOTE: Range rings removed for authenticity
@@ -478,6 +556,13 @@ class CRTRadarScope {
         }
         if (window.__SAGE_NETWORK_STATIONS__) {
             this.networkStations = window.__SAGE_NETWORK_STATIONS__;
+        }
+        if (window.__SAGE_SECTOR_GRID__) {
+            const grid = window.__SAGE_SECTOR_GRID__;
+            this.show_sector_grid = grid.show_sector_grid;
+            this.expansion_level = grid.expansion_level;
+            this.selected_sector_row = grid.selected_sector_row;
+            this.selected_sector_col = grid.selected_sector_col;
         }
     }
     

@@ -184,15 +184,26 @@ def feature_select_panel(active_overlays: Set[str], state_class) -> rx.Component
 
 def off_centering_controls(state_class) -> rx.Component:
     """
-    Off-Centering Pushbuttons
-    Pan and zoom the radar view
+    7x7 Sector Grid Off-Centering Controls (IBM DSP Authentic Feature)
+    
+    HISTORICAL CONTEXT:
+    IBM DSP 1 documentation shows Direction Centers used 7x7 sector grid
+    with off-centering push-buttons for 8x expansion. This solved the
+    "symbology overprinting problem" when many tracks clustered together.
+    
+    14 buttons total:
+    - 7 vertical buttons (rows 1-7)
+    - 7 horizontal buttons (columns A-G)
+    
+    Operator clicks vertical + horizontal to select sector (e.g., "3" + "D" = sector 3-D)
+    Then adjusts expansion level (1x/2x/4x/8x) to zoom into selected sector.
     
     Args:
-        state_class: State class with pan_scope, zoom_scope, rotate_scope, center_scope methods
+        state_class: State class with sector selection and expansion methods
     """
     return rx.box(
         rx.heading(
-            "OFF-CENTERING CONTROLS",
+            "OFF-CENTERING (7×7 SECTORS)",
             size="3",
             color="#00ff00",
             margin_bottom="0.5rem",
@@ -200,49 +211,70 @@ def off_centering_controls(state_class) -> rx.Component:
         ),
         
         rx.vstack(
-            # Directional pan controls
+            # Grid toggle
+            rx.hstack(
+                console_button(
+                    "SHOW GRID",
+                    active=state_class.show_sector_grid,
+                    on_click=lambda _: state_class.toggle_sector_grid(),
+                    size="2"
+                ),
+                spacing="2",
+                margin_bottom="0.5rem",
+            ),
+            
+            # Row selection (1-7)
             rx.box(
-                rx.text("PAN VIEW", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
-                rx.grid(
-                    rx.box(),  # Empty corner
-                    console_button("↑", on_click=lambda _: state_class.pan_scope("up"), size="2"),
-                    rx.box(),  # Empty corner
-                    console_button("←", on_click=lambda _: state_class.pan_scope("left"), size="2"),
-                    console_button("⊙", on_click=lambda _: state_class.center_scope(), size="2"),
-                    console_button("→", on_click=lambda _: state_class.pan_scope("right"), size="2"),
-                    rx.box(),  # Empty corner
-                    console_button("↓", on_click=lambda _: state_class.pan_scope("down"), size="2"),
-                    rx.box(),  # Empty corner
-                    columns="3",
+                rx.text("SELECT ROW:", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
+                rx.hstack(
+                    console_button("1", active=(state_class.selected_sector_row == 0), on_click=lambda _: state_class.select_sector_row(0), size="1"),
+                    console_button("2", active=(state_class.selected_sector_row == 1), on_click=lambda _: state_class.select_sector_row(1), size="1"),
+                    console_button("3", active=(state_class.selected_sector_row == 2), on_click=lambda _: state_class.select_sector_row(2), size="1"),
+                    console_button("4", active=(state_class.selected_sector_row == 3), on_click=lambda _: state_class.select_sector_row(3), size="1"),
+                    console_button("5", active=(state_class.selected_sector_row == 4), on_click=lambda _: state_class.select_sector_row(4), size="1"),
+                    console_button("6", active=(state_class.selected_sector_row == 5), on_click=lambda _: state_class.select_sector_row(5), size="1"),
+                    console_button("7", active=(state_class.selected_sector_row == 6), on_click=lambda _: state_class.select_sector_row(6), size="1"),
                     spacing="1",
-                    justify_items="center",
-                    width="180px",
+                ),
+            ),
+            
+            # Column selection (A-G)
+            rx.box(
+                rx.text("SELECT COLUMN:", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
+                rx.hstack(
+                    console_button("A", active=(state_class.selected_sector_col == 0), on_click=lambda _: state_class.select_sector_col(0), size="1"),
+                    console_button("B", active=(state_class.selected_sector_col == 1), on_click=lambda _: state_class.select_sector_col(1), size="1"),
+                    console_button("C", active=(state_class.selected_sector_col == 2), on_click=lambda _: state_class.select_sector_col(2), size="1"),
+                    console_button("D", active=(state_class.selected_sector_col == 3), on_click=lambda _: state_class.select_sector_col(3), size="1"),
+                    console_button("E", active=(state_class.selected_sector_col == 4), on_click=lambda _: state_class.select_sector_col(4), size="1"),
+                    console_button("F", active=(state_class.selected_sector_col == 5), on_click=lambda _: state_class.select_sector_col(5), size="1"),
+                    console_button("G", active=(state_class.selected_sector_col == 6), on_click=lambda _: state_class.select_sector_col(6), size="1"),
+                    spacing="1",
                 ),
             ),
             
             rx.divider(),
             
-            # Zoom controls
+            # Expansion level (1x/2x/4x/8x)
             rx.box(
-                rx.text("ZOOM", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
+                rx.text("MAGNIFICATION:", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
                 rx.hstack(
-                    console_button("−", on_click=lambda _: state_class.zoom_scope("out"), size="2"),
-                    console_button("+", on_click=lambda _: state_class.zoom_scope("in"), size="2"),
-                    console_button("FIT", on_click=lambda _: state_class.zoom_scope("fit"), size="2"),
+                    console_button("1X", active=(state_class.expansion_level == 1), on_click=lambda _: state_class.set_expansion_level(1), size="1"),
+                    console_button("2X", active=(state_class.expansion_level == 2), on_click=lambda _: state_class.set_expansion_level(2), size="1"),
+                    console_button("4X", active=(state_class.expansion_level == 4), on_click=lambda _: state_class.set_expansion_level(4), size="1"),
+                    console_button("8X", active=(state_class.expansion_level == 8), on_click=lambda _: state_class.set_expansion_level(8), size="1"),
                     spacing="2",
                 ),
             ),
             
-            rx.divider(),
-            
-            # Rotation (bonus feature)
-            rx.box(
-                rx.text("ROTATE", color="#888888", font_size="0.8rem", margin_bottom="0.5rem"),
-                rx.hstack(
-                    console_button("↶", on_click=lambda _: state_class.rotate_scope("ccw"), size="2"),
-                    console_button("N", on_click=lambda _: state_class.rotate_scope("reset"), size="2"),
-                    console_button("↷", on_click=lambda _: state_class.rotate_scope("cw"), size="2"),
-                    spacing="2"),
+            # Selected sector display
+            rx.text(
+                f"SECTOR {state_class.selected_sector_row + 1}-{chr(65 + state_class.selected_sector_col)} | {state_class.expansion_level}X",
+                color="#00ff00",
+                font_family="'Courier New', monospace",
+                font_weight="bold",
+                text_align="center",
+                margin_top="0.5rem",
             ),
             
             spacing="3",
