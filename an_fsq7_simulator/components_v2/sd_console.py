@@ -131,7 +131,7 @@ def feature_select_panel(active_overlays: Set[str], state_class) -> rx.Component
     features = [
         ("S20", "FLIGHT PATHS", "flight_paths", "Show trailing paths behind targets"),
         ("S21", "INTERCEPTS", "intercept_vectors", "Show intercept missile vectors"),
-        ("S22", "RANGE RINGS", "range_rings", "Show 100/200/300 mile range circles"),
+        # S22 removed: RANGE RINGS not authentic for SD consoles (PPI radar feature only)
         ("S23", "CALLSIGNS", "callsigns", "Show track ID labels"),
         ("S24", "COASTLINES", "coastlines", "Show geographic coastline overlay"),
     ]

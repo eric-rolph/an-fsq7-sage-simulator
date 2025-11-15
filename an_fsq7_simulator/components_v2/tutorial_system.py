@@ -33,11 +33,9 @@ TRAINING_MISSIONS: List[Mission] = [
                 check_condition="system_operational",
                 hint="Watch the tube count and temperature rise. This takes about 5 seconds.",
             ),
-            MissionStep(
-                text="Toggle RANGE RINGS overlay on",
-                check_condition="overlay_range_rings_active",
-                hint="Find the Feature Select panel and press the S22 RANGE RINGS button",
-            ),
+            # Range rings step removed - not historically authentic for SD consoles
+            # SD consoles showed processed tracks from 28 radar stations
+            # Geographic reference provided by coastlines instead
             MissionStep(
                 text="Toggle COASTLINES overlay on",
                 check_condition="overlay_coastlines_active",

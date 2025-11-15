@@ -194,10 +194,10 @@ class CRTRadarScope {
         // Draw persistence layer (faded trails)
         this.ctx.drawImage(this.persistenceCanvas, 0, 0);
         
-        // Draw range rings DIRECTLY on main canvas (static overlay, no persistence)
-        if (this.overlays.has('range_rings')) {
-            this.drawRangeRings();
-        }
+        // NOTE: Range rings removed for historical authenticity
+        // SD (Situation Display) consoles showed computer-processed tracks from 28 radar stations.
+        // Range rings belong on PPI (Plan Position Indicator) displays at actual radar stations,
+        // not on Direction Center SD consoles where "range from where?" is ambiguous.
         
         // Draw network stations overlay (Priority 6) if available
         if (this.networkStations && Array.isArray(this.networkStations) && this.networkStations.length > 0) {
@@ -216,6 +216,12 @@ class CRTRadarScope {
         this.animationId = requestAnimationFrame(() => this.render());
     }
     
+    // HISTORICAL NOTE: Range rings removed for authenticity
+    // IBM DSP 1 Figure 9.2 shows NO range rings on SAGE SD consoles.
+    // Range rings appear on PPI radar displays (rotating sweep) at radar stations.
+    // SD consoles showed processed tracks from 28 radars - "range from where?" is meaningless.
+    // Geographic reference provided by coastlines instead.
+    /*
     drawRangeRings() {
         const rings = [50, 100, 150, 200, 250, 300, 350];
         
@@ -229,6 +235,7 @@ class CRTRadarScope {
             this.ctx.stroke();
         });
     }
+    */
     
     addSweepToPersistence() {
         // Add sweep trail to persistence layer (will fade over time)
