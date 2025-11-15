@@ -273,128 +273,131 @@ def network_legend_panel() -> rx.Component:
 NETWORK_RENDERING_SCRIPT = """
 // Network station rendering for SAGE radar scope
 // Extends crt_radar.js with station overlay capability
-// Install methods on CRTRadarScope prototype so they're available for all instances
 
 (function() {
-    // Wait for CRTRadarScope to be defined
+    // Wait for CRTRadarScope to be defined, then install network rendering methods
     function installNetworkRendering() {
         if (typeof window.CRTRadarScope === 'undefined') {
             setTimeout(installNetworkRendering, 50);
             return;
         }
         
-        // Add rendering method to prototype
-        window.CRTRadarScope.prototype.renderNetworkStations = function(stations) {
-        if (!this.canvas || !this.ctx) return;
+        // Helper: Get visual style for station type
+        window.CRTRadarScope.prototype.getStationStyle = function(stationType) {
+            const styles = {
+                'DEW': { color: '#00ffff', symbol: '△', size: 10 },
+                'MID_CANADA': { color: '#ffaa00', symbol: '◇', size: 10 },
+                'PINETREE': { color: '#00ff00', symbol: '▽', size: 10 },
+                'GAP_FILLER': { color: '#ffff00', symbol: '○', size: 8 },
+                'GCI': { color: '#ff00ff', symbol: '⬟', size: 14 }
+            };
+            return styles[stationType] || styles['GAP_FILLER'];
+        };
         
-        const ctx = this.ctx;
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+        // Helper: Calculate distance between two stations
+        window.CRTRadarScope.prototype.stationDistance = function(s1, s2) {
+            const dx = s2.x - s1.x;
+            const dy = s2.y - s1.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        };
         
-        stations.forEach(station => {
-            const x = station.x * width;
-            const y = station.y * height;
-            const style = this.getStationStyle(station.station_type);
+        // Helper: Find nearest GCI station for data routing lines
+        window.CRTRadarScope.prototype.findNearestGCI = function(station, allStations) {
+            const gciStations = allStations.filter(s => s.station_type === 'GCI' && s.status === 'operational');
+            if (gciStations.length === 0) return null;
             
-            // Draw coverage radius (semi-transparent circle)
-            if (station.status === 'operational' || station.status === 'degraded') {
-                ctx.save();
-                ctx.strokeStyle = style.color;
-                ctx.globalAlpha = station.status === 'operational' ? 0.2 : 0.1;
-                ctx.lineWidth = 1;
-                
-                // Convert coverage radius (miles) to pixels
-                // Assuming scope shows ~600 mile range
-                const radiusPixels = (station.coverage_radius / 600) * (Math.min(width, height) / 2);
-                
-                ctx.beginPath();
-                ctx.arc(x, y, radiusPixels, 0, Math.PI * 2);
-                ctx.stroke();
-                ctx.restore();
-            }
+            let nearest = gciStations[0];
+            let minDist = this.stationDistance(station, nearest);
             
-            // Draw station marker
-            ctx.save();
-            ctx.fillStyle = style.color;
-            ctx.font = `${style.size}px monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // Status indication
-            if (station.status === 'offline') {
-                ctx.globalAlpha = 0.3;
-            } else if (station.status === 'degraded') {
-                ctx.globalAlpha = 0.6;
-            }
-            
-            ctx.fillText(style.symbol, x, y);
-            
-            // Small label below station
-            ctx.font = '8px monospace';
-            ctx.fillText(station.name.substring(0, 8), x, y + 12);
-            
-            ctx.restore();
-            
-            // Connection line to GCI (if station is operational)
-            if (station.status === 'operational' && station.station_type !== 'GCI') {
-                // Draw line to nearest GCI station
-                const gciStation = this.findNearestGCI(station, stations);
-                if (gciStation) {
-                    ctx.save();
-                    ctx.strokeStyle = style.color;
-                    ctx.globalAlpha = 0.15;
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([2, 4]);
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(gciStation.x * width, gciStation.y * height);
-                    ctx.stroke();
-                    
-                    ctx.restore();
+            for (let i = 1; i < gciStations.length; i++) {
+                const dist = this.stationDistance(station, gciStations[i]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = gciStations[i];
                 }
             }
-        });
-    };
-    
-    window.CRTRadarScope.prototype.getStationStyle = function(stationType) {
-        const styles = {
-            'DEW': { color: '#00ffff', symbol: '△', size: 10 },
-            'MID_CANADA': { color: '#ffaa00', symbol: '◇', size: 10 },
-            'PINETREE': { color: '#00ff00', symbol: '▽', size: 10 },
-            'GAP_FILLER': { color: '#ffff00', symbol: '○', size: 8 },
-            'GCI': { color: '#ff00ff', symbol: '⬟', size: 14 }
+            
+            return nearest;
         };
-        return styles[stationType] || styles['GAP_FILLER'];
-    };
-    
-    window.CRTRadarScope.prototype.findNearestGCI = function(station, allStations) {
-        const gciStations = allStations.filter(s => s.station_type === 'GCI' && s.status === 'operational');
-        if (gciStations.length === 0) return null;
         
-        let nearest = gciStations[0];
-        let minDist = this.distance(station, nearest);
+        // Main rendering method
+        window.CRTRadarScope.prototype.renderNetworkStations = function(stations) {
+            if (!this.canvas || !this.ctx || !stations) return;
+            
+            const ctx = this.ctx;
+            const width = this.canvas.width;
+            const height = this.canvas.height;
+            
+            stations.forEach(station => {
+                const x = station.x * width;
+                const y = station.y * height;
+                const style = this.getStationStyle(station.station_type);
+                
+                // Draw coverage radius (semi-transparent circle)
+                if (station.status === 'operational' || station.status === 'degraded') {
+                    ctx.save();
+                    ctx.strokeStyle = style.color;
+                    ctx.globalAlpha = station.status === 'operational' ? 0.2 : 0.1;
+                    ctx.lineWidth = 1;
+                    
+                    // Convert coverage radius (miles) to pixels
+                    // Assuming scope shows ~600 mile range
+                    const radiusPixels = (station.coverage_radius / 600) * (Math.min(width, height) / 2);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, radiusPixels, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                // Draw station marker
+                ctx.save();
+                ctx.fillStyle = style.color;
+                ctx.font = `${style.size}px monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                // Status indication
+                if (station.status === 'offline') {
+                    ctx.globalAlpha = 0.3;
+                } else if (station.status === 'degraded') {
+                    ctx.globalAlpha = 0.6;
+                }
+                
+                ctx.fillText(style.symbol, x, y);
+                
+                // Small label below station
+                ctx.font = '8px monospace';
+                ctx.fillText(station.name.substring(0, 8), x, y + 12);
+                
+                ctx.restore();
+                
+                // Connection line to GCI (if station is operational)
+                if (station.status === 'operational' && station.station_type !== 'GCI') {
+                    // Draw line to nearest GCI station
+                    const gciStation = this.findNearestGCI(station, stations);
+                    if (gciStation) {
+                        ctx.save();
+                        ctx.strokeStyle = style.color;
+                        ctx.globalAlpha = 0.15;
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([2, 4]);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(gciStation.x * width, gciStation.y * height);
+                        ctx.stroke();
+                        
+                        ctx.restore();
+                    }
+                }
+            });
+        };
         
-        for (let i = 1; i < gciStations.length; i++) {
-            const dist = this.distance(station, gciStations[i]);
-            if (dist < minDist) {
-                minDist = dist;
-                nearest = gciStations[i];
-            }
-        }
-        
-        return nearest;
-    };
-    
-    window.CRTRadarScope.prototype.distance = function(s1, s2) {
-        const dx = s2.x - s1.x;
-        const dy = s2.y - s1.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    };
-    
-        console.log('[SAGE Network] Station rendering system initialized');
+        console.log('[SAGE Network] Station rendering methods installed on CRTRadarScope.prototype');
     }
     
+    // Install immediately or wait for CRTRadarScope to be defined
     installNetworkRendering();
 })();
 """
