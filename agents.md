@@ -399,6 +399,7 @@ Current roadmap priorities:
 - ✅ Priority 4: Scenario Debrief System (COMPLETE – 7 scenarios with performance tracking)
 - ✅ Priority 5: Sound Effects & Audio Feedback (COMPLETE)
 - ✅ Priority 6: Network & Station View (COMPLETE)
+- ✅ Priority 7: Dynamic Scenario Events (COMPLETE – 8 event types, system messages panel with reactive UI)
 
 When implementing new features:
 1. Update `sim/models.py` for core domain models.

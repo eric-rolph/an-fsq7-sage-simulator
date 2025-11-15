@@ -1,6 +1,45 @@
-# Priority 4 Completion Report: Scenario Debrief System
+# SAGE Simulator - Completion Status
 
-**Status:** ✅ COMPLETE  
+**Last Updated:** November 15, 2025  
+**Status:** ✅ ALL PRIORITIES COMPLETE (1-7)
+
+---
+
+## Priority 7: Dynamic Scenario Events & System Messages ✅
+
+**Status:** COMPLETE  
+**Completion Date:** November 15, 2025  
+**Commits:** d037caa, eccca94, 92af5f9, 3577f52, 0b6095b
+
+### Implementation Summary
+
+**Event System** (`sim/scenario_events.py` - 484 lines):
+- 8 event types: SPAWN_TRACK, COURSE_CHANGE, THREAT_ESCALATION, EQUIPMENT_FAILURE, SYSTEM_MESSAGE, WAVE_SPAWN, CONDITIONAL_EVENT, PERIODIC_EVENT
+- EventTimeline class with check_and_trigger() for timed events
+- Factory functions for easy event creation
+- Integration with all 7 scenarios
+
+**System Messages Panel** (`components_v2/system_messages.py` - 363 lines):
+- Reactive UI with rx.foreach(), rx.cond(), Var.length()
+- Scrollable message log (250px height) with entry count badge
+- Message formatting: timestamps, icons, category badges, details
+- Footer with last update time and auto-scroll indicator
+- CLEAR LOG button integration
+
+**Verified Functionality:**
+- All 4 Scenario 5 events trigger correctly and display in panel:
+  - "IFF AMBIGUOUS - Manual correlation required" (CORRELATION category)
+  - "IFF RESPONSE: TGT-5002 transmitting friendly codes" (IFF category)
+  - "TGT-5003 AGGRESSIVE MANEUVER" (TRACK category)
+  - "TGT-5004 RADIO CONTACT" (COMMS category)
+- Badge counter updates reactively (11 → 17 entries)
+- Complete end-to-end event pipeline functional
+
+---
+
+## Priority 4: Scenario Debrief System ✅
+
+**Status:** COMPLETE  
 **Completion Date:** November 14, 2025  
 **Commits:** 3fbc807, 0f95d24, e0367a8
 
