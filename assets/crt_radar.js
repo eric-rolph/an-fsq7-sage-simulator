@@ -41,11 +41,11 @@ class CRTRadarScope {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         
-        // P7 Phosphor colors (inspired by real CRT phosphor)
-        // P7 has two components: fast blue decay + slow green persistence
-        this.phosphorFast = 'rgba(100, 150, 255, 0.9)';  // Blue, fast decay
-        this.phosphorSlow = 'rgba(0, 255, 100, 0.8)';    // Green, slow persistence
-        this.phosphorPersistence = 'rgba(0, 255, 100, 0.3)'; // Fading trail
+        // P14 Phosphor (historically accurate SAGE situation display)
+        // Purple flash when electron beam hits, orange afterglow for 2-3 seconds
+        this.phosphorFast = 'rgba(180, 100, 255, 0.9)';      // Purple flash (fast decay ~100ms)
+        this.phosphorSlow = 'rgba(255, 180, 100, 0.8)';      // Orange afterglow (slow persistence)
+        this.phosphorPersistence = 'rgba(255, 180, 100, 0.4)'; // Fading orange trail
         
         // Persistence layer for phosphor trails
         this.persistenceCanvas = document.createElement('canvas');
@@ -64,15 +64,15 @@ class CRTRadarScope {
         this.centerY = this.height / 2;
         
         // Phosphor persistence decay alpha (how much to fade each frame)
-        // P7 phosphor has ~1-2 second visible persistence
-        // At 60fps, need ~0.01-0.015 for proper decay rate
-        this.persistenceDecay = 0.012;  // Gives ~1.5 second trails
+        // P14 phosphor has ~2-3 second visible persistence (orange afterglow)
+        // At 60fps, need ~0.008-0.010 for proper P14 decay rate
+        this.persistenceDecay = 0.009;  // Gives ~2.5 second trails (matches 2.5s refresh)
         
         // Animation
         this.lastFrameTime = Date.now();
         this.sweepSpeed = 6.0; // degrees per second
         
-        console.log('[CRT] Initialized with P7 phosphor simulation');
+        console.log('[CRT] Initialized with P14 phosphor simulation (purple flash + orange afterglow)');
         console.log('[CRT] Persistence decay:', this.persistenceDecay);
         console.log('[CRT] Overlays:', Array.from(this.overlays));
         
@@ -255,6 +255,7 @@ class CRTRadarScope {
     
     drawTracksOnPersistence() {
         // Draw tracks to persistence layer (will fade over time)
+        // SAGE authentic: Monochrome P14 phosphor, symbol SHAPES indicate track type
         if (!this.tracks || !Array.isArray(this.tracks)) {
             return;
         }
@@ -262,23 +263,54 @@ class CRTRadarScope {
             const x = this.centerX + track.x;
             const y = this.centerY + track.y;
             
-            // Color based on correlation state
-            let trackColor = this.phosphorSlow;  // Default green
+            // Monochrome P14 orange phosphor (all tracks same color)
+            this.persistenceCtx.strokeStyle = this.phosphorSlow;
+            this.persistenceCtx.fillStyle = this.phosphorSlow;
+            this.persistenceCtx.lineWidth = 2;
+            
+            // Correlation state: dashed outline for uncorrelated
             if (track.correlation_state === 'uncorrelated') {
-                trackColor = 'rgba(255, 255, 0, 0.8)';  // Yellow for uncorrelated
-            } else if (track.correlation_state === 'correlating') {
-                trackColor = 'rgba(255, 165, 0, 0.8)';  // Orange for correlating
+                this.persistenceCtx.setLineDash([3, 3]);
+            } else {
+                this.persistenceCtx.setLineDash([]);
             }
             
-            // Add to persistence layer
-            this.persistenceCtx.fillStyle = trackColor;
-            this.persistenceCtx.beginPath();
-            this.persistenceCtx.arc(x, y, 4, 0, Math.PI * 2);
-            this.persistenceCtx.fill();
+            // Track type determines SYMBOL SHAPE (not color)
+            // Based on historical SAGE symbology
+            const trackType = track.track_type || 'unknown';
             
-            // Add question mark symbol for uncorrelated tracks
+            if (trackType === 'friendly') {
+                // Circle for friendly
+                this.persistenceCtx.beginPath();
+                this.persistenceCtx.arc(x, y, 6, 0, Math.PI * 2);
+                this.persistenceCtx.stroke();
+            } else if (trackType === 'hostile' || trackType === 'bomber' || trackType === 'fighter') {
+                // Square for hostile
+                this.persistenceCtx.strokeRect(x - 6, y - 6, 12, 12);
+            } else if (trackType === 'missile') {
+                // Triangle pointing up for missile
+                this.persistenceCtx.beginPath();
+                this.persistenceCtx.moveTo(x, y - 8);
+                this.persistenceCtx.lineTo(x + 7, y + 6);
+                this.persistenceCtx.lineTo(x - 7, y + 6);
+                this.persistenceCtx.closePath();
+                this.persistenceCtx.stroke();
+            } else {
+                // Diamond for unknown
+                this.persistenceCtx.beginPath();
+                this.persistenceCtx.moveTo(x, y - 8);
+                this.persistenceCtx.lineTo(x + 8, y);
+                this.persistenceCtx.lineTo(x, y + 8);
+                this.persistenceCtx.lineTo(x - 8, y);
+                this.persistenceCtx.closePath();
+                this.persistenceCtx.stroke();
+            }
+            
+            // Reset line dash
+            this.persistenceCtx.setLineDash([]);
+            
+            // Question mark for uncorrelated tracks
             if (track.correlation_state === 'uncorrelated') {
-                this.persistenceCtx.fillStyle = 'rgba(255, 255, 0, 1.0)';
                 this.persistenceCtx.font = '14px "Courier New", monospace';
                 this.persistenceCtx.textAlign = 'center';
                 this.persistenceCtx.textBaseline = 'middle';
@@ -289,6 +321,7 @@ class CRTRadarScope {
     
     drawTracksBright() {
         // Draw bright track markers on top (doesn't persist)
+        // P14 phosphor: purple flash on impact, all tracks monochrome
         if (!this.tracks || !Array.isArray(this.tracks)) {
             return;
         }
@@ -296,23 +329,14 @@ class CRTRadarScope {
             const x = this.centerX + track.x;
             const y = this.centerY + track.y;
             
-            // Color based on correlation state
-            let brightColor = this.phosphorFast;  // Default blue-white
-            let shadowColor = this.phosphorSlow;  // Default green glow
+            // Monochrome P14 phosphor: purple flash for all tracks
+            const brightColor = this.phosphorFast;   // Purple flash
+            const shadowColor = this.phosphorSlow;   // Orange glow
             
-            if (track.correlation_state === 'uncorrelated') {
-                brightColor = 'rgba(255, 255, 0, 1.0)';  // Yellow bright
-                shadowColor = 'rgba(255, 255, 0, 0.8)';  // Yellow glow
-            } else if (track.correlation_state === 'correlating') {
-                brightColor = 'rgba(255, 200, 0, 1.0)';  // Orange bright
-                shadowColor = 'rgba(255, 165, 0, 0.8)';  // Orange glow
-            }
-            
-            // Draw bright spot with glow
+            // Draw bright center spot with P14 phosphor glow
             this.ctx.fillStyle = brightColor;
             this.ctx.shadowColor = shadowColor;
             this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = this.phosphorSlow;
             this.ctx.beginPath();
             this.ctx.arc(x, y, 3, 0, Math.PI * 2);
             this.ctx.fill();

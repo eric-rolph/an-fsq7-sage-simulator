@@ -532,15 +532,31 @@ def radar_update_script(tracks_json: str, overlays_json: str, geo_json: str) -> 
 # CSS for radar scope container
 RADAR_SCOPE_CSS = """
 <style>
+/* Blue room ambient lighting (SAGE authentic environment) */
 #radar-scope-canvas {
     image-rendering: crisp-edges;
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-crisp-edges;
     cursor: crosshair;
+    /* P14 phosphor orange glow on hover */
+    box-shadow: 0 0 15px rgba(255, 180, 100, 0.2);
 }
 
 #radar-scope-canvas:hover {
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+    /* Enhanced P14 orange glow on hover */
+    box-shadow: 0 0 25px rgba(255, 180, 100, 0.4);
+}
+
+/* Blue room indirect lighting simulation */
+body {
+    background: radial-gradient(circle at center, 
+        rgba(30, 50, 100, 0.15), 
+        rgba(10, 20, 50, 0.3));
+}
+
+/* Blue ambient glow on control panels */
+.rx-Box, .rx-Flex {
+    box-shadow: 0 0 10px rgba(80, 120, 200, 0.1);
 }
 
 /* Crosshair cursor when light gun armed */

@@ -145,20 +145,22 @@ For deep-dive system transparency (press **Shift+I** to toggle):
 - **Educational Value**: Understand SAGE's drum-buffered I/O and polling architecture
 - Designed for CS students (Ada persona) exploring system architecture
 
-### 🎨 Vector CRT Radar Scope
-Long-persistence P7 phosphor screen simulation:
-- **Rotating sweep**: 60-second rotation (6°/sec) with phosphor persistence decay
-- **Monochrome green phosphor** (P7-style): Blue-white flash + slow green persistence (historically accurate)
-- **Track correlation states** (color coding for educational clarity - real SAGE used symbols only):
-  - 🟡 Yellow: Uncorrelated tracks (with "?" symbol)
-  - 🟠 Orange: Correlating (analysis in progress)
-  - 🟢 Green: Correlated (classified)
-- **Phosphor persistence trails**: ~1.5 second fade simulating P7 CRT decay characteristics
-- **Canvas shadow glow**: Phosphor bloom effects around bright targets
-- **Geographic rendering**: Coastlines, cities, range rings with toggle control
-- **Precise click detection**: Light gun target selection via canvas coordinate mapping
-- **Pan/Zoom controls**: Smooth view manipulation for detailed inspection
-- **60 FPS rendering**: Canvas 2D API with dual-layer persistence buffering
+### 🎨 Authentic P14 Phosphor Situation Display
+Faithful simulation of the SAGE 19" situation display console:
+- **P14 Phosphor CRT** (historically accurate): Purple flash → orange afterglow (2-3 second persistence)
+- **Monochrome Symbology**: Track types differentiated by **symbol shapes**, not colors
+  - ⬤ Circle: Friendly aircraft
+  - ⬛ Square: Hostile aircraft (bombers, fighters)
+  - ◆ Diamond: Unknown tracks
+  - ▲ Triangle: Missiles
+  - Dashed outlines: Uncorrelated tracks (with "?" indicator)
+- **Blue Room Environment**: Dim blue ambient lighting (simulates indirect lighting to prevent phosphor glare)
+- **Computer-Driven Display**: Tracks rendered with authentic monochrome vector symbology
+- **Phosphor Persistence**: ~2.5 second orange afterglow matches SAGE 2.5s display refresh cycles
+- **Geographic Overlays**: Coastlines, range rings, cities (vector rendering)
+- **Light Gun Target Selection**: Precise click detection on symbol shapes
+- **Pan/Zoom Controls**: Smooth view manipulation for detailed inspection
+- **60 FPS Persistence Decay**: Canvas 2D API with dual-layer phosphor simulation
 
 ## Under the Hood: SAGE's Unusual Architecture
 

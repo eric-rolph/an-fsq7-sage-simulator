@@ -73,18 +73,27 @@ Main layout has a consistent structure:
 - **Global action controls** (e.g. ARM LIGHT GUN, LAUNCH INTERCEPT, CLEAR SELECTION) live in a consistent bottom/action region or clearly defined action bar.
 - **Do not move** the detail panel or action region to different sides/views based on state.
 
-### CRT Display
-Scope is a **vector CRT**:
-- Use **strokes** (blips, lines, arcs, polylines, vector glyphs) – not filled HUD widgets over the radar picture.
+### CRT Display (P14 Phosphor - HISTORICALLY ACCURATE)
+Scope is a **19" P14 phosphor vector CRT** (SAGE situation display):
+- **P14 Phosphor**: Purple flash → orange afterglow (2-3 second persistence)
+- **Monochrome Display**: NO color coding - all symbology uses P14 orange phosphor color
+- Use **vector strokes** (blips, lines, arcs, polylines, symbol shapes) – not filled HUD widgets
 - Visual hierarchy:
-  - **Map/coastlines/static geometry**: thin, low-intensity strokes.
-  - **Range rings/grids**: slightly brighter, but still secondary.
-  - **Tracks/selected targets**: brightest strokes; selection adds halo/outline, not a random UI chip floating over the scope.
+  - **Map/coastlines/static geometry**: thin, low-intensity strokes
+  - **Range rings/grids**: slightly brighter, but still secondary
+  - **Tracks/selected targets**: brightest strokes; selection adds halo/outline
+- **Blue Room Lighting**: Dim blue ambient glow simulates SAGE indirect lighting environment
 
-### Threat Encoding
-Threat state differences must be visible via **shape/pattern**, not color alone:
-- E.g. symbol shape (diamond vs circle vs square), solid vs dashed vs dotted strokes.
-- Color changes (friendly/hostile/unknown) are allowed as an accessibility/clarity layer, but must not be the only signal.
+### Track Symbology (HISTORICALLY ACCURATE)
+Track types differentiated by **SYMBOL SHAPE**, not color:
+- **Circle**: Friendly aircraft
+- **Square**: Hostile aircraft (bombers, fighters)
+- **Diamond**: Unknown tracks
+- **Triangle**: Missiles
+- **Dashed outline**: Uncorrelated tracks (with "?" indicator)
+- **Solid outline**: Correlated/classified tracks
+
+**CRITICAL**: All symbols render in monochrome P14 orange phosphor. Shape indicates type, NOT color.
 
 ### Agent Behavior
 - When editing components in `an_fsq7_simulator/components_v2/`, keep these invariants intact.
