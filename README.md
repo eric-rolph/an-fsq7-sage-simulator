@@ -155,6 +155,10 @@ Faithful simulation of the SAGE 19" situation display console:
   - ▲ Triangle: Missiles
   - Dashed outlines: Uncorrelated tracks (with "?" indicator)
 - **Blue Room Environment**: Dim blue ambient lighting (simulates indirect lighting to prevent phosphor glare)
+- **2.5-Second Refresh Cycle**: Computer updates display drum every 2.5 seconds (historically accurate)
+  - Phosphor persistence decays continuously at 60fps between refreshes
+  - Simulates SAGE's computer-driven display update timing
+  - Tracks remain visible via P14 orange afterglow between updates
 - **Computer-Driven Display**: Tracks rendered with authentic monochrome vector symbology
 - **Phosphor Persistence**: ~2.5 second orange afterglow matches SAGE 2.5s display refresh cycles
 - **Geographic Overlays**: Coastlines, range rings, cities (vector rendering)

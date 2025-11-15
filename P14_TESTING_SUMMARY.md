@@ -81,36 +81,55 @@ body {
 
 ---
 
-## Next Steps (Phase 3 - Optional)
+## ✅ Phase 3: 2.5-Second Computer Refresh Cycle (COMPLETE)
 
-### 2.5-Second Computer Refresh Simulation
-Currently: Tracks update continuously at 60 FPS  
-Proposed: Simulate SAGE 2.5-second display refresh cycles
+**Implementation Date:** November 14, 2025
 
+### What Changed
+Computer now updates display drum every 2.5 seconds, matching SAGE's historical refresh timing:
+- **Computer writes fresh track data** every 2.5 seconds (via `updateTrackData()`)
+- **Phosphor persistence decays continuously** at 60fps between refreshes
+- **Tracks remain visible** via P14 orange afterglow (2-3 second persistence matches refresh interval)
+- **Toggle available**: `enableRefreshCycle` flag for A/B comparison (authentic vs continuous mode)
+
+### Code Implementation
 ```javascript
-// Simulate computer-driven display updates
+// SAGE 2.5-second computer refresh cycle
 this.lastComputerRefresh = Date.now();
-this.refreshInterval = 2500; // milliseconds
+this.refreshInterval = 2500; // milliseconds (historically accurate)
+this.enableRefreshCycle = true;
 
 render() {
-    const now = Date.now();
-    const timeSinceRefresh = now - this.lastComputerRefresh;
+    const shouldRefresh = this.enableRefreshCycle 
+        ? (timeSinceRefresh >= this.refreshInterval)
+        : true; // Continuous mode
     
-    // Phosphor decay continues at 60fps
-    this.applyPhosphorDecay();
-    
-    // Computer refreshes display every 2.5 seconds
-    if (timeSinceRefresh >= this.refreshInterval) {
-        this.updateTrackData();
-        this.redrawAllTracks();
+    if (shouldRefresh) {
+        this.updateTrackData();           // Fetch from window.__SAGE_*
+        this.addSweepToPersistence();
+        this.drawTracksOnPersistence();
         this.lastComputerRefresh = now;
+    } else {
+        // Between refreshes: only sweep, tracks persist via phosphor
+        this.addSweepToPersistence();
     }
-    
-    requestAnimationFrame(() => this.render());
 }
 ```
 
-**Trade-off:** May feel less responsive to users expecting real-time updates
+### Historical Accuracy
+- ✅ Matches Ullman dissertation description: "2.5-second refresh cycles"
+- ✅ P14 phosphor persistence (~2.5s) perfectly aligned with refresh interval
+- ✅ Simulates computer writing to display drum, not continuous streaming
+
+### User Experience
+- **Authentic feel**: Tracks "snap" into position every 2.5 seconds (like real SAGE)
+- **Smooth phosphor decay**: Persistence layer decays at 60fps for smooth visual fading
+- **No loss of data**: Tracks remain visible via afterglow between computer updates
+- **Optional modern mode**: Can disable refresh cycle for continuous updates if needed
+
+---
+
+## Next Steps (Phase 4 - Optional)
 
 ### Enhanced Character Stencil Rendering
 Simulate SAGE character matrix (64-character stencil):
@@ -122,6 +141,8 @@ function drawStencilChar(ctx, char, x, y) {
     ctx.fillText(char, x, y);   // Then fill
 }
 ```
+
+**Status:** Optional polish, not required for historical accuracy
 
 ---
 

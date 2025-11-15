@@ -76,6 +76,11 @@ Main layout has a consistent structure:
 ### CRT Display (P14 Phosphor - HISTORICALLY ACCURATE)
 Scope is a **19" P14 phosphor vector CRT** (SAGE situation display):
 - **P14 Phosphor**: Purple flash → orange afterglow (2-3 second persistence)
+- **2.5-Second Refresh Cycle**: Computer updates display drum every 2.5 seconds (historically accurate)
+  - Phosphor persistence decays continuously at 60fps between computer refreshes
+  - Tracks remain visible via P14 orange afterglow during 2.5s intervals
+  - Simulates SAGE's drum-buffered display update timing
+  - **Toggle available**: `enableRefreshCycle` flag in crt_radar.js for A/B comparison
 - **Monochrome Display**: NO color coding - all symbology uses P14 orange phosphor color
 - Use **vector strokes** (blips, lines, arcs, polylines, symbol shapes) – not filled HUD widgets
 - Visual hierarchy:
@@ -102,7 +107,7 @@ Track types differentiated by **SYMBOL SHAPE**, not color:
 
 ## JavaScript Integration
 
-**Data Flow**: Python → JSON → window global → JS polls every 100ms
+**Data Flow**: Python → JSON → window global → JS reads on refresh cycle
 
 ```python
 def get_data_json(self) -> str:
@@ -115,8 +120,67 @@ def data_script_tag(self) -> str:
     return f"<script>window.__SAGE_DATA__ = {self.get_data_json()};</script>"
 ```
 
+### CRT Render Loop (CRITICAL - DO NOT BREAK)
+
+**2.5-Second Refresh Cycle Implementation** (`assets/crt_radar.js`):
+
 ```javascript
-// JavaScript polls window globals
+// SAGE 2.5-second computer refresh cycle (Phase 3 - Priority 7)
+this.lastComputerRefresh = Date.now();
+this.refreshInterval = 2500; // milliseconds (historically accurate)
+this.enableRefreshCycle = true; // Toggle for A/B comparison
+
+render() {
+    const now = Date.now();
+    const timeSinceRefresh = now - this.lastComputerRefresh;
+    
+    // Phosphor decay continues at 60fps (ALWAYS)
+    this.applyPhosphorDecay();
+    
+    // Computer refreshes display every 2.5 seconds
+    const shouldRefresh = this.enableRefreshCycle 
+        ? (timeSinceRefresh >= this.refreshInterval)
+        : true; // Continuous mode for comparison
+    
+    if (shouldRefresh) {
+        this.updateTrackData();           // Fetch from window.__SAGE_*
+        this.addSweepToPersistence();     // Write sweep to persistence layer
+        this.drawTracksOnPersistence();   // Write tracks to persistence layer
+        
+        if (this.enableRefreshCycle) {
+            this.lastComputerRefresh = now;
+        }
+    } else {
+        // Between refreshes: only sweep, tracks persist via phosphor
+        this.addSweepToPersistence();
+    }
+    
+    // Composite persistence to main canvas (phosphor glow)
+    this.ctx.drawImage(this.persistenceCanvas, 0, 0);
+    
+    requestAnimationFrame(() => this.render());
+}
+
+updateTrackData() {
+    // Fetch fresh data from window globals (simulates computer reading drum)
+    if (window.__SAGE_TRACKS__) this.tracks = window.__SAGE_TRACKS__;
+    if (window.__SAGE_INTERCEPTORS__) this.interceptors = window.__SAGE_INTERCEPTORS__;
+    if (window.__SAGE_OVERLAYS__) this.overlays = new Set(window.__SAGE_OVERLAYS__);
+    if (window.__SAGE_GEO_DATA__) this.geoData = window.__SAGE_GEO_DATA__;
+    if (window.__SAGE_NETWORK_STATIONS__) this.networkStations = window.__SAGE_NETWORK_STATIONS__;
+}
+```
+
+**Key Points**:
+- **Phosphor decay runs at 60fps** - smooth fading between computer updates
+- **Track data updates every 2.5s** - matches SAGE display drum refresh timing
+- **Tracks remain visible** via P14 orange afterglow persistence (2-3 seconds)
+- **DO NOT** change `drawTracksOnPersistence()` to run every frame - breaks historical accuracy
+- **DO NOT** remove `updateTrackData()` method - required for refresh cycle
+- **DO NOT** change `refreshInterval` without documenting historical justification
+
+```javascript
+// Legacy polling pattern (for reference, not used with refresh cycle)
 setInterval(() => {
   if (window.__SAGE_DATA__) {
     scope.updateData(window.__SAGE_DATA__);

@@ -68,12 +68,18 @@ class CRTRadarScope {
         // At 60fps, need ~0.008-0.010 for proper P14 decay rate
         this.persistenceDecay = 0.009;  // Gives ~2.5 second trails (matches 2.5s refresh)
         
+        // SAGE 2.5-second computer refresh cycle (Priority 7 - Phase 3)
+        this.lastComputerRefresh = Date.now();
+        this.refreshInterval = 2500; // milliseconds (historically accurate)
+        this.enableRefreshCycle = true; // Toggle for A/B comparison
+        
         // Animation
         this.lastFrameTime = Date.now();
         this.sweepSpeed = 6.0; // degrees per second
         
         console.log('[CRT] Initialized with P14 phosphor simulation (purple flash + orange afterglow)');
         console.log('[CRT] Persistence decay:', this.persistenceDecay);
+        console.log('[CRT] Computer refresh cycle:', this.enableRefreshCycle ? '2.5 seconds (authentic)' : 'continuous (modern)');
         console.log('[CRT] Overlays:', Array.from(this.overlays));
         
         // Light gun click handler
@@ -151,16 +157,35 @@ class CRTRadarScope {
         // Update sweep angle
         this.sweepAngle = (this.sweepAngle + this.sweepSpeed * dt) % 360;
         
-        // Apply phosphor persistence decay to fade old content
+        // Apply phosphor persistence decay to fade old content (always at 60fps)
         this.persistenceCtx.globalCompositeOperation = 'source-over';
         this.persistenceCtx.fillStyle = `rgba(0, 0, 0, ${this.persistenceDecay})`;
         this.persistenceCtx.fillRect(0, 0, this.width, this.height);
         
-        // Add sweep trail to persistence layer
-        this.addSweepToPersistence();
+        // SAGE 2.5-second computer refresh cycle (Phase 3)
+        // Computer updates display drum every 2.5 seconds, phosphor decays continuously
+        const timeSinceRefresh = now - this.lastComputerRefresh;
+        const shouldRefresh = this.enableRefreshCycle 
+            ? (timeSinceRefresh >= this.refreshInterval)
+            : true; // Always refresh if cycle disabled (modern continuous mode)
         
-        // Draw tracks to persistence layer
-        this.drawTracksOnPersistence();
+        if (shouldRefresh) {
+            // Fetch updated track data from window globals
+            this.updateTrackData();
+            
+            // Write fresh data to persistence layer (computer refresh)
+            this.addSweepToPersistence();
+            this.drawTracksOnPersistence();
+            
+            // Reset refresh timer
+            if (this.enableRefreshCycle) {
+                this.lastComputerRefresh = now;
+            }
+        } else {
+            // Between refreshes: only add sweep trail, don't redraw tracks
+            // This simulates phosphor persistence while waiting for next computer update
+            this.addSweepToPersistence();
+        }
         
         // Now composite everything to main display canvas
         this.ctx.fillStyle = '#000';
@@ -416,6 +441,25 @@ class CRTRadarScope {
                 this.ctx.fillText(interceptor.id, x + 12, y);
             }
         });
+    }
+    
+    updateTrackData() {
+        // Fetch fresh data from window globals (simulates computer reading display drum)
+        if (window.__SAGE_TRACKS__) {
+            this.tracks = window.__SAGE_TRACKS__;
+        }
+        if (window.__SAGE_INTERCEPTORS__) {
+            this.interceptors = window.__SAGE_INTERCEPTORS__;
+        }
+        if (window.__SAGE_OVERLAYS__) {
+            this.overlays = new Set(window.__SAGE_OVERLAYS__);
+        }
+        if (window.__SAGE_GEO_DATA__) {
+            this.geoData = window.__SAGE_GEO_DATA__;
+        }
+        if (window.__SAGE_NETWORK_STATIONS__) {
+            this.networkStations = window.__SAGE_NETWORK_STATIONS__;
+        }
     }
     
     updateTracks(tracks) {

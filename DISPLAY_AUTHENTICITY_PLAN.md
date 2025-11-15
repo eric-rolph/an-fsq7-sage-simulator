@@ -79,11 +79,11 @@
 
 ---
 
-## Proposed Implementation Changes
+## Implementation Status
 
-### Phase 1: P14 Phosphor Simulation
+### ✅ Phase 1: P14 Phosphor Simulation (COMPLETE)
 
-**Update `assets/crt_radar.js` phosphor colors:**
+**Updated `assets/crt_radar.js` phosphor colors:**
 
 ```javascript
 // P14 Phosphor (historically accurate)
@@ -97,7 +97,9 @@ this.phosphorPersistence = 'rgba(255, 180, 100, 0.4)'; // Fading orange trail
 - Slow orange persistence (2-3 seconds visible)
 - Matches "several seconds" from Ullman description
 
-### Phase 2: Monochrome Symbol-Based Track Differentiation
+**Status:** ✅ Committed (414deea), verified via browser console
+
+### ✅ Phase 2: Monochrome Symbol-Based Track Differentiation (COMPLETE)
 
 **Remove color coding, add symbol shapes:**
 
@@ -180,37 +182,57 @@ function drawTrackSymbol(ctx, x, y, trackType, correlationState) {
 }
 ```
 
-### Phase 4: 2.5-Second Refresh Cycle Simulation
+### ✅ Phase 3: 2.5-Second Computer Refresh Cycle (COMPLETE)
 
-**Update render loop to simulate computer-driven updates:**
+**Updated render loop to simulate computer-driven updates:**
 
 ```javascript
-// Simulate 2.5-second refresh cycles (computer updates display drum)
+// SAGE 2.5-second computer refresh cycle
 this.lastComputerRefresh = Date.now();
-this.refreshInterval = 2500; // milliseconds
+this.refreshInterval = 2500; // milliseconds (historically accurate)
+this.enableRefreshCycle = true; // Toggle for A/B comparison
 
 render() {
     const now = Date.now();
     const timeSinceRefresh = now - this.lastComputerRefresh;
     
-    // Phosphor decay continues at 60fps
+    // Phosphor decay continues at 60fps (always)
     this.applyPhosphorDecay();
     
     // Computer refreshes display every 2.5 seconds
-    if (timeSinceRefresh >= this.refreshInterval) {
-        this.updateTrackData(); // Fetch new data from window.__SAGE_*
-        this.redrawAllTracks(); // Write new data to persistence layer
-        this.lastComputerRefresh = now;
+    const shouldRefresh = this.enableRefreshCycle 
+        ? (timeSinceRefresh >= this.refreshInterval)
+        : true; // Continuous mode for comparison
+    
+    if (shouldRefresh) {
+        this.updateTrackData();           // Fetch from window.__SAGE_*
+        this.addSweepToPersistence();     // Write sweep to persistence layer
+        this.drawTracksOnPersistence();   // Write tracks to persistence layer
+        
+        if (this.enableRefreshCycle) {
+            this.lastComputerRefresh = now;
+        }
+    } else {
+        // Between refreshes: only sweep decays, tracks persist via phosphor
+        this.addSweepToPersistence();
     }
     
-    // Always composite persistence layer to main canvas (phosphor glow)
+    // Composite persistence layer to main canvas (phosphor glow)
     this.ctx.drawImage(this.persistenceCanvas, 0, 0);
     
     requestAnimationFrame(() => this.render());
 }
 ```
 
-### Phase 5: Character Matrix Simulation (Optional)
+**Key Features:**
+- Computer writes fresh track data every 2.5 seconds (matches SAGE display drum update timing)
+- Phosphor persistence decays continuously at 60fps between refreshes
+- Tracks remain visible via P14 orange afterglow (2-3 second persistence)
+- Toggle `enableRefreshCycle` to compare authentic vs continuous (modern) mode
+
+**Status:** ✅ Implemented, README updated with 2.5-second refresh documentation
+
+### Phase 4: Character Matrix Simulation (Optional)
 
 **Simulate stencil-based character rendering:**
 
