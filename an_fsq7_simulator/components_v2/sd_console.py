@@ -269,7 +269,7 @@ def off_centering_controls(state_class) -> rx.Component:
             
             # Selected sector display
             rx.text(
-                f"SECTOR {state_class.selected_sector_row + 1}-{chr(65 + state_class.selected_sector_col)} | {state_class.expansion_level}X",
+                state_class.sector_label,
                 color="#00ff00",
                 font_family="'Courier New', monospace",
                 font_weight="bold",

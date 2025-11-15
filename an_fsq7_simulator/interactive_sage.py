@@ -27,6 +27,7 @@ from . import state_model
 # Import simulation models and scenarios
 from .sim import models as sim_models
 from .sim import scenarios as sim_scenarios
+from .sim import scenario_events  # NEW: Dynamic scenario events
 
 # Import all our component modules
 from .components_v2 import (
@@ -148,6 +149,11 @@ class InteractiveSageState(rx.State):
     selected_sector_row: int = 3  # 0-6 (center = 3)
     selected_sector_col: int = 3  # 0-6 (center = 3)
     
+    # ===== SCENARIO EVENT SYSTEM STATE (Dynamic Scenarios) =====
+    _event_timeline: Optional[scenario_events.EventTimeline] = None  # Private - not serialized
+    scenario_elapsed_time: float = 0.0  # Seconds since scenario start
+    active_events_count: int = 0  # Count of events that have triggered
+    
     # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
     
@@ -196,6 +202,9 @@ class InteractiveSageState(rx.State):
                 
                 # Update system inspector metrics (Priority 3)
                 self.update_system_inspector_metrics()
+                
+                # Process scenario events (Dynamic scenario system)
+                self.process_scenario_events()
     
     async def tick_loop(self):
         """Legacy main simulation loop - replaced by simulation_tick_loop"""
@@ -505,6 +514,186 @@ class InteractiveSageState(rx.State):
         self.track_processing_rate = 12 + random.randint(-2, 2)
         self.display_processing_rate = 60  # 60 FPS
     
+    def process_scenario_events(self):
+        """
+        Process scenario event timeline - triggers dynamic events during scenarios.
+        Called every simulation tick to check for events that should fire.
+        """
+        if not self._event_timeline:
+            return
+        
+        # Check for events that should trigger
+        triggered_events = self._event_timeline.check_and_trigger(self.world_time, self)
+        
+        # Process each triggered event
+        for event in triggered_events:
+            self.handle_scenario_event(event)
+            self.active_events_count += 1
+        
+        # Update scenario elapsed time for display
+        self.scenario_elapsed_time = self._event_timeline.get_elapsed_time(self.world_time)
+    
+    def handle_scenario_event(self, event: scenario_events.ScenarioEvent):
+        """Execute a specific scenario event"""
+        import math
+        
+        if event.event_type == scenario_events.EventType.SPAWN_TRACK:
+            # Spawn new track
+            data = event.data
+            heading_rad = math.radians(data["heading"])
+            speed_scale = 0.00005
+            vx = math.cos(heading_rad) * data["speed"] * speed_scale
+            vy = math.sin(heading_rad) * data["speed"] * speed_scale
+            
+            new_track = state_model.Track(
+                id=data["track_id"],
+                x=data["x"],
+                y=data["y"],
+                vx=vx,
+                vy=vy,
+                altitude=data["altitude"],
+                speed=int(data["speed"]),
+                heading=int(data["heading"]),
+                track_type=data["track_type"].lower(),
+                threat_level=data["threat_level"],
+                time_detected=self.world_time / 1000.0
+            )
+            self.tracks.append(new_track)
+            
+            # System message if provided
+            if data.get("message"):
+                self.system_messages_log.append(
+                    system_messages.SystemMessage(
+                        timestamp=datetime.now().strftime("%H:%M:%S"),
+                        category="DETECTION",
+                        message=data["message"]
+                    )
+                )
+        
+        elif event.event_type == scenario_events.EventType.COURSE_CHANGE:
+            # Change existing track course
+            data = event.data
+            track = next((t for t in self.tracks if t.id == data["track_id"]), None)
+            if track:
+                if data.get("new_heading") is not None:
+                    heading_rad = math.radians(data["new_heading"])
+                    speed_scale = 0.00005
+                    speed = data.get("new_speed", track.speed)
+                    track.vx = math.cos(heading_rad) * speed * speed_scale
+                    track.vy = math.sin(heading_rad) * speed * speed_scale
+                    track.heading = int(data["new_heading"])
+                
+                if data.get("new_speed") is not None:
+                    track.speed = int(data["new_speed"])
+                    # Recalculate velocity with new speed
+                    heading_rad = math.radians(track.heading)
+                    speed_scale = 0.00005
+                    track.vx = math.cos(heading_rad) * track.speed * speed_scale
+                    track.vy = math.sin(heading_rad) * track.speed * speed_scale
+                
+                if data.get("message"):
+                    self.system_messages_log.append(
+                        system_messages.SystemMessage(
+                            timestamp=datetime.now().strftime("%H:%M:%S"),
+                            category="TRACK",
+                            message=data["message"]
+                        )
+                    )
+        
+        elif event.event_type == scenario_events.EventType.THREAT_ESCALATION:
+            # Escalate threat level
+            data = event.data
+            track = next((t for t in self.tracks if t.id == data["track_id"]), None)
+            if track:
+                track.threat_level = data["new_threat_level"]
+                
+                if data.get("message"):
+                    self.system_messages_log.append(
+                        system_messages.SystemMessage(
+                            timestamp=datetime.now().strftime("%H:%M:%S"),
+                            category="WARNING",
+                            message=data["message"]
+                        )
+                    )
+        
+        elif event.event_type == scenario_events.EventType.EQUIPMENT_FAILURE:
+            # Trigger tube failures
+            data = event.data
+            tube_ids = data.get("tube_ids")
+            count = data.get("count", 1)
+            
+            if tube_ids:
+                # Specific tubes
+                for tube_id in tube_ids:
+                    if 0 <= tube_id < len(self.maintenance.tubes):
+                        tube = self.maintenance.tubes[tube_id]
+                        tube.status = "degrading"
+                        tube.health = 50
+            else:
+                # Random tubes
+                import random
+                healthy_tubes = [t for t in self.maintenance.tubes if t.status == "ok"]
+                for _ in range(min(count, len(healthy_tubes))):
+                    if healthy_tubes:
+                        tube = random.choice(healthy_tubes)
+                        tube.status = "degrading"
+                        tube.health = 50
+                        healthy_tubes.remove(tube)
+            
+            if data.get("message"):
+                self.system_messages_log.append(
+                    system_messages.SystemMessage(
+                        timestamp=datetime.now().strftime("%H:%M:%S"),
+                        category="MAINTENANCE",
+                        message=data["message"]
+                    )
+                )
+        
+        elif event.event_type == scenario_events.EventType.SYSTEM_MESSAGE:
+            # Display system message
+            data = event.data
+            self.system_messages_log.append(
+                system_messages.SystemMessage(
+                    timestamp=datetime.now().strftime("%H:%M:%S"),
+                    category=data.get("category", "SYSTEM"),
+                    message=data["message"],
+                    details=data.get("details")
+                )
+            )
+        
+        elif event.event_type == scenario_events.EventType.WAVE_SPAWN:
+            # Spawn multiple tracks as wave
+            data = event.data
+            for track_data in data["tracks"]:
+                heading_rad = math.radians(track_data["heading"])
+                speed_scale = 0.00005
+                vx = math.cos(heading_rad) * track_data["speed"] * speed_scale
+                vy = math.sin(heading_rad) * track_data["speed"] * speed_scale
+                
+                new_track = state_model.Track(
+                    id=track_data["track_id"],
+                    x=track_data["x"],
+                    y=track_data["y"],
+                    vx=vx,
+                    vy=vy,
+                    altitude=track_data["altitude"],
+                    speed=int(track_data["speed"]),
+                    heading=int(track_data["heading"]),
+                    track_type=track_data["track_type"].lower(),
+                    threat_level=track_data["threat_level"],
+                    time_detected=self.world_time / 1000.0
+                )
+                self.tracks.append(new_track)
+            
+            if data.get("message"):
+                self.system_messages_log.append(
+                    system_messages.SystemMessage(
+                        timestamp=datetime.now().strftime("%H:%M:%S"),
+                        category="WARNING",
+                        message=data["message"]
+                    )
+                )
+    
     def load_scenario(self, scenario_name: str):
         """Load a scenario and convert RadarTarget objects to Track objects"""
         if scenario_name not in sim_scenarios.SCENARIOS:
@@ -578,6 +767,13 @@ class InteractiveSageState(rx.State):
                 weapons_remaining=2
             ),
         ]
+        
+        # Initialize scenario event timeline
+        events = scenario_events.get_events_for_scenario(scenario_name)
+        self._event_timeline = scenario_events.EventTimeline(events)
+        self._event_timeline.reset(self.world_time)
+        self.scenario_elapsed_time = 0.0
+        self.active_events_count = 0
         
         # Log scenario load
         self.system_messages_log.append(
@@ -1669,6 +1865,13 @@ class InteractiveSageState(rx.State):
             if track.id == self.classifying_track_id:
                 return track.y
         return 0.0
+    
+    @rx.var
+    def sector_label(self) -> str:
+        """Computed sector label for display (e.g., '4-D | 2X')"""
+        row_num = self.selected_sector_row + 1  # 0-6 -> 1-7
+        col_letter = chr(65 + self.selected_sector_col)  # 0-6 -> A-G
+        return f"SECTOR {row_num}-{col_letter} | {self.expansion_level}X"
 
 
 # ========================
