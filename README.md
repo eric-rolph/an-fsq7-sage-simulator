@@ -84,10 +84,19 @@ See programs run in real-time:
 - **Color-coded output**: Green for normal, yellow for results, cyan for values
 - **Scrollable trace**: Review full execution history
 
+### 🔍 System Inspector (Advanced)
+For deep-dive system transparency (press **Shift+I** to toggle):
+- **Drum Fields**: View magnetic drum storage with status bits (LRI, GFI, XTL, SDC)
+- **CPU State**: Real-time accumulator, index register, program counter, and flags
+- **Queue Inspector**: See processing bottlenecks and data flow
+- **Status Channels**: Monitor asynchronous I/O polling (OD_LRI, CD_LRI, LIGHT_GUN)
+- **Educational Value**: Understand SAGE's drum-buffered I/O and polling architecture
+- Designed for CS students (Ada persona) exploring system architecture
+
 ### 🎨 Professional WebGL Radar Scope
-Authentic phosphor screen experience:
+Long-persistence phosphor screen experience (P7-style):
 - **Rotating sweep**: 4-second rotation with phosphor fade effect
-- **Color-coded tracks**:
+- **Color-coded tracks** (modern accessibility aid - real SAGE used symbols/patterns on monochrome displays):
   - 🔴 Red: Hostile
   - 🟢 Green: Friendly  
   - 🟡 Yellow: Unknown
@@ -100,10 +109,34 @@ Authentic phosphor screen experience:
 - **Pan/Zoom**: Smooth controls for detailed inspection
 - **60 FPS rendering**: Smooth Canvas 2D API performance
 
+## Under the Hood: SAGE's Unusual Architecture
+
+The AN/FSQ-7 was fundamentally different from modern computers. This simulator models several of SAGE's unusual architectural features:
+
+### One's Complement Arithmetic
+- **Not two's complement**: Uses one's complement binary representation (two zeros: +0 and -0)
+- **Fractional values**: Numbers represented as fractions between -1.0 and +1.0
+- **Parallel processing**: Each 32-bit word contains TWO 16-bit values processed simultaneously
+- **Implicit shift quirk**: Addition automatically shifts right by one bit (programmers had to pre-compensate!)
+
+### Drum-Buffered I/O
+- **No direct I/O**: CPU never talks directly to radar, consoles, or other sites
+- **Magnetic drum intermediary**: All external data written to dedicated drum fields (LRI for radar, GFI for ground radar, XTL for cross-tell)
+- **Status channel polling**: CPU continuously polls status bits to detect when new data arrives
+- **Asynchronous operation**: Input systems write to drum independently while CPU runs
+
+### Light Gun Polling
+- **Not mouse coordinates**: Light gun used a photomultiplier tube that detected the CRT electron beam
+- **Sequential detection**: CPU draws each target, then polls a flip-flop bit to see if the gun "flashed"
+- **Timing-based**: Selected target identified by which draw operation triggered the photomultiplier
+- **Polling required**: CPU must check status after EVERY draw operation
+
+These architectural quirks made SAGE programming challenging but enabled real-time operation with 1950s technology. For technical details, see [`docs/HIGH_FIDELITY_EMULATION.md`](docs/HIGH_FIDELITY_EMULATION.md).
+
 ## Classic Features
 
-### 🖥️ Authentic CRT Display
-- Vintage phosphor glow effects with decay
+### 🖥️ Long-Persistence CRT Display (P7-Style)
+- Vintage phosphor glow effects with decay (rendered in green for readability)
 - Scan line overlay for period authenticity
 - Multiple display modes (Radar, Tactical, Status, Memory)
 - Adjustable brightness control (0-100%)
@@ -227,7 +260,7 @@ chmod +x setup.sh
 - **FIT**: Reset zoom to 1.0
 - **Rotate** (↶/↷): Rotate view (clockwise/counter-clockwise)
 - **N**: Reset rotation to North-up
-- **Brightness slider**: Adjust phosphor intensity (20-100%)
+- **Brightness slider**: Adjust display intensity (20-100%)
 
 ### 🔧 Maintaining Vacuum Tubes
 
@@ -420,7 +453,7 @@ Contributions welcome! Areas for enhancement:
 - **[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md)** - Planned features and development priorities
 - **[docs/](docs/)** - Detailed technical and design documentation:
   - `DESIGN_NOTES` - Educational framework, personas, learning objectives
-  - `VISUAL_REFERENCE.md` - P7 phosphor CRT design language
+  - `VISUAL_REFERENCE.md` - CRT display design language
   - `RADAR_ARCHITECTURE.md` - Technical implementation details
   - `ARCHITECTURE.md` - System architecture overview
   - `HISTORY.md` - SAGE system historical context

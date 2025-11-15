@@ -20,7 +20,7 @@ The AN/FSQ-7 was developed by IBM and deployed as part of SAGE (Semi-Automatic G
 
 Each SAGE direction center had approximately 24 operator consoles featuring:
 
-1. **Display Tube:** 19-inch round CRT with P7 phosphor (green)
+1. **Display Tube:** 19-inch round CRT with P7-style long-persistence phosphor (rendered in green for readability)
 2. **Light Gun:** Photo-sensitive stylus for pointing at display
 3. **Control Panel:** Switches, buttons, and indicator lights
 4. **Alphanumeric Keyboard:** For command entry
@@ -139,9 +139,10 @@ async def update_simulation(self):
 
 ### Phosphor Effects
 
-The P7 phosphor used in SAGE displays had these characteristics:
-- **Color:** Green (525nm wavelength)
-- **Persistence:** Medium-short (microseconds)
+P7-style long-persistence phosphor characteristics (rendered in green for readability):
+- **Historical P7:** Blue flash + yellow-green afterglow (radar phosphor)
+- **Our Rendering:** Green (525nm wavelength) for modern screen legibility
+- **Persistence:** Simulated long-persistence trails (~1-2 seconds)
 - **Brightness:** High initial, exponential decay
 - **Ghosting:** Minimal with proper refresh rate
 
@@ -290,9 +291,11 @@ Trade-offs:
 
 ### Why Green CRT Aesthetic?
 
-Authentic to period:
-- P7 phosphor was standard in 1950s-60s
-- Green provided best contrast and eye comfort
+Historical context with modern readability:
+- Real SAGE used monochrome displays (typically green or amber phosphor)
+- P7 radar phosphor: blue flash + yellow-green afterglow
+- **Our choice:** Rendered in solid green for modern screen legibility and accessibility
+- Green provides best contrast and eye comfort
 - Instantly recognizable as vintage computing
 - Strong association with SAGE system
 

@@ -55,8 +55,10 @@ This document provides ASCII art representations of the simulator's user interfa
 
 ## Color Scheme
 
+**Historical Note:** Real SAGE displays were monochrome (typically green or amber). Threat distinction used symbols, labels, and patterns. Our color coding is a modern accessibility aid for legibility while maintaining historically authentic symbol patterns.
+
 **Primary Colors:**
-- **Green (#00FF00)**: Primary UI, text, borders (authentic P7 phosphor)
+- **Green (#00FF00)**: Primary UI, text, borders (P7-style long-persistence phosphor rendered in green)
 - **Yellow (#FFFF00)**: Warnings, selected items, data highlights
 - **Red (#FF0000)**: Critical alerts, high threats, errors
 - **Cyan (#00FFFF)**: Memory indicators, secondary info
@@ -100,7 +102,7 @@ box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8)
 ```
 ## Vector CRT Display Language (Situation Display)
 
-The radar/situation scope is modeled as a **vector CRT** with long-persistence P14-like phosphor, not as a modern raster game HUD.
+The radar/situation scope is modeled as a **vector CRT** with long-persistence phosphor behavior (P7-style), not as a modern raster game HUD. Historical note: Real SAGE used monochrome displays; our green rendering provides modern accessibility while maintaining authentic stroke-based primitives.
 
 ### 2.1 Visual primitives
 
@@ -119,7 +121,7 @@ No filled shapes on the CRT itself; fill is reserved for UI chrome around the sc
 
 ### 2.2 Phosphor behavior & afterglow
 
-We approximate the P14 long-persistence tube described in Ulmann: a short bright flash followed by a dim orange afterglow that fades over several seconds.
+We simulate long-persistence phosphor behavior (P7-style): a bright initial flash followed by a decaying afterglow that fades over several seconds. Note: Historical P7 was blue-flash/yellow-afterglow (radar); we render in green for modern screen readability.
 
 Rules:
 

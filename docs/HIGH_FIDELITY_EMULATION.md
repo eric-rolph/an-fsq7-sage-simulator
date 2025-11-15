@@ -15,6 +15,8 @@ The AN/FSQ-7's Arithmetic Element (AE) was fundamentally different from modern C
 - **One's complement**: Used one's complement representation (not two's complement)
 - **Implicit shift**: Addition included an automatic right shift (hardware quirk programmers had to work around)
 
+**Implementation Note:** This "add with implicit shift" behavior is based on secondary technical descriptions and may be refined as more primary documentation is located. The behavior is consistent with SAGE's fixed-point arithmetic requirements, but the exact hardware implementation requires further manual confirmation from original IBM/Lincoln Laboratory sources.
+
 **Previous Implementation:**
 - Standard integer arithmetic
 - Single accumulator value
