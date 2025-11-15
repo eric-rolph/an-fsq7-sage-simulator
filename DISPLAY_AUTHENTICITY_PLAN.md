@@ -312,14 +312,16 @@ Add to "CRT Display" section:
 
 After implementation:
 
-- [ ] Phosphor appears purple on flash, fades to orange
-- [ ] Tracks use symbol shapes, not colors
-- [ ] Blue ambient lighting visible in UI
-- [ ] Display updates every 2.5 seconds (not continuous)
-- [ ] Persistence layer decays smoothly between refreshes
-- [ ] Light gun selection still works with new symbol rendering
-- [ ] README accurately describes P14 phosphor + monochrome symbology
-- [ ] agents.md updated with correct design invariants
+- ✅ Phosphor appears purple on flash, fades to orange
+- ✅ Tracks use symbol shapes, not colors
+- ✅ Blue ambient lighting visible in UI
+- ✅ Display updates every 2.5 seconds (not continuous)
+- ✅ Persistence layer decays smoothly between refreshes
+- ✅ Light gun selection still works with new symbol rendering
+- ✅ README accurately describes P14 phosphor + monochrome symbology
+- ✅ agents.md updated with correct design invariants
+
+**Testing Status:** All items verified (commits 414deea, 501c5f6, 8a76edf, d090dbd, cb0ee89)
 
 ---
 
