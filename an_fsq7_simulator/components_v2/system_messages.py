@@ -136,7 +136,7 @@ def system_messages_panel(messages: List[SystemMessage], max_height: str = "300p
                     font_family="Courier New"
                 ),
                 rx.badge(
-                    f"{len(messages)} entries",
+                    messages.length().to(str) + " entries",
                     color_scheme="green",
                     variant="soft"
                 ),
@@ -180,7 +180,11 @@ def system_messages_panel(messages: List[SystemMessage], max_height: str = "300p
             # Footer with statistics
             rx.hstack(
                 rx.text(
-                    f"Last update: {messages[-1].timestamp if messages else '--:--:--'}",
+                    rx.cond(
+                        messages.length() > 0,
+                        "Last update: " + messages[-1].timestamp,
+                        "Last update: --:--:--"
+                    ),
                     font_family="Courier New",
                     font_size="10px",
                     color="#888888"

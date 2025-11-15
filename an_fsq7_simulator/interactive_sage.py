@@ -2034,6 +2034,11 @@ def index() -> rx.Component:
                         on_arm=InteractiveSageState.arm_lightgun
                     ),
                     interceptor_panel.interceptor_panel(),
+                    system_messages.system_messages_panel(
+                        messages=InteractiveSageState.system_messages_log,
+                        max_height="250px",
+                        on_clear=InteractiveSageState.clear_system_messages
+                    ),
                     execution_trace_panel.execution_trace_panel_compact(
                         InteractiveSageState.cpu_trace
                     ),
