@@ -6,6 +6,7 @@ for testing and demonstration purposes.
 """
 
 import reflex as rx
+from an_fsq7_simulator.sim import scenarios as sim_scenarios
 
 
 def scenario_selector_panel(
@@ -23,12 +24,8 @@ def scenario_selector_panel(
         rx.Component with scenario selector UI
     """
     
-    scenarios = [
-        "Demo 1 - Three Inbound",
-        "Demo 2 - Mixed Friendly/Unknown",
-        "Demo 3 - High Threat Saturation",
-        "Demo 4 - Patrol Route",
-    ]
+    # Get all available scenarios from the scenarios module
+    scenarios = list(sim_scenarios.SCENARIOS.keys())
     
     return rx.box(
         rx.vstack(
