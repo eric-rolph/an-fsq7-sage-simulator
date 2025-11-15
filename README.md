@@ -2,7 +2,11 @@
 
 A fully interactive web-based simulator of the AN/FSQ-7 computer, the massive vacuum tube computer used in the SAGE (Semi-Automatic Ground Environment) air defense system during the Cold War era (1958-1983).
 
-**🎮 NOW FULLY INTERACTIVE!** Experience Cold War air defense with working radar display, track visualization, authentic P7 phosphor CRT rendering, and hands-on vacuum tube maintenance.
+**🎮 NOW FULLY INTERACTIVE!** Experience Cold War air defense as a **SAGE Direction Center operator**, with authentic P14 phosphor CRT display, working light gun, and hands-on vacuum tube maintenance.
+
+## Your Role: Direction Center Operator
+
+You are operating a **SAGE Direction Center (DC) situation display console**. The DC aggregates radar data from 28 stations across North America (DEW Line, Mid-Canada Line, Pinetree Line, Gap-Fillers, Ground Control Intercept sites) and coordinates continental air defense responses. Think of it as the "command center" receiving real-time feeds from multiple radar installations.
 
 ## About the AN/FSQ-7
 
@@ -478,7 +482,7 @@ uv run python -c "import an_fsq7_simulator.interactive_sage; print('✓ Imports 
 - **Package Manager**: UV (fast Python package and project manager)
 - **State Management**: Reflex State with real-time WebSocket updates
 - **UI Components**: Radix UI via Reflex
-- **Styling**: CSS-in-Python with vintage CRT effects (P7 phosphor simulation)
+- **Styling**: CSS-in-Python with vintage CRT effects (P14 phosphor simulation)
 - **Backend**: Python 3.8+ with async event handlers
 - **Frontend**: React (auto-compiled by Reflex)
 - **CPU Emulation**: Custom one's complement arithmetic with indexed addressing

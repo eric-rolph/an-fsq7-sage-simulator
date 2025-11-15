@@ -220,7 +220,7 @@ class CRTRadarScope {
         const rings = [50, 100, 150, 200, 250, 300, 350];
         
         // Draw DIRECTLY to main canvas (static overlay, always visible)
-        this.ctx.strokeStyle = 'rgba(0, 255, 100, 0.4)';  // Authentic P7 green phosphor
+        this.ctx.strokeStyle = 'rgba(255, 180, 100, 0.3)';  // P14 phosphor orange (dim intensity)
         this.ctx.lineWidth = 1;  // Thin lines like real CRT
         
         rings.forEach(radius => {

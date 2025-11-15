@@ -283,13 +283,15 @@ NETWORK_RENDERING_SCRIPT = """
         }
         
         // Helper: Get visual style for station type
+        // P14 Phosphor: Monochrome orange, differentiation via SYMBOL SHAPE only
         window.CRTRadarScope.prototype.getStationStyle = function(stationType) {
+            const phosphorOrange = 'rgba(255, 180, 100, 0.8)';  // P14 phosphor color
             const styles = {
-                'DEW': { color: '#00ffff', symbol: '△', size: 10 },
-                'MID_CANADA': { color: '#ffaa00', symbol: '◇', size: 10 },
-                'PINETREE': { color: '#00ff00', symbol: '▽', size: 10 },
-                'GAP_FILLER': { color: '#ffff00', symbol: '○', size: 8 },
-                'GCI': { color: '#ff00ff', symbol: '⬟', size: 14 }
+                'DEW': { color: phosphorOrange, symbol: '△', size: 10 },        // Triangle up (Arctic)
+                'MID_CANADA': { color: phosphorOrange, symbol: '◇', size: 10 }, // Diamond (Mid)
+                'PINETREE': { color: phosphorOrange, symbol: '▽', size: 10 },   // Triangle down (South)
+                'GAP_FILLER': { color: phosphorOrange, symbol: '○', size: 8 },  // Small circle (Local)
+                'GCI': { color: phosphorOrange, symbol: '⬟', size: 14 }         // Pentagon (Command)
             };
             return styles[stationType] || styles['GAP_FILLER'];
         };
