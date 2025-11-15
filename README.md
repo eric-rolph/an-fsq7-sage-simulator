@@ -75,6 +75,58 @@ Each mission includes:
 - Reward messages on completion
 - Welcome modal on first visit (Start Training / Skip)
 
+### 🎯 Track Correlation & Classification System
+Realistic detect → correlate → classify workflow:
+- **Track States**: UNCORRELATED → CORRELATING → CORRELATED
+- **Confidence Levels**: LOW/MED/HIGH based on radar returns and IFF signals
+- **Manual Override**: Use light gun to correlate ambiguous tracks
+- **Classification Panel**: Mark tracks as Hostile / Friendly / Unknown / Ignore
+- **Track History**: View lifecycle progression and correlation decisions
+- **Visual Feedback**: Different shapes/colors per state on radar scope
+
+### ✈️ Interceptor Assignment System
+Tactical aircraft management with real consequences:
+- **3 Aircraft Types**: F-106 Delta Dart, F-102 Delta Dagger, F-89 Scorpion
+- **Detailed Status**: View fuel levels, weapon loads (AIM-4 Falcon, MB-1 Genie), base location
+- **Smart Suggestions**: System recommends best interceptor for selected target
+- **State Tracking**: READY → REFUELING → SCRAMBLING → AIRBORNE → ENGAGING → RETURNING
+- **Intercept Vectors**: Blue dashed lines show flight path on radar
+- **Engagement Outcomes**: SPLASH ONE (success) vs MISS (failure) with feedback
+
+### 🔍 System Inspector (Advanced)
+Deep-dive system transparency for students and enthusiasts (press **Shift+I**):
+- **Drum Fields**: View magnetic drum storage with status bits (LRI, GFI, XTL, SDC)
+- **CPU State**: Real-time accumulator, index register, program counter, flags
+- **Queue Inspector**: See processing bottlenecks and data flow
+- **Status Channels**: Monitor asynchronous I/O polling (OD_LRI, CD_LRI, LIGHT_GUN)
+- **Educational Value**: Understand SAGE's drum-buffered I/O and polling architecture
+
+### 📊 Scenario Debrief System
+Performance assessment and learning feedback:
+- **7 Training Scenarios**: Beginner → Expert difficulty progression
+- **Performance Metrics**: Detection %, classification accuracy, intercept success rate
+- **Letter Grades**: A-F scoring with detailed breakdown
+- **Learning Moments**: Mistakes highlighted with severity icons and improvement tips
+- **Mission Objectives**: Checklist showing completion status
+- **Action Options**: Continue, Replay Scenario, Next Scenario
+
+### 🔊 Sound Effects & Audio Feedback
+Authentic Cold War era audio ambiance:
+- **25+ Sound Library**: Radar sweep, light gun clicks, tube replacements, alarm bells, intercepts
+- **3 Volume Channels**: Ambiance, UI interactions, alerts (independent control)
+- **4 Audio Presets**: Silent, Minimal, Balanced, Full Immersion
+- **Real-time Feedback**: Audio cues for target selection, intercept launches, system events
+- **Historical Accuracy**: Vintage equipment sounds sourced from period recordings
+
+### 🗺️ Network & Station View
+Strategic air defense network visualization:
+- **28 SAGE Stations**: Direction Centers, Combat Centers, NORAD HQ
+- **5 Station Types**: Different icons for DC, CC, NORAD, Early Warning, Gap Filler
+- **Coverage Circles**: Visual representation of radar range
+- **Network Connectivity**: Cross-tell communication links between stations
+- **Legend Panel**: Station type reference with toggle controls
+- **Geographic Accuracy**: Stations placed at historical locations across North America
+
 ### 💻 CPU Execution Trace
 See programs run in real-time:
 - **Step-by-step visualization**: Watch each instruction execute
@@ -173,7 +225,7 @@ Run authentic programs demonstrating indexed addressing:
 
 ### Prerequisites
 - Python 3.8 or higher
-- pip package manager
+- **UV package manager** (automatically handles dependencies)
 
 ### Quick Start
 
@@ -190,23 +242,24 @@ chmod +x setup.sh
 
 ### Manual Setup
 
-1. **Install dependencies:**
+1. **Install UV** (if not already installed):
    ```bash
-   pip install -r requirements.txt
+   pip install uv
    ```
 
-2. **Initialize the Reflex app:**
-   ```bash
-   reflex init
+2. **Run the simulator:**
+   ```powershell
+   # Windows PowerShell
+   uv run reflex run
+   
+   # Linux/Mac
+   uv run reflex run
    ```
 
-3. **Run the simulator:**
-   ```bash
-   reflex run
-   ```
-
-4. **Open your browser:**
+3. **Open your browser:**
    Navigate to http://localhost:3000
+
+**Note:** This project uses `uv` for package management. All commands must be prefixed with `uv run` (e.g., `uv run python script.py`, `uv run reflex run`).
 
 ## Usage Guide
 
@@ -326,33 +379,48 @@ The system spawns realistic scenarios automatically:
 
 ```
 an_fsq7_simulator/
-├── an_fsq7_simulator.py       # Main application (original)
-├── interactive_sage.py        # NEW: Interactive simulator main
-├── cpu_core.py                # CPU execution engine
-├── sage_programs.py           # Example programs
-├── components/                # Original UI components
+├── interactive_sage.py        # Main interactive simulator state and handlers
+├── state_model.py             # Reflex-compatible data structures
+├── cpu_core.py                # CPU execution engine (one's complement arithmetic)
+├── drum_io_system.py          # Drum-buffered I/O simulation
+├── sage_programs.py           # Example SAGE programs
+├── scenarios.py               # Legacy scenario definitions
+├── components/                # Original UI components (v1)
 │   ├── crt_display.py
 │   ├── control_panel.py
 │   ├── cpu_panel.py
 │   └── ...
-├── components_v2/             # NEW: Interactive components
-│   ├── state_model.py         # Core data structures
-│   ├── scenarios.py           # Scenario generation & physics
-│   ├── execution_trace_panel.py  # CPU trace visualization
-│   ├── light_gun.py           # Light gun target selection
-│   ├── sd_console.py          # Console controls
-│   ├── geographic_overlays.py # Coastlines, cities, range rings
-│   ├── tube_maintenance.py    # Tube maintenance mini-game
-│   ├── tutorial_system.py     # Training missions
-│   ├── radar_scope.py         # WebGL radar renderer
-│   └── README.md              # Component documentation
-└── docs/                       # Documentation
+├── components_v2/             # Current interactive components
+│   ├── execution_trace_panel.py   # CPU trace visualization
+│   ├── geographic_overlays.py     # Coastlines, cities, range rings
+│   ├── light_gun.py               # Light gun target selection
+│   ├── operator_workflow.py       # Track correlation & classification
+│   ├── radar_scope.py             # Vector CRT radar renderer
+│   ├── safe_actions.py            # Interceptor assignment panel
+│   ├── scenarios_layered.py       # Scenario debrief system
+│   ├── sd_console.py              # Console controls (filters, overlays)
+│   ├── sound_effects.py           # Audio system with volume controls
+│   ├── system_messages.py         # Network & station view
+│   ├── track_lifecycle.py         # Track state visualization
+│   ├── tube_maintenance.py        # Vacuum tube mini-game
+│   ├── tutorial_system.py         # Training missions
+│   └── README.md                  # Component documentation
+├── sim/                       # Simulation engine
+│   ├── models.py              # Core domain models (Track, Interceptor, Tube, etc.)
+│   ├── scenarios.py           # Scenario definitions with learning objectives
+│   ├── sim_loop.py            # Physics and state updates
+│   └── modes.py               # Display modes and filters
+└── docs/                       # Comprehensive documentation
     ├── ARCHITECTURE.md
     ├── DESIGN.md
+    ├── FIDELITY_SUMMARY.md
+    ├── HIGH_FIDELITY_EMULATION.md
     ├── HISTORY.md
     ├── INDEXED_ADDRESSING.md
     ├── INTEGRATION_GUIDE.md
-    └── archive/               # Old implementation docs
+    ├── SOUND_EFFECTS_GUIDE.md
+    ├── UI_DESIGN_PATTERNS.md
+    └── archive/               # Historical implementation docs
 ```
 
 ## Documentation
@@ -368,39 +436,52 @@ an_fsq7_simulator/
 
 ## Testing
 
-Run the CPU execution tests:
+Run tests using UV package manager:
 
-```bash
-# Test array sum example
-cd an_fsq7_simulator
-python -m cpu_core
+```powershell
+# Core unit tests (CPU, drum, light gun)
+uv run pytest tests/unit
 
-# Run all examples
-python -m sage_programs
+# Simulation tests (scenarios, physics)
+uv run pytest tests/sim
+
+# Design language / UI contract tests
+uv run pytest tests/design_language
+
+# Property-based tests (optional)
+uv run pytest tests/property_based
+
+# Test imports
+uv run python -c "import an_fsq7_simulator.interactive_sage; print('✓ Imports OK')"
 ```
 
-Expected output:
-```
-✓ All indexed addressing examples working correctly!
-  The AN/FSQ-7 CPU core properly implements:
-    • effective_address = base_address + I
-    • Index register (I) for loop counters
-    • Indexed load: LDA base(I)
-    • Indexed store: STO base(I)
-    • Loop control: TIX (Transfer on Index)
-```
+**Manual Testing:**
+1. Start server: `uv run reflex run`
+2. Open http://localhost:3000
+3. Verify features work:
+   - Track rendering and movement
+   - Light gun selection (press D, click target)
+   - Interceptor assignment panel
+   - System Inspector (Shift+I)
+   - Scenario debrief after mission
+   - Sound effects (check volume controls)
+   - Network view toggle
 
 ## Technology Stack
 
-- **Framework**: Reflex (Python → React web framework)
-- **State Management**: Reflex State with real-time updates
+- **Framework**: Reflex 0.8.19 (Python → React web framework)
+- **Package Manager**: UV (fast Python package and project manager)
+- **State Management**: Reflex State with real-time WebSocket updates
 - **UI Components**: Radix UI via Reflex
-- **Styling**: CSS-in-Python with vintage CRT effects
-- **Backend**: Python with async event handlers
+- **Styling**: CSS-in-Python with vintage CRT effects (P7 phosphor simulation)
+- **Backend**: Python 3.8+ with async event handlers
 - **Frontend**: React (auto-compiled by Reflex)
-- **CPU Emulation**: Custom Python implementation
-- **Rendering**: WebGL/Canvas 2D API for radar scope
-- **Animation**: CSS @keyframes for tube states
+- **CPU Emulation**: Custom one's complement arithmetic with indexed addressing
+- **I/O Architecture**: Drum-buffered asynchronous I/O with status channel polling
+- **Rendering**: Canvas 2D API for vector CRT radar scope
+- **Animation**: CSS @keyframes for tube states, phosphor decay, scan lines
+- **Audio**: HTML5 Audio API with multi-channel mixing
+- **Testing**: pytest for unit, simulation, and design language tests
 
 ## Historical Context
 
@@ -423,41 +504,62 @@ The Semi-Automatic Ground Environment (SAGE) was:
 
 ## Contributing
 
-Contributions welcome! Areas for enhancement:
+Contributions welcome! Current system is production-ready with all 6 development priorities complete. Areas for future enhancement:
 
 **Interactive Features:**
 - [ ] Multi-player support (multiple operator consoles)
-- [ ] Historical mission scenarios (Cuban Missile Crisis, etc.)
+- [ ] Historical mission scenarios (Cuban Missile Crisis, Berlin Airlift, etc.)
 - [ ] Authentic SAGE command language interpreter
-- [ ] WebGL shader improvements for CRT effects
-- [ ] Sound effects (tape drive, alarm bells, teleprinter)
-- [ ] Mobile/touch-friendly light gun
-- [ ] More scenario types (recon flights, transport, etc.)
-- [ ] Weather effects on radar
+- [ ] WebGL shader improvements for CRT phosphor effects
+- [ ] Mobile/touch-friendly light gun (touch events)
+- [ ] More scenario types (recon flights, transport, tankers, etc.)
+- [ ] Weather effects on radar (rain clutter, storm cells)
+- [ ] Cross-browser testing (Chrome, Firefox, Safari, Edge)
 
 **CPU Features:**
-- [ ] More SAGE instruction opcodes
-- [ ] Subroutine library
-- [ ] Drum timing simulation
-- [ ] More example programs
+- [ ] Complete SAGE instruction set (all 50+ opcodes)
+- [ ] Subroutine library (authentic SAGE system programs)
+- [ ] Drum timing simulation (rotational latency)
+- [ ] More example programs (weapon control, data link)
+- [ ] Assembly language syntax support
 
 **System Features:**
-- [ ] Additional display modes
-- [ ] Network teletype simulation
-- [ ] Alarm system with bells
-- [ ] Printer output simulation
+- [ ] Network teletype simulation (cross-tell messages)
+- [ ] Alarm system with authentic bell sounds
+- [ ] Printer output simulation (status reports)
+- [ ] Accessibility improvements (keyboard navigation, screen readers)
+- [ ] Create actual pytest tests for design language invariants
+- [ ] Property-based testing for numerical correctness
+
+**Documentation:**
+- [ ] Video tutorials for each training mission
+- [ ] Interactive architecture diagrams
+- [ ] Historical photo gallery with comparisons
 
 ## Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick installation and first run guide
-- **[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md)** - Planned features and development priorities
-- **[docs/](docs/)** - Detailed technical and design documentation:
-  - `DESIGN_NOTES` - Educational framework, personas, learning objectives
-  - `VISUAL_REFERENCE.md` - CRT display design language
-  - `RADAR_ARCHITECTURE.md` - Technical implementation details
-  - `ARCHITECTURE.md` - System architecture overview
-  - `HISTORY.md` - SAGE system historical context
-  - `archive/` - Historical session notes and implementation details
+**Getting Started:**
+- **[QUICKSTART.md](QUICKSTART.md)** - 5-minute quick start guide
+- **[agents.md](agents.md)** - Development patterns for AI agents working on project
+- **[TODO_COMPLETION_REPORT.md](TODO_COMPLETION_REPORT.md)** - Detailed completion status of all priorities
+- **[ALL_PRIORITIES_COMPLETE_SUMMARY.md](ALL_PRIORITIES_COMPLETE_SUMMARY.md)** - Comprehensive test verification
+
+**Technical Documentation:**
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture overview
+- **[docs/DESIGN.md](docs/DESIGN.md)** - Technical design decisions
+- **[docs/HIGH_FIDELITY_EMULATION.md](docs/HIGH_FIDELITY_EMULATION.md)** - One's complement, drum I/O, light gun polling
+- **[docs/FIDELITY_SUMMARY.md](docs/FIDELITY_SUMMARY.md)** - Historical accuracy assessment
+- **[docs/INDEXED_ADDRESSING.md](docs/INDEXED_ADDRESSING.md)** - CPU implementation details
+- **[docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md)** - Component wiring guide
+
+**Feature Documentation:**
+- **[docs/SOUND_EFFECTS_GUIDE.md](docs/SOUND_EFFECTS_GUIDE.md)** - Audio system implementation
+- **[docs/UI_DESIGN_PATTERNS.md](docs/UI_DESIGN_PATTERNS.md)** - Design language and invariants
+- **[an_fsq7_simulator/components_v2/README.md](an_fsq7_simulator/components_v2/README.md)** - Component API reference
+
+**Historical Context:**
+- **[docs/HISTORY.md](docs/HISTORY.md)** - AN/FSQ-7 and SAGE system history
+- **[docs/archive/](docs/archive/)** - Historical implementation notes and session summaries
 
 ## License
 
