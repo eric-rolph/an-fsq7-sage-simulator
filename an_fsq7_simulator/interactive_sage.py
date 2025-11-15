@@ -527,6 +527,7 @@ class InteractiveSageState(rx.State):
         
         # Process each triggered event
         for event in triggered_events:
+            print(f"[EVENT] Triggered: {event.event_type.name} at {self.scenario_elapsed_time:.1f}s")
             self.handle_scenario_event(event)
             self.active_events_count += 1
         
@@ -787,7 +788,10 @@ class InteractiveSageState(rx.State):
     
     def change_scenario(self, scenario_name: str):
         """Change to a different scenario"""
+        print(f"[SCENARIO] change_scenario called with: {scenario_name}")
+        print(f"[SCENARIO] Before load - messages count: {len(self.system_messages_log)}")
         self.load_scenario(scenario_name)
+        print(f"[SCENARIO] After load - messages count: {len(self.system_messages_log)}, tracks: {[t.id for t in self.tracks]}")
         # Log scenario change
         self.system_messages_log.append(
             system_messages.SystemMessage(
@@ -797,6 +801,7 @@ class InteractiveSageState(rx.State):
                 details=f"{len(self.tracks)} tracks loaded"
             )
         )
+        print(f"[SCENARIO] After message append - messages count: {len(self.system_messages_log)}")
     
     def pause_simulation(self):
         """Pause the simulation loop"""
@@ -1177,7 +1182,7 @@ class InteractiveSageState(rx.State):
         # Log the filter change
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="FILTER",
                 message=f"Filter {action.upper()}",
                 details=f"Category: {filter_name.upper()}"
@@ -1196,7 +1201,7 @@ class InteractiveSageState(rx.State):
         # Log the overlay change
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="INFO",
                 message=f"Overlay {action.upper()}",
                 details=f"Display: {overlay_name.replace('_', ' ').upper()}"
