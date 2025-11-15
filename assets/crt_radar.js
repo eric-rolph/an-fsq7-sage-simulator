@@ -259,7 +259,7 @@ class CRTRadarScope {
         );
         gradient.addColorStop(0, this.phosphorFast);
         gradient.addColorStop(0.7, this.phosphorSlow);
-        gradient.addColorStop(1, 'rgba(0, 255, 100, 0)');
+        gradient.addColorStop(1, 'rgba(255, 180, 100, 0)');  // P14 orange transparent
         
         this.ctx.save();
         this.ctx.translate(this.centerX, this.centerY);
@@ -410,18 +410,30 @@ class CRTRadarScope {
             this.ctx.translate(x, y);
             this.ctx.rotate(heading);
             
-            // Status-based colors
-            let color = 'rgba(0, 150, 255, 0.9)';  // Default blue
+            // P14 Monochrome: Use brightness/pattern/glow to differentiate status (NOT color)
+            let alpha = 0.9;  // Default brightness (AIRBORNE)
+            let lineDash = [];  // Default solid line
+            let shadowBlur = 0;  // Default no glow
+            
             if (interceptor.status === 'ENGAGING') {
-                color = 'rgba(255, 50, 50, 0.9)';  // Red when engaging
+                alpha = 1.0;  // BRIGHTEST for engaging
+                shadowBlur = 15;  // Pulsing glow effect
             } else if (interceptor.status === 'RETURNING') {
-                color = 'rgba(100, 100, 255, 0.7)';  // Lighter blue returning
+                alpha = 0.5;  // DIM for returning to base
+                lineDash = [3, 3];  // Dashed outline
             }
+            
+            const color = `rgba(255, 180, 100, ${alpha})`;  // P14 orange monochrome
             
             // Draw triangle
             this.ctx.fillStyle = color;
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-            this.ctx.lineWidth = 1;
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.setLineDash(lineDash);
+            if (shadowBlur > 0) {
+                this.ctx.shadowBlur = shadowBlur;
+                this.ctx.shadowColor = 'rgba(255, 180, 100, 1.0)';
+            }
             this.ctx.beginPath();
             this.ctx.moveTo(size, 0);  // Nose pointing right (0 degrees)
             this.ctx.lineTo(-size, size);  // Bottom left
@@ -434,7 +446,7 @@ class CRTRadarScope {
             
             // Add ID label if active
             if (interceptor.status === 'AIRBORNE' || interceptor.status === 'ENGAGING') {
-                this.ctx.fillStyle = 'rgba(0, 200, 255, 0.9)';
+                this.ctx.fillStyle = 'rgba(255, 180, 100, 0.9)';  // P14 orange monochrome
                 this.ctx.font = '10px "Courier New", monospace';
                 this.ctx.textAlign = 'left';
                 this.ctx.textBaseline = 'middle';
