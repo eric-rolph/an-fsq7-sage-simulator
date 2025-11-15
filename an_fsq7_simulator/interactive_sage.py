@@ -778,7 +778,7 @@ class InteractiveSageState(rx.State):
         # Log scenario load
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="SCENARIO",
                 message=f"Loaded: {scenario.name}",
                 details=f"{len(self.tracks)} tracks, {len(self.interceptors)} interceptors"
@@ -791,7 +791,7 @@ class InteractiveSageState(rx.State):
         # Log scenario change
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="SCENARIO",
                 message=f"Scenario changed to: {scenario_name}",
                 details=f"{len(self.tracks)} tracks loaded"
@@ -803,7 +803,7 @@ class InteractiveSageState(rx.State):
         self.is_paused = True
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="SIMULATION",
                 message="Simulation PAUSED",
                 details=""
@@ -815,7 +815,7 @@ class InteractiveSageState(rx.State):
         self.is_paused = False
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="SIMULATION",
                 message="Simulation RESUMED",
                 details=""
@@ -827,7 +827,7 @@ class InteractiveSageState(rx.State):
         self.speed_multiplier = speed
         self.system_messages_log.append(
             system_messages.SystemMessage(
-                timestamp=datetime.now(),
+                timestamp=datetime.now().strftime("%H:%M:%S"),
                 category="SIMULATION",
                 message=f"Speed set to {speed}x",
                 details=""
@@ -1510,6 +1510,17 @@ class InteractiveSageState(rx.State):
         """Clear all system messages from the log"""
         self.system_messages_log = []
     
+    def add_system_message(self, message: str, category: str = "INFO", details: str = ""):
+        """Helper method to add a system message to the log"""
+        self.system_messages_log.append(
+            system_messages.SystemMessage(
+                timestamp=datetime.now().strftime("%H:%M:%S"),
+                category=category,
+                message=message,
+                details=details
+            )
+        )
+    
     
     # ========================
     # TUBE MAINTENANCE
@@ -1872,6 +1883,20 @@ class InteractiveSageState(rx.State):
         row_num = self.selected_sector_row + 1  # 0-6 -> 1-7
         col_letter = chr(65 + self.selected_sector_col)  # 0-6 -> A-G
         return f"SECTOR {row_num}-{col_letter} | {self.expansion_level}X"
+    
+    @rx.var
+    def system_messages_script_tag(self) -> str:
+        """Inject system messages log as JSON for JavaScript access"""
+        messages_data = [
+            {
+                "timestamp": msg.timestamp,
+                "category": msg.category,
+                "message": msg.message,
+                "details": msg.details if hasattr(msg, 'details') and msg.details else ""
+            }
+            for msg in self.system_messages_log
+        ]
+        return f"<script>window.__SAGE_SYSTEM_MESSAGES__ = {json.dumps(messages_data)};</script>"
 
 
 # ========================
@@ -2077,6 +2102,7 @@ def index() -> rx.Component:
         rx.html(InteractiveSageState.geo_script_tag),
         rx.html(InteractiveSageState.interceptors_script_tag),
         rx.html(InteractiveSageState.sector_grid_script_tag),  # 7x7 sector grid state
+        rx.html(InteractiveSageState.system_messages_script_tag),  # System messages for event display
         
         # Network station rendering system (Priority 6)
         rx.script(network_stations.NETWORK_RENDERING_SCRIPT),
