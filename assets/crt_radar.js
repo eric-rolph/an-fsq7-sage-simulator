@@ -197,6 +197,14 @@ class CRTRadarScope {
         this.ctx.fillStyle = '#000';
         this.ctx.fillRect(0, 0, this.width, this.height);
         
+        // Save context state before zoom transformation
+        this.ctx.save();
+        
+        // Apply sector zoom if expansion > 1x
+        if (this.expansion_level > 1) {
+            this.applySectorZoom();
+        }
+        
         // Draw persistence layer (faded trails)
         this.ctx.drawImage(this.persistenceCanvas, 0, 0);
         
@@ -224,7 +232,69 @@ class CRTRadarScope {
         // Draw interceptors on top (blue triangles with vectors)
         this.drawInterceptors();
         
+        // Restore context state (undo zoom transformation)
+        this.ctx.restore();
+        
         this.animationId = requestAnimationFrame(() => this.render());
+    }
+    
+    /**
+     * Apply sector zoom transformation to canvas context
+     * 
+     * IMPLEMENTATION:
+     * When expansion_level > 1, we zoom into the selected sector by:
+     * 1. Calculating sector boundaries (7x7 grid)
+     * 2. Translating canvas to move selected sector to origin
+     * 3. Scaling by expansion_level (2x, 4x, 8x)
+     * 4. Translating back so zoomed sector fills display
+     * 
+     * This makes tracks in selected sector appear larger while keeping
+     * normalized coordinates (0-1) unchanged in code.
+     */
+    applySectorZoom() {
+        const sectorWidth = this.width / 7;
+        const sectorHeight = this.height / 7;
+        
+        // Calculate sector boundaries in canvas coordinates
+        const sectorX = this.selected_sector_col * sectorWidth;
+        const sectorY = this.selected_sector_row * sectorHeight;
+        
+        // Calculate zoom origin (center of selected sector)
+        const centerX = sectorX + sectorWidth / 2;
+        const centerY = sectorY + sectorHeight / 2;
+        
+        // Apply transformation:
+        // 1. Translate so sector center is at canvas center
+        // 2. Scale by expansion level
+        // 3. Result: selected sector fills entire display
+        
+        // Move origin to center of canvas
+        this.ctx.translate(this.width / 2, this.height / 2);
+        
+        // Scale by expansion level
+        this.ctx.scale(this.expansion_level, this.expansion_level);
+        
+        // Move back so selected sector center is at origin
+        this.ctx.translate(-centerX, -centerY);
+    }
+    
+    /**
+     * Apply sector zoom transformation to persistence canvas
+     * Same logic as applySectorZoom() but for persistenceCtx
+     */
+    applySectorZoomToPersistence() {
+        const sectorWidth = this.width / 7;
+        const sectorHeight = this.height / 7;
+        
+        const sectorX = this.selected_sector_col * sectorWidth;
+        const sectorY = this.selected_sector_row * sectorHeight;
+        
+        const centerX = sectorX + sectorWidth / 2;
+        const centerY = sectorY + sectorHeight / 2;
+        
+        this.persistenceCtx.translate(this.width / 2, this.height / 2);
+        this.persistenceCtx.scale(this.expansion_level, this.expansion_level);
+        this.persistenceCtx.translate(-centerX, -centerY);
     }
     
     /**
@@ -369,9 +439,19 @@ class CRTRadarScope {
         if (!this.tracks || !Array.isArray(this.tracks)) {
             return;
         }
+        
+        // Save persistence context state
+        this.persistenceCtx.save();
+        
+        // Apply sector zoom if expansion > 1x
+        if (this.expansion_level > 1) {
+            this.applySectorZoomToPersistence();
+        }
+        
         this.tracks.forEach(track => {
-            const x = this.centerX + track.x;
-            const y = this.centerY + track.y;
+            // Tracks use normalized coordinates (0-1), convert to canvas pixels
+            const x = track.x * this.width;
+            const y = track.y * this.height;
             
             // Monochrome P14 orange phosphor (all tracks same color)
             this.persistenceCtx.strokeStyle = this.phosphorSlow;
@@ -427,6 +507,9 @@ class CRTRadarScope {
                 this.persistenceCtx.fillText('?', x + 12, y - 10);
             }
         });
+        
+        // Restore persistence context state
+        this.persistenceCtx.restore();
     }
     
     drawTracksBright() {
@@ -436,8 +519,9 @@ class CRTRadarScope {
             return;
         }
         this.tracks.forEach(track => {
-            const x = this.centerX + track.x;
-            const y = this.centerY + track.y;
+            // Tracks use normalized coordinates (0-1), convert to canvas pixels
+            const x = track.x * this.width;
+            const y = track.y * this.height;
             
             // Monochrome P14 phosphor: purple flash for all tracks
             const brightColor = this.phosphorFast;   // Purple flash
@@ -466,15 +550,16 @@ class CRTRadarScope {
                 return;
             }
             
-            const x = this.centerX + (interceptor.x * this.width);
-            const y = this.centerY + (interceptor.y * this.height);
+            // Interceptors use normalized coordinates (0-1), convert to canvas pixels
+            const x = interceptor.x * this.width;
+            const y = interceptor.y * this.height;
             
             // Draw intercept vector (dashed line to target) if engaging
             if (interceptor.assigned_target_id && (interceptor.status === 'AIRBORNE' || interceptor.status === 'ENGAGING')) {
                 const target = this.tracks.find(t => t.id === interceptor.assigned_target_id);
                 if (target) {
-                    const targetX = this.centerX + (target.x * this.width);
-                    const targetY = this.centerY + (target.y * this.height);
+                    const targetX = target.x * this.width;
+                    const targetY = target.y * this.height;
                     
                     this.ctx.strokeStyle = 'rgba(0, 150, 255, 0.6)';
                     this.ctx.lineWidth = 1;
