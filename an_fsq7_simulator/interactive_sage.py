@@ -234,10 +234,12 @@ class InteractiveSageState(rx.State):
             dt: Time delta in seconds (default 1.0 second per update)
         """
         for track in self.tracks:
-            # Save current position to trail (keep last 20 positions)
+            # Save current position to trail (keep last 7 scans - IBM DSP authentic)
+            # IBM Documentation: "the last seven scans were always shown"
+            # At 2.5-second refresh cycle: 7 scans = 17.5 seconds of history
             track.trail.append((track.x, track.y))
-            if len(track.trail) > 20:
-                track.trail = track.trail[-20:]
+            if len(track.trail) > 7:
+                track.trail = track.trail[-7:]
             
             # Update position based on velocity
             track.x += track.vx * dt
