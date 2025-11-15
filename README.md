@@ -145,21 +145,20 @@ For deep-dive system transparency (press **Shift+I** to toggle):
 - **Educational Value**: Understand SAGE's drum-buffered I/O and polling architecture
 - Designed for CS students (Ada persona) exploring system architecture
 
-### 🎨 Professional WebGL Radar Scope
-Long-persistence phosphor screen experience (P7-style):
-- **Rotating sweep**: 4-second rotation with phosphor fade effect
-- **Color-coded tracks** (modern accessibility aid - real SAGE used symbols/patterns on monochrome displays):
-  - 🔴 Red: Hostile
-  - 🟢 Green: Friendly  
-  - 🟡 Yellow: Unknown
-  - 🟣 Magenta: Missile
-  - 🔵 Blue: Interceptor
-- **Fading trails**: 20-point history showing flight paths
-- **Glow effects**: Box-shadow halos around tracks, enhanced on selection
+### 🎨 Vector CRT Radar Scope
+Long-persistence P7 phosphor screen simulation:
+- **Rotating sweep**: 60-second rotation (6°/sec) with phosphor persistence decay
+- **Monochrome green phosphor** (P7-style): Blue-white flash + slow green persistence (historically accurate)
+- **Track correlation states** (color coding for educational clarity - real SAGE used symbols only):
+  - 🟡 Yellow: Uncorrelated tracks (with "?" symbol)
+  - 🟠 Orange: Correlating (analysis in progress)
+  - 🟢 Green: Correlated (classified)
+- **Phosphor persistence trails**: ~1.5 second fade simulating P7 CRT decay characteristics
+- **Canvas shadow glow**: Phosphor bloom effects around bright targets
 - **Geographic rendering**: Coastlines, cities, range rings with toggle control
-- **Click detection**: Precise light gun target selection
-- **Pan/Zoom**: Smooth controls for detailed inspection
-- **60 FPS rendering**: Smooth Canvas 2D API performance
+- **Precise click detection**: Light gun target selection via canvas coordinate mapping
+- **Pan/Zoom controls**: Smooth view manipulation for detailed inspection
+- **60 FPS rendering**: Canvas 2D API with dual-layer persistence buffering
 
 ## Under the Hood: SAGE's Unusual Architecture
 
