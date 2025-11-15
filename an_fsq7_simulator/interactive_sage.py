@@ -38,6 +38,7 @@ from .components_v2 import (
     tube_maintenance,
     tutorial_system,
     radar_scope,
+    network_stations,
     system_messages,  # NEW: Operator goal flow requirement #2
     scenario_selector,  # NEW: Scenario switching UI
     simulation_controls,  # NEW: Pause/play/speed controls
@@ -135,6 +136,11 @@ class InteractiveSageState(rx.State):
     alerts_volume: float = 0.8
     mute_all: bool = False
     sound_enabled: bool = True
+    
+    # ===== NETWORK STATION VIEW STATE (Priority 6) =====
+    show_network_view: bool = False
+    selected_station_id: str = ""
+    network_stations_data: str = "[]"  # JSON of all stations
     
     # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
@@ -1140,6 +1146,28 @@ class InteractiveSageState(rx.State):
                 rx.call_script(f"window.setSoundVolume('alerts', {self.alerts_volume})")
             ]
     
+    # ========================
+    # NETWORK STATION VIEW HANDLERS (Priority 6)
+    # ========================
+    
+    def toggle_network_view(self):
+        """Toggle network station overlay"""
+        self.show_network_view = not self.show_network_view
+    
+    def select_station(self, station_id: str):
+        """Select a station to view details"""
+        self.selected_station_id = station_id
+    
+    def simulate_station_failure(self, station_id: str):
+        """Simulate a radar station going offline"""
+        # Future: update station status in network_stations_data
+        pass
+    
+    def restore_station(self, station_id: str):
+        """Bring a failed station back online"""
+        # Future: restore station status in network_stations_data
+        pass
+    
     def pan_scope(self, direction: str):
         """Pan scope view (arrow buttons)"""
         step = 0.05
@@ -1515,6 +1543,28 @@ class InteractiveSageState(rx.State):
         """Return complete script tag with interceptors data - for rx.html injection"""
         return f"<script>window.__SAGE_INTERCEPTORS__ = {self.get_interceptors_json()};</script>"
     
+    def get_network_stations_json(self) -> str:
+        """Convert network stations to JSON for JavaScript rendering"""
+        stations_data = [
+            {
+                "id": s.id,
+                "name": s.name,
+                "station_type": s.station_type,
+                "x": s.x,
+                "y": s.y,
+                "coverage_radius": s.coverage_radius,
+                "status": s.status,
+                "description": s.description
+            }
+            for s in network_stations.ALL_STATIONS
+        ]
+        return json.dumps(stations_data)
+    
+    @rx.var
+    def network_stations_script_tag(self) -> str:
+        """Inject network stations data for JavaScript rendering"""
+        return f"<script>window.__SAGE_NETWORK_STATIONS__ = {self.get_network_stations_json()};</script>"
+    
     # Sound config is managed through UI event handlers directly calling JavaScript
     # Initial volumes are set in SOUND_PLAYER_SCRIPT constructor
     
@@ -1631,6 +1681,33 @@ def index() -> rx.Component:
                         alerts_volume=InteractiveSageState.alerts_volume,
                         mute_all=InteractiveSageState.mute_all,
                         state_class=InteractiveSageState
+                    ),
+                    # Network view toggle (Priority 6)
+                    rx.button(
+                        rx.cond(
+                            InteractiveSageState.show_network_view,
+                            "📡 RADAR VIEW",
+                            "🌐 NETWORK VIEW"
+                        ),
+                        on_click=InteractiveSageState.toggle_network_view,
+                        size="3",
+                        style={
+                            "width": "100%",
+                            "background": rx.cond(
+                                InteractiveSageState.show_network_view,
+                                "#00AA00",
+                                "#0066AA"
+                            ),
+                            "border": "2px solid #00ff00",
+                            "font-family": "'Courier New', monospace",
+                            "cursor": "pointer",
+                            "font-weight": "bold"
+                        }
+                    ),
+                    # Network legend (show when network view active)
+                    rx.cond(
+                        InteractiveSageState.show_network_view,
+                        network_stations.network_legend_panel()
                     ),
                     width="300px",
                     spacing="4"
@@ -1751,6 +1828,10 @@ def index() -> rx.Component:
         rx.html(InteractiveSageState.tracks_script_tag),
         rx.html(InteractiveSageState.geo_script_tag),
         rx.html(InteractiveSageState.interceptors_script_tag),
+        
+        # Network station rendering system (Priority 6)
+        rx.script(network_stations.NETWORK_RENDERING_SCRIPT),
+        rx.html(InteractiveSageState.network_stations_script_tag),
         
         # Enhanced CRT Radar scope with P7 phosphor simulation - external script
         crt_effects.load_crt_script(),

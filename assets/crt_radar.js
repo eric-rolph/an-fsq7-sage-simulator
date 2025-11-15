@@ -174,6 +174,11 @@ class CRTRadarScope {
             this.drawRangeRings();
         }
         
+        // Draw network stations overlay (Priority 6) if available
+        if (this.networkStations && Array.isArray(this.networkStations) && this.networkStations.length > 0) {
+            this.drawNetworkStations();
+        }
+        
         // Draw bright sweep leading edge on top
         this.drawSweepBright();
         
@@ -404,6 +409,17 @@ class CRTRadarScope {
     updateGeoData(geoData) {
         this.geoData = geoData;
     }
+    
+    updateNetworkStations(stations) {
+        this.networkStations = stations;
+    }
+    
+    drawNetworkStations() {
+        // Call renderNetworkStations method if it was added by network_stations.py
+        if (typeof this.renderNetworkStations === 'function' && this.networkStations) {
+            this.renderNetworkStations(this.networkStations);
+        }
+    }
 }
 
 // Expose to window
@@ -499,6 +515,15 @@ setInterval(function() {
                 window.crtRadarScope.updateGeoData(window.__SAGE_GEO__);
             } catch(e) {
                 console.error('[CRT] Error updating geo data:', e);
+            }
+        }
+        
+        // Read network station data from global variable (Priority 6)
+        if (window.__SAGE_NETWORK_STATIONS__ && Array.isArray(window.__SAGE_NETWORK_STATIONS__)) {
+            try {
+                window.crtRadarScope.updateNetworkStations(window.__SAGE_NETWORK_STATIONS__);
+            } catch(e) {
+                console.error('[CRT] Error updating network stations:', e);
             }
         }
     }
