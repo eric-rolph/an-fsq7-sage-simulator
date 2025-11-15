@@ -174,21 +174,67 @@
 
 ---
 
+### Priority 6: **Network & Station View** ✅ COMPLETE
+**Persona:** Ada (system understanding)  
+**Pillar:** System transparency  
+**Status:** Implemented and committed (commits 46f57db, e121c12)
+
+#### Features Implemented:
+1. **Comprehensive Station Network**
+   - 25 historical SAGE radar stations across North America
+   - 5 station types with unique symbols and colors:
+     - △ DEW Line (8 stations) - cyan, Arctic early warning
+     - ◇ Mid-Canada Line (6 stations) - orange, central Canada
+     - ▽ Pinetree Line (8 stations) - green, southern border
+     - ○ Gap-Filler (3 stations) - yellow, US interior
+     - ⬟ GCI/SAGE DC (3 stations) - magenta, command centers
+   
+2. **Canvas Rendering System**
+   - Coverage circles showing radar range (semi-transparent, status-based alpha)
+   - Station markers with type symbols and abbreviated names
+   - Connection lines from stations to nearest GCI center (dashed, low opacity)
+   - Status-based rendering: operational (1.0), degraded (0.6), offline (0.3)
+
+3. **UI Integration**
+   - Toggle button: 🌐 NETWORK VIEW / 📡 RADAR VIEW
+   - Network legend panel showing all station types (auto-shows with network view)
+   - Total station count display (28 stations including scenario bases)
+   - Seamless toggle between network overlay and standard radar view
+
+4. **State Management**
+   - `show_network_view`: Toggle state
+   - `selected_station_id`: For future station selection feature
+   - `network_stations_data`: JSON serialization of all stations
+   - Methods: `toggle_network_view()`, `select_station()`, etc.
+
+5. **JavaScript Integration**
+   - CRTRadarScope prototype methods: `renderNetworkStations()`, `getStationStyle()`, `findNearestGCI()`
+   - Data polling integrated with existing CRT update loop (1000ms)
+   - Automatic station data injection via window.__SAGE_NETWORK_STATIONS__
+
+**Files:**
+- `components_v2/network_stations.py` (389 lines) - station data, legend panel, rendering script
+- `interactive_sage.py`: Network state fields, handlers, data serialization
+- `assets/crt_radar.js`: Integration hooks for network rendering
+
+**Verified:**
+- ✅ 28 stations rendering correctly with coverage circles
+- ✅ Station markers with proper symbols and colors
+- ✅ GCI connection lines displayed
+- ✅ Toggle functionality working perfectly
+- ✅ Legend panel shows/hides appropriately
+
+---
+
 ## 🎯 NEXT PRIORITIES (Additional Features)
 
-### Network & Station View
-**Persona:** Ada (system understanding)  
-**Pillar:** System transparency
+### Future Network Enhancements
+**When:** After core features complete
 
-- Show SAGE radar network:
-  - DEW Line stations (Arctic)
-  - Mid-Canada Line
-  - Pinetree Line
-  - Gap-filler radars
-  - GCI (Ground Control Intercept) stations
-  
-- Visual map showing which stations contribute to current radar picture
-- Station failure simulation (track drops disappear from coverage area)
+- Interactive station selection (click to show details panel)
+- Station failure simulation affecting track coverage
+- Real-time data flow animation from stations to GCI
+- Station status degradation over time
 
 ---
 
