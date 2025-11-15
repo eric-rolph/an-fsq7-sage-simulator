@@ -324,9 +324,17 @@ def sound_settings_panel(
     effects_volume: float,
     alerts_volume: float,
     mute_all: bool,
+    state_class,
 ) -> rx.Component:
     """
     Sound settings control panel
+    
+    Args:
+        ambient_volume: Ambient sound volume (0.0-1.0)
+        effects_volume: Effects sound volume (0.0-1.0)
+        alerts_volume: Alerts sound volume (0.0-1.0)
+        mute_all: Whether all sounds are muted
+        state_class: Reflex State class with sound event handlers
     """
     return rx.box(
         rx.vstack(
@@ -342,14 +350,14 @@ def sound_settings_panel(
             # Master mute
             rx.hstack(
                 rx.switch(
-                    checked=not mute_all,
-                    on_change=rx.State.toggle_sound_mute,  # type: ignore
+                    checked=~mute_all,  # Use ~ operator for Reflex Var inversion
+                    on_change=state_class.toggle_sound_mute,
                     color_scheme="green"
                 ),
                 rx.text(
-                    "SOUND ENABLED" if not mute_all else "SOUND MUTED",
+                    rx.cond(~mute_all, "SOUND ENABLED", "SOUND MUTED"),  # Use rx.cond instead of ternary
                     font_weight="bold",
-                    color="#00ff00" if not mute_all else "#ff0000",
+                    color=rx.cond(~mute_all, "#00ff00", "#ff0000"),  # Use rx.cond for color
                     font_family="Courier New"
                 ),
                 spacing="3",
@@ -362,21 +370,21 @@ def sound_settings_panel(
             volume_slider(
                 label="AMBIENT (radar sweep, computer hum)",
                 value=ambient_volume,
-                on_change=rx.State.set_ambient_volume,  # type: ignore
+                on_change=state_class.set_ambient_volume,
                 color="blue"
             ),
             
             volume_slider(
                 label="EFFECTS (button clicks, selections)",
                 value=effects_volume,
-                on_change=rx.State.set_effects_volume,  # type: ignore
+                on_change=state_class.set_effects_volume,
                 color="green"
             ),
             
             volume_slider(
                 label="ALERTS (warnings, hostiles, intercepts)",
                 value=alerts_volume,
-                on_change=rx.State.set_alerts_volume,  # type: ignore
+                on_change=state_class.set_alerts_volume,
                 color="orange"
             ),
             
@@ -414,28 +422,28 @@ def sound_settings_panel(
                     "SILENT",
                     size="1",
                     variant="soft",
-                    on_click=rx.State.set_sound_preset("silent"),  # type: ignore
+                    on_click=lambda: state_class.set_sound_preset("silent"),
                     style={"font_family": "Courier New"}
                 ),
                 rx.button(
                     "SUBTLE",
                     size="1",
                     variant="soft",
-                    on_click=rx.State.set_sound_preset("subtle"),  # type: ignore
+                    on_click=lambda: state_class.set_sound_preset("subtle"),
                     style={"font_family": "Courier New"}
                 ),
                 rx.button(
                     "NORMAL",
                     size="1",
                     variant="soft",
-                    on_click=rx.State.set_sound_preset("normal"),  # type: ignore
+                    on_click=lambda: state_class.set_sound_preset("normal"),
                     style={"font_family": "Courier New"}
                 ),
                 rx.button(
                     "IMMERSIVE",
                     size="1",
                     variant="soft",
-                    on_click=rx.State.set_sound_preset("immersive"),  # type: ignore
+                    on_click=lambda: state_class.set_sound_preset("immersive"),
                     style={"font_family": "Courier New"}
                 ),
                 spacing="2"
@@ -465,7 +473,7 @@ def volume_slider(
                 rx.text(label, font_size="11px", color="#888888"),
                 rx.spacer(),
                 rx.text(
-                    f"{int(value * 100)}%",
+                    (value * 100).to(str) + "%",  # Convert to string and add %
                     font_family="Courier New",
                     font_weight="bold",
                     color="#00ff00"
@@ -473,11 +481,11 @@ def volume_slider(
                 width="100%"
             ),
             rx.slider(
-                value=value * 100,
+                default_value=value,  # Use default_value for Reflex Var
                 min=0,
-                max=100,
-                step=5,
-                on_change=lambda v: on_change(v / 100.0),
+                max=1,
+                step=0.05,  # 5% steps
+                on_change=on_change,  # Already receives 0.0-1.0 value
                 color_scheme=color,
                 width="100%"
             ),
@@ -488,14 +496,14 @@ def volume_slider(
     )
 
 
-def test_sound_button(label: str, sound_id: str) -> rx.Component:
-    """Button to test a specific sound"""
+def test_sound_button(label: str, sound_id: str, category: str = "effects") -> rx.Component:
+    """Button to test a specific sound - calls JavaScript directly"""
     return rx.button(
         label,
         size="1",
         variant="outline",
         color_scheme="gray",
-        on_click=rx.State.play_sound(sound_id),  # type: ignore
+        on_click=rx.call_script(f"window.playSound('{sound_id}', '{category}', false)"),
         style={
             "font_family": "Courier New",
             "font_size": "10px"
@@ -727,4 +735,6 @@ window.setSoundVolume = (category, value) => {
 window.muteSounds = (muted) => {
     window.sageSoundPlayer.setMute(muted);
 };
+
+console.log('[SAGE Sound] Sound player initialized');
 """

@@ -46,6 +46,7 @@ from .components_v2 import (
     interceptor_panel,  # NEW: Interceptor assignment system
     system_inspector,  # NEW: System Inspector Overlay (Priority 3)
     scenario_debrief,  # NEW: Scenario Debrief Panel (Priority 4)
+    sound_effects,  # NEW: Sound Effects & Audio Feedback (Priority 5)
 )
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
@@ -127,6 +128,13 @@ class InteractiveSageState(rx.State):
     scenario_complete: bool = False
     scenario_start_time: float = 0.0
     scenario_metrics: Dict[str, Any] = {}
+    
+    # ===== SOUND EFFECTS STATE (Priority 5) =====
+    ambient_volume: float = 0.3
+    effects_volume: float = 0.7
+    alerts_volume: float = 0.8
+    mute_all: bool = False
+    sound_enabled: bool = True
     
     # Note: geo_overlays removed from state - use geographic_overlays module directly in views
     
@@ -692,6 +700,7 @@ class InteractiveSageState(rx.State):
     def arm_lightgun(self):
         """Activate light gun (press D key)"""
         self.lightgun_armed = True
+        # Note: Sound trigger handled by JavaScript via window.playSound()
     
     def disarm_lightgun(self):
         """Deactivate light gun (press ESC key)"""
@@ -712,6 +721,7 @@ class InteractiveSageState(rx.State):
             return
         
         self.selected_track_id = track_id
+        # Note: lightgun_select sound triggered by JavaScript on canvas click
         
         # Mark track as selected in state
         for track in self.tracks:
@@ -744,6 +754,7 @@ class InteractiveSageState(rx.State):
         interceptor.assigned_target_id = target_id
         interceptor.status = "SCRAMBLING"
         target.interceptor_assigned = True
+        # Note: intercept_launch sound triggered by JavaScript via window.playSound('intercept_launch', 'effect')
         
         # Calculate distance for logging
         import math
@@ -841,6 +852,7 @@ class InteractiveSageState(rx.State):
             track.confidence_level = "high"
             track.correlation_reason = "manual"
             track.classification_time = self.world_time / 1000.0
+            # Note: hostile_alert sound triggered by JavaScript via window.playSound('hostile_alert', 'alert')
             
             self.system_messages_log.append(
                 system_messages.SystemMessage(
@@ -1077,6 +1089,56 @@ class InteractiveSageState(rx.State):
         self.scenario_metrics = metrics.to_dict()
         self.scenario_complete = True
         self.stop_simulation()
+    
+    # ========================
+    # SOUND EFFECTS HANDLERS (Priority 5)
+    # ========================
+    
+    def play_sound(self, sound_id: str, category: str = "effects"):
+        """Trigger a sound effect (handled by JavaScript)"""
+        # Sound playing is handled by JavaScript SAGESoundPlayer
+        # This method exists to be called from event handlers
+        pass
+    
+    def set_ambient_volume(self, volume: list[float]):
+        """Set ambient sounds volume (0.0-1.0) - slider passes list[float]"""
+        vol = volume[0] if volume else 0.5
+        self.ambient_volume = max(0.0, min(1.0, vol))
+        return rx.call_script(f"window.setSoundVolume('ambient', {self.ambient_volume})")
+    
+    def set_effects_volume(self, volume: list[float]):
+        """Set effects sounds volume (0.0-1.0) - slider passes list[float]"""
+        vol = volume[0] if volume else 0.5
+        self.effects_volume = max(0.0, min(1.0, vol))
+        return rx.call_script(f"window.setSoundVolume('effects', {self.effects_volume})")
+    
+    def set_alerts_volume(self, volume: list[float]):
+        """Set alert sounds volume (0.0-1.0) - slider passes list[float]"""
+        vol = volume[0] if volume else 0.5
+        self.alerts_volume = max(0.0, min(1.0, vol))
+        return rx.call_script(f"window.setSoundVolume('alerts', {self.alerts_volume})")
+    
+    def toggle_sound_mute(self):
+        """Toggle all sounds on/off"""
+        self.mute_all = not self.mute_all
+        return rx.call_script(f"window.muteSounds({str(self.mute_all).lower()})")
+    
+    def set_sound_preset(self, preset: str):
+        """Apply sound volume preset (silent/subtle/normal/immersive)"""
+        presets = {
+            "silent": (0.0, 0.0, 0.0),
+            "subtle": (0.1, 0.3, 0.4),
+            "normal": (0.3, 0.7, 0.8),
+            "immersive": (0.5, 1.0, 1.0)
+        }
+        if preset in presets:
+            self.ambient_volume, self.effects_volume, self.alerts_volume = presets[preset]
+            # Update all three volumes in JavaScript
+            return [
+                rx.call_script(f"window.setSoundVolume('ambient', {self.ambient_volume})"),
+                rx.call_script(f"window.setSoundVolume('effects', {self.effects_volume})"),
+                rx.call_script(f"window.setSoundVolume('alerts', {self.alerts_volume})")
+            ]
     
     def pan_scope(self, direction: str):
         """Pan scope view (arrow buttons)"""
@@ -1453,6 +1515,9 @@ class InteractiveSageState(rx.State):
         """Return complete script tag with interceptors data - for rx.html injection"""
         return f"<script>window.__SAGE_INTERCEPTORS__ = {self.get_interceptors_json()};</script>"
     
+    # Sound config is managed through UI event handlers directly calling JavaScript
+    # Initial volumes are set in SOUND_PLAYER_SCRIPT constructor
+    
     # Helper vars for classification panel (avoid nested property access issues)
     @rx.var
     def classifying_track_type(self) -> str:
@@ -1559,6 +1624,13 @@ def index() -> rx.Component:
                     ),
                     tube_maintenance.tube_maintenance_panel(
                         InteractiveSageState.maintenance
+                    ),
+                    sound_effects.sound_settings_panel(
+                        ambient_volume=InteractiveSageState.ambient_volume,
+                        effects_volume=InteractiveSageState.effects_volume,
+                        alerts_volume=InteractiveSageState.alerts_volume,
+                        mute_all=InteractiveSageState.mute_all,
+                        state_class=InteractiveSageState
                     ),
                     width="300px",
                     spacing="4"
@@ -1682,6 +1754,9 @@ def index() -> rx.Component:
         
         # Enhanced CRT Radar scope with P7 phosphor simulation - external script
         crt_effects.load_crt_script(),
+        
+        # Sound Effects System (Priority 5) - config managed through UI event handlers
+        rx.script(sound_effects.SOUND_PLAYER_SCRIPT),
         
         rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
         
