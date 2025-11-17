@@ -68,12 +68,20 @@
 - ✅ Scenario debrief system verified
 
 ### Automated Testing
-- ⏳ **TODO:** Create pytest test suite (`tests/design_language/`)
+- ✅ **Pytest infrastructure setup complete** (pytest.ini, conftest.py)
+- ✅ **69 tests implemented** (33 unit, 36 simulation)
+  - Unit tests: CPU core, light gun, track correlation
+  - Simulation tests: Interceptor logic, scenarios, track physics
+- ✅ **100% pass rate** (69/69 tests passing)
+- 📊 **8% code coverage** (baseline established, target 80%+)
+- ⏳ **TODO:** Create design_language tests (mode-free UI, P14 monochrome, layout invariants)
+- ⏳ **TODO:** Create integration tests (light gun workflow, intercept workflow, scenario debrief)
+- ⏳ **TODO:** Add property-based tests with Hypothesis
 - ⏳ **TODO:** Add CI/CD pipeline (GitHub Actions)
 - ⏳ **TODO:** Cross-browser testing (Firefox, Safari, Edge)
 
 ### Known Issues
-- None blocking (server stable, features working)
+- None blocking (server stable, features working, all tests passing)
 - WebSocket warnings during hot reload (harmless)
 
 ---

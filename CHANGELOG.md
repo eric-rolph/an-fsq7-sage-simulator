@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Testing Infrastructure** (2025-11-18)
+  - Pytest configuration with coverage reporting
+  - 69 automated tests (33 unit, 36 simulation)
+  - Test fixtures for tracks, interceptors, scenarios
+  - Unit tests for CPU core, light gun, track correlation
+  - Simulation tests for interceptor logic, scenarios, track physics
+  - 100% pass rate achieved (69/69 tests)
+  - 8% code coverage baseline (target 80%+)
+
+---
+
 ## [1.0.0] - 2025-11-17
 
 ### Added
