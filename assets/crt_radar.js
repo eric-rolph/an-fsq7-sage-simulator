@@ -523,13 +523,16 @@ class CRTRadarScope {
     drawTracksBright() {
         // Draw bright track markers on top with history trails (doesn't persist)
         // P14 phosphor: purple flash on impact, orange afterglow history
-        // Priority 8 Task 4: Bright/dim history system with 7-position trails
+        // Priority 8: Authentic tabular display with 5-feature format (A/B/C/D/E)
         if (!this.tracks || !Array.isArray(this.tracks)) {
             return;
         }
         
         // Alpha values for history trail (7 positions, progressively dimmer)
         const historyAlpha = [0.85, 0.7, 0.55, 0.4, 0.3, 0.2, 0.15];
+        
+        // Check if tabular display system is available
+        const hasTabularDisplay = typeof window.TabularTrackDisplay !== 'undefined';
         
         this.tracks.forEach(track => {
             // Draw history trail first (dim positions)
@@ -555,22 +558,59 @@ class CRTRadarScope {
                 this.ctx.shadowBlur = 0;
             }
             
-            // Draw present position (brightest)
+            // Draw present position
             const x = track.x * this.width;
             const y = track.y * this.height;
             
-            // Monochrome P14 phosphor: purple flash for present position
-            const brightColor = this.phosphorFast;   // Purple flash
-            const shadowColor = this.phosphorSlow;   // Orange glow
+            // Monochrome P14 phosphor color
+            const phosphorColor = this.phosphorFast;   // Purple flash for present
             
-            // Draw bright center spot with P14 phosphor glow
-            this.ctx.fillStyle = brightColor;
-            this.ctx.shadowColor = shadowColor;
-            this.ctx.shadowBlur = 15;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, 3, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
+            // Priority 8: Use authentic tabular display if track has features
+            if (hasTabularDisplay && track.feature_a && track.feature_b && track.feature_c && track.feature_d) {
+                // Transform track data to TabularTrackDisplay format
+                const tabularTrack = {
+                    features: {
+                        A: track.feature_a,
+                        B: track.feature_b,
+                        C: track.feature_c,
+                        D: track.feature_d
+                    },
+                    heading: track.heading,
+                    speed: track.speed,
+                    positionMode: 0  // Default: RIGHT
+                };
+                
+                // Render authentic 5-feature tabular format (A/B/C/D/E)
+                try {
+                    window.TabularTrackDisplay.renderTrack(
+                        this.ctx,
+                        tabularTrack,
+                        x,
+                        y,
+                        phosphorColor,
+                        1.0  // Full brightness for present position
+                    );
+                } catch (err) {
+                    console.error('[CRT] Tabular display error:', err);
+                    // Fallback to simple dot
+                    this.ctx.fillStyle = phosphorColor;
+                    this.ctx.shadowColor = this.phosphorSlow;
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                }
+            } else {
+                // Fallback: Legacy geometric symbols (circles/squares) for tracks without features
+                this.ctx.fillStyle = phosphorColor;
+                this.ctx.shadowColor = this.phosphorSlow;
+                this.ctx.shadowBlur = 15;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 3, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+            }
         });
     }
     
