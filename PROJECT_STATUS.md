@@ -69,15 +69,17 @@
 
 ### Automated Testing
 - ✅ **Pytest infrastructure setup complete** (pytest.ini, conftest.py)
-- ✅ **116 tests implemented** (49 unit, 36 simulation, 31 design_language)
-  - Unit tests: CPU core, light gun, track correlation, drum I/O (NEW)
-  - Simulation tests: Interceptor logic, scenarios, track physics
+- ✅ **180 tests implemented** (76 unit, 73 simulation, 31 design_language)
+  - Unit tests: CPU core, light gun, track correlation, drum I/O, state model (NEW)
+  - Simulation tests: Interceptor logic, scenarios, track physics, sim_loop (NEW), scenario events (NEW)
   - Design language tests: Mode-free UI, P14 monochrome, layout invariants
-- ✅ **100% pass rate** (116/116 tests passing)
-- 📊 **11% code coverage** (up from 8%, target 80%+)
+- ✅ **100% pass rate** (180/180 tests passing)
+- 📊 **16% code coverage** (up from 8%, target 40% Week 1)
+  - sim_loop.py: 94% covered (15% → 94%)
+  - scenario_events.py: 79% covered (0% → 79%)
+  - sim/models.py: 74% covered (50% → 74%)
+  - state_model.py: 67% covered (65% → 67%)
   - drum_io_system.py: 58% covered
-  - state_model.py: 65% covered
-  - sim/models.py: 50% covered
 - ⏳ **TODO:** Create integration tests (light gun workflow, intercept workflow, scenario debrief)
 - ⏳ **TODO:** Add property-based tests with Hypothesis
 - ⏳ **TODO:** Expand unit test coverage (cpu_authentic, state transitions, sim_loop)
