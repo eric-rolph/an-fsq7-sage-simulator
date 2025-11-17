@@ -1650,6 +1650,11 @@ class InteractiveSageState(rx.State):
             "correlation_state": getattr(t, 'correlation_state', 'correlated'),
             "confidence_level": getattr(t, 'confidence_level', 'high'),
             "correlation_reason": getattr(t, 'correlation_reason', ''),
+            # Tabular display features (A/B/C/D) - Priority 8
+            "feature_a": getattr(t, 'feature_a', ''),
+            "feature_b": getattr(t, 'feature_b', ''),
+            "feature_c": getattr(t, 'feature_c', ''),
+            "feature_d": getattr(t, 'feature_d', ''),
         } for t in filtered_tracks])
     
     def get_overlays_json(self) -> str:
