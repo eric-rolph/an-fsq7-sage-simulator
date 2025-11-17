@@ -1749,18 +1749,22 @@ class InteractiveSageState(rx.State):
             confidence_level="unknown"
         )
     
+    @rx.var(cache=True)
+    def _tracks_json_cached(self) -> str:
+        """PERFORMANCE: Cached JSON serialization to avoid redundant json.dumps() calls"""
+        return self.get_tracks_json()
+    
     @rx.var
     def tracks_json_var(self) -> str:
         """Embed filtered tracks as JSON for JavaScript access (computed var)"""
-        return self.get_tracks_json()
+        return self._tracks_json_cached
     
     @rx.var
     def tracks_script_tag(self) -> str:
         """Return complete script tag with tracks data - for rx.html injection"""
         # SECURITY: Escape JSON for HTML context to prevent XSS
         import html
-        json_data = self.get_tracks_json()
-        safe_json = html.escape(json_data, quote=False)
+        safe_json = html.escape(self._tracks_json_cached, quote=False)
         return f"<script>window.__SAGE_TRACKS__ = {safe_json};</script>"
     
     @rx.var
@@ -1768,17 +1772,21 @@ class InteractiveSageState(rx.State):
         """Convert world_time from milliseconds to seconds for UI display"""
         return self.world_time / 1000.0
     
+    @rx.var(cache=True)
+    def _geo_json_cached(self) -> str:
+        """PERFORMANCE: Cached JSON serialization to avoid redundant json.dumps() calls"""
+        return self.get_geo_json()
+    
     @rx.var
     def geo_json_var(self) -> str:
         """Embed geographic data as JSON for JavaScript access (computed var)"""
-        return self.get_geo_json()
+        return self._geo_json_cached
     
     @rx.var
     def geo_script_tag(self) -> str:
         """Return complete script tag with geo data - for rx.html injection"""
         import html
-        json_data = self.get_geo_json()
-        safe_json = html.escape(json_data, quote=False)
+        safe_json = html.escape(self._geo_json_cached, quote=False)
         return f"<script>window.__SAGE_GEO__ = {safe_json};</script>"
     
     def get_interceptors_json(self) -> str:
@@ -1796,17 +1804,21 @@ class InteractiveSageState(rx.State):
         ]
         return json.dumps(interceptors_data)
     
+    @rx.var(cache=True)
+    def _interceptors_json_cached(self) -> str:
+        """PERFORMANCE: Cached JSON serialization to avoid redundant json.dumps() calls"""
+        return self.get_interceptors_json()
+    
     @rx.var
     def interceptors_json_var(self) -> str:
         """Embed interceptors as JSON for JavaScript access (computed var)"""
-        return self.get_interceptors_json()
+        return self._interceptors_json_cached
     
     @rx.var
     def interceptors_script_tag(self) -> str:
         """Return complete script tag with interceptors data - for rx.html injection"""
         import html
-        json_data = self.get_interceptors_json()
-        safe_json = html.escape(json_data, quote=False)
+        safe_json = html.escape(self._interceptors_json_cached, quote=False)
         return f"<script>window.__SAGE_INTERCEPTORS__ = {safe_json};</script>"
     
     @rx.var
@@ -1840,12 +1852,16 @@ class InteractiveSageState(rx.State):
         ]
         return json.dumps(stations_data)
     
+    @rx.var(cache=True)
+    def _network_stations_json_cached(self) -> str:
+        """PERFORMANCE: Cached JSON serialization to avoid redundant json.dumps() calls"""
+        return self.get_network_stations_json()
+    
     @rx.var
     def network_stations_script_tag(self) -> str:
         """Inject network stations data for JavaScript rendering"""
         import html
-        json_data = self.get_network_stations_json()
-        safe_json = html.escape(json_data, quote=False)
+        safe_json = html.escape(self._network_stations_json_cached, quote=False)
         return f"<script>window.__SAGE_NETWORK_STATIONS__ = {safe_json};</script>"
     
     # Sound config is managed through UI event handlers directly calling JavaScript
@@ -1915,10 +1931,9 @@ class InteractiveSageState(rx.State):
         col_letter = chr(65 + self.selected_sector_col)  # 0-6 -> A-G
         return f"SECTOR {row_num}-{col_letter} | {self.expansion_level}X"
     
-    @rx.var
-    def system_messages_script_tag(self) -> str:
-        """Inject system messages log as JSON for JavaScript access"""
-        import html
+    @rx.var(cache=True)
+    def _system_messages_json_cached(self) -> str:
+        """PERFORMANCE: Cached JSON serialization to avoid redundant json.dumps() calls"""
         messages_data = [
             {
                 "timestamp": msg.timestamp,
@@ -1928,8 +1943,13 @@ class InteractiveSageState(rx.State):
             }
             for msg in self.system_messages_log
         ]
-        json_data = json.dumps(messages_data)
-        safe_json = html.escape(json_data, quote=False)
+        return json.dumps(messages_data)
+    
+    @rx.var
+    def system_messages_script_tag(self) -> str:
+        """Inject system messages log as JSON for JavaScript access"""
+        import html
+        safe_json = html.escape(self._system_messages_json_cached, quote=False)
         return f"<script>window.__SAGE_SYSTEM_MESSAGES__ = {safe_json};</script>"
 
 
