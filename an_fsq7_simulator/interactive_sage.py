@@ -75,6 +75,10 @@ class InteractiveSageState(rx.State):
     cpu_trace: state_model.CpuTrace = None
     execution_speed: str = "realtime"  # realtime | slow | step
     
+    # ===== PERFORMANCE OPTIMIZATION STATE =====
+    # Track last feature update values to avoid unnecessary regeneration
+    _track_feature_cache: Dict[str, Dict[str, int]] = {}
+    
     # ===== LIGHT GUN STATE =====
     lightgun_armed: bool = False
     selected_track_id: str = ""
@@ -265,8 +269,31 @@ class InteractiveSageState(rx.State):
             elif track.y > 1.0:
                 track.y -= 1.0
             
-            # Update tabular display features to reflect current track state
-            state_model.update_track_display_features(track)
+            # PERFORMANCE: Only regenerate tabular features if significant changes
+            # Thresholds: 500ft altitude, 5° heading, 50 knots speed
+            if track.id not in self._track_feature_cache:
+                # First update - initialize tracking and generate features
+                self._track_feature_cache[track.id] = {
+                    'altitude': track.altitude,
+                    'heading': track.heading,
+                    'speed': track.speed
+                }
+                state_model.update_track_display_features(track)
+            else:
+                # Check if significant change occurred
+                cache = self._track_feature_cache[track.id]
+                altitude_changed = abs(track.altitude - cache['altitude']) > 500
+                heading_changed = abs(track.heading - cache['heading']) > 5
+                speed_changed = abs(track.speed - cache['speed']) > 50
+                
+                if altitude_changed or heading_changed or speed_changed:
+                    # Update tracking and regenerate features
+                    self._track_feature_cache[track.id] = {
+                        'altitude': track.altitude,
+                        'heading': track.heading,
+                        'speed': track.speed
+                    }
+                    state_model.update_track_display_features(track)
     
     def update_interceptor_positions(self, dt: float = 1.0):
         """
@@ -357,7 +384,11 @@ class InteractiveSageState(rx.State):
                     hit_probability = 0.7  # 70% hit rate
                     if random.random() < hit_probability:
                         # Hit! Remove target
-                        self.tracks = [t for t in self.tracks if t.id != target.id]
+                        removed_id = target.id
+                        self.tracks = [t for t in self.tracks if t.id != removed_id]
+                        # PERFORMANCE: Clean up feature cache for removed track
+                        if removed_id in self._track_feature_cache:
+                            del self._track_feature_cache[removed_id]
                         self.system_messages_log.append(
                             system_messages.SystemMessage(
                                 timestamp=datetime.now().strftime("%H:%M:%S"),
@@ -708,6 +739,8 @@ class InteractiveSageState(rx.State):
         
         # Convert RadarTarget to Track
         self.tracks = []
+        # PERFORMANCE: Clear feature cache when loading new scenario
+        self._track_feature_cache = {}
         for rt in scenario.targets:
             # Calculate velocity components from speed and heading
             # Speed in knots, heading in degrees (0=East, 90=North in radar coords)
@@ -1145,7 +1178,11 @@ class InteractiveSageState(rx.State):
             return
         
         # Remove track from list
-        self.tracks = [t for t in self.tracks if t.id != self.classifying_track_id]
+        removed_id = self.classifying_track_id
+        self.tracks = [t for t in self.tracks if t.id != removed_id]
+        # PERFORMANCE: Clean up feature cache for removed track
+        if removed_id in self._track_feature_cache:
+            del self._track_feature_cache[removed_id]
         
         self.system_messages_log.append(
             system_messages.SystemMessage(
