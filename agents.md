@@ -415,12 +415,13 @@ When implementing new features:
 ## Agent Collaboration Notes
 
 When multiple agents work on this project:
-- Always check `TODO_COMPLETION_REPORT.md` for current status.
-- Read `DEVELOPMENT_ROADMAP.md` for priority order.
-- Check `AGENTS.md` (this file) for common patterns and constraints.
+- Always check `PROJECT_STATUS.md` for current status and roadmap.
+- Read `CHANGELOG.md` for recent feature additions.
+- Check `agents.md` (this file) for common patterns and constraints.
+- Review `CONTRIBUTING.md` for testing guidelines and PR process.
 - Use `git log --oneline -10` to see recent work.
 - Don't assume commands work without the `uv run` prefix.
-- Don't introduce new tools or package managers without updating this file and the roadmap.
+- Don't introduce new tools or package managers without updating this file.
 
 ## Emergency Recovery
 

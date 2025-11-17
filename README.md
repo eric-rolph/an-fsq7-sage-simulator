@@ -551,26 +551,27 @@ Contributions welcome! Current system is production-ready with all 6 development
 
 **Getting Started:**
 - **[QUICKSTART.md](QUICKSTART.md)** - 5-minute quick start guide
-- **[agents.md](agents.md)** - Development patterns for AI agents working on project
-- **[TODO_COMPLETION_REPORT.md](TODO_COMPLETION_REPORT.md)** - Detailed completion status of all priorities
-- **[ALL_PRIORITIES_COMPLETE_SUMMARY.md](ALL_PRIORITIES_COMPLETE_SUMMARY.md)** - Comprehensive test verification
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contributor guide with testing & PR guidelines
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Current development status
 
-**Technical Documentation:**
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture overview
-- **[docs/DESIGN.md](docs/DESIGN.md)** - Technical design decisions
-- **[docs/HIGH_FIDELITY_EMULATION.md](docs/HIGH_FIDELITY_EMULATION.md)** - One's complement, drum I/O, light gun polling
-- **[docs/FIDELITY_SUMMARY.md](docs/FIDELITY_SUMMARY.md)** - Historical accuracy assessment
-- **[docs/INDEXED_ADDRESSING.md](docs/INDEXED_ADDRESSING.md)** - CPU implementation details
-- **[docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md)** - Component wiring guide
-
-**Feature Documentation:**
-- **[docs/SOUND_EFFECTS_GUIDE.md](docs/SOUND_EFFECTS_GUIDE.md)** - Audio system implementation
-- **[docs/UI_DESIGN_PATTERNS.md](docs/UI_DESIGN_PATTERNS.md)** - Design language and invariants
+**For Developers:**
+- **[agents.md](agents.md)** - Development patterns, design invariants, common gotchas
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and data flow
+- **[docs/DESIGN.md](docs/DESIGN.md)** - Design philosophy and technical decisions
+- **[docs/HIGH_FIDELITY_EMULATION.md](docs/HIGH_FIDELITY_EMULATION.md)** - SAGE technical implementation details
+- **[docs/INDEXED_ADDRESSING.md](docs/INDEXED_ADDRESSING.md)** - CPU architecture and instruction set
 - **[an_fsq7_simulator/components_v2/README.md](an_fsq7_simulator/components_v2/README.md)** - Component API reference
+
+**For Users:**
+- **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)** - Comprehensive user manual
+- **[docs/SOUND_EFFECTS_GUIDE.md](docs/SOUND_EFFECTS_GUIDE.md)** - Audio system reference
+- **[docs/UI_DESIGN_PATTERNS.md](docs/UI_DESIGN_PATTERNS.md)** - Design language and patterns
 
 **Historical Context:**
 - **[docs/HISTORY.md](docs/HISTORY.md)** - AN/FSQ-7 and SAGE system history
-- **[docs/archive/](docs/archive/)** - Historical implementation notes and session summaries
+- **[docs/FIDELITY_SUMMARY.md](docs/FIDELITY_SUMMARY.md)** - Historical accuracy notes
+- **[docs/archive/](docs/archive/)** - Completed session reports and historical notes
 
 ## License
 

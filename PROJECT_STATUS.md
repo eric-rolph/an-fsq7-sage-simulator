@@ -80,26 +80,42 @@
 
 ## 📚 Documentation Status
 
-### User-Facing Documentation
-- ✅ **README.md** - Comprehensive feature list, getting started, architecture overview
-- ✅ **QUICKSTART.md** - Fast setup instructions
-- ✅ **TESTING_GUIDE.md** - Manual testing procedures
-- ⏳ **USER_GUIDE.md** - TODO: Detailed walkthrough with keyboard shortcuts
+### Core Documentation (Essential - 12 files)
 
-### Developer Documentation
-- ✅ **agents.md** - Critical design invariants, render loop warnings, development patterns
-- ✅ **DEVELOPMENT_ROADMAP.md** - Original roadmap (all priorities complete)
-- ✅ **WHATS_NEXT_ROADMAP.md** - Future enhancement recommendations
-- ✅ **DISPLAY_AUTHENTICITY_PLAN.md** - P14 phosphor implementation details
-- ✅ **ALL_PRIORITIES_COMPLETE_SUMMARY.md** - Comprehensive completion report
-- ⏳ **CONTRIBUTING.md** - TODO: Contributor guide
-- ⏳ **ARCHITECTURE.md** - TODO: Detailed architecture diagrams
+**User-Facing:**
+- ✅ **README.md** - Main entry point, feature showcase
+- ✅ **QUICKSTART.md** - Fast setup guide (Windows/Linux)
+- ✅ **CHANGELOG.md** - Version history and release notes
+- ⏳ **docs/USER_GUIDE.md** - Comprehensive user manual (needs Priority 8 updates)
 
-### Historical Documentation
-- ✅ **docs/HIGH_FIDELITY_EMULATION.md** - SAGE architecture details
-- ✅ **docs/VISUAL_REFERENCE.md** - Display characteristics
-- ✅ **docs/SOUND_EFFECTS_GUIDE.md** - Audio system documentation
-- ✅ **docs/HISTORY.md** - Cold War context
+**Developer Reference:**
+- ✅ **CONTRIBUTING.md** - Contributor guide with testing & PR guidelines
+- ✅ **agents.md** - Critical dev patterns, design invariants, gotchas
+- ✅ **docs/ARCHITECTURE.md** - System structure and data flow
+- ✅ **docs/DESIGN.md** - Design philosophy
+- ✅ **docs/HIGH_FIDELITY_EMULATION.md** - SAGE technical implementation
+- ✅ **docs/INDEXED_ADDRESSING.md** - CPU architecture details
+- ✅ **an_fsq7_simulator/components_v2/README.md** - Component API
+
+**Historical Context:**
+- ✅ **docs/HISTORY.md** - SAGE historical background
+- ✅ **docs/FIDELITY_SUMMARY.md** - Historical accuracy notes
+- ✅ **docs/UI_DESIGN_PATTERNS.md** - Design language rules
+- ✅ **docs/SOUND_EFFECTS_GUIDE.md** - Audio system reference
+
+**Project Management:**
+- ✅ **PROJECT_STATUS.md** - Current status snapshot (this file)
+
+### Archived Documentation (Historical Sessions)
+
+**Location:** `docs/archive/completed_sessions/`
+
+Session reports from completed development priorities:
+- Priority 1-7 implementation summaries
+- Priority 8 integration report
+- Display authenticity enhancement project
+- Sound integration guide
+- Code compliance reviews
 
 ---
 
