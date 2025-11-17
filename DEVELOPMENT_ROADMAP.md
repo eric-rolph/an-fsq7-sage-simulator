@@ -238,6 +238,122 @@
 
 ---
 
+### Priority 8: **🔴 CRITICAL - Authentic SAGE Display Format** ⚠️ IN PLANNING
+**Status:** Major corrections required based on C702-416L-ST manual analysis  
+**Persona:** All (historical accuracy fundamental to experience)  
+**Pillar:** Historical feel, Cognitive fidelity  
+**Impact:** HIGH - Complete rewrite of track rendering system
+
+#### Discovery from Official Manual
+
+Analysis of the **C702-416L-ST Situation Display Generator Element** manual (pages 0440-0540) reveals our track display format is **fundamentally incorrect**.
+
+**Current Implementation (WRONG):**
+- Geometric shapes: circles (friendly), squares (hostile), diamonds (unknown), triangles (missiles)
+- Color-coded symbology
+- Simple dot rendering
+
+**Authentic SAGE Display (CORRECT):**
+- **CHARACTER-BASED TABULAR FORMAT** with 5 features:
+  ```
+      A1 A2 A3 A4    ← Track ID (e.g., "FPTKG")
+      B1 B2 B3 B4    ← Track data
+      D1 D2 A5 A6    ← Additional data
+  ──►  E  ◄──        ← Central point (aircraft position)
+      C1 C2 C3 C4    ← More data
+  
+  With VECTOR line showing direction/speed
+  ```
+- **Alphanumeric text** displayed as dot-matrix characters
+- **4 positioning modes** (above/below/left/right of central point) to avoid clutter
+- **RD (Radar) symbols**: Bright PRESENT + dim HISTORY trail (7 positions)
+- **Up to 4 vectors** per track showing heading, speed, predicted path
+
+#### Required Changes
+
+1. **Character Rendering System** (NEW)
+   - Implement 5×7 or 7×9 dot-matrix font
+   - Generate A-Z, 0-9 characters for CRT display
+   - Position text relative to canvas coordinates
+
+2. **Tabular Track Format** (MAJOR REWRITE)
+   - Replace geometric shapes with character matrix
+   - Define A/B/C/D/E feature layout
+   - Encode track data into alphanumeric characters
+   - Support 4 orientation modes based on position bits
+   - Implement vector constraints (cannot cross character groups)
+
+3. **Bright/Dim History System** (MODERATE)
+   - Present radar returns: BRIGHT intensity
+   - History positions (last 7): DIM and fading
+   - Update every ~0.5 seconds (not synchronized)
+   - Comet-tail effect showing track movement
+
+4. **Track Data Encoding** (NEW)
+   - Generate proper character codes for:
+     - Feature A: Track identification
+     - Feature B: Altitude/speed data
+     - Feature C: Heading/classification
+     - Feature D: Additional metadata
+   - Match authentic SAGE encoding (requires more manual research)
+
+5. **Multiple Vector Display** (MODERATE)
+   - Support up to 4 vectors per track
+   - Vector length = magnitude (speed)
+   - Vector direction = heading
+   - Quadrant-based positioning (LS/RS bits)
+
+#### Implementation Plan
+
+**Phase 1: Prototype Character System** (2-3 days)
+- Create dot-matrix font renderer
+- Test character display on canvas
+- Verify readability at CRT resolution
+
+**Phase 2: Tabular Format Core** (3-5 days)
+- Implement 5-feature layout engine
+- Position features around central point
+- Add 4 orientation modes
+- Test with static data
+
+**Phase 3: Track Data Integration** (2-3 days)
+- Update Track model with character data
+- Generate feature characters from track properties
+- Integrate with existing simulation loop
+
+**Phase 4: History & Vectors** (2-3 days)
+- Implement bright/dim history trail
+- Add vector rendering with constraints
+- Polish timing and persistence
+
+**Phase 5: Testing & Refinement** (1-2 days)
+- Validate against historical photographs
+- Adjust character spacing and sizing
+- Optimize rendering performance
+- Update documentation
+
+#### What We Keep (Already Correct)
+
+✅ Console layout and switches (matches Figure 9.2)  
+✅ CRT phosphor characteristics (P14 simulation)  
+✅ Geographic overlays (coastlines, range rings)  
+✅ Off-centering controls  
+✅ Feature selection system  
+✅ Light gun interaction workflow  
+✅ Drum buffer architecture  
+
+#### Documentation References
+
+- **Primary Source**: `docs/SAGE_DISPLAY_CORRECTIONS_REQUIRED.md` (complete analysis)
+- **Manual Pages**: C702-416L-ST pages 0440-0540
+- **Figures Referenced**: 4-5 (tabular format), 4-8 (character examples), 4-9 (vectors), 4-11 (history), 4-12 (RD symbols), 9.2 (console layout)
+
+**Estimated Effort:** 10-15 days (major rewrite)  
+**Priority:** HIGH (fundamental to historical accuracy)  
+**Breaking Changes:** Track rendering only (scenarios/logic unchanged)
+
+---
+
 ## 🛠️ Technical Debt & Improvements
 
 ### Performance Optimization

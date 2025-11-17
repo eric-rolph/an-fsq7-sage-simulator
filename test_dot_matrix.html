@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAGE Dot Matrix Font & Tabular Track Test</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+        h1 {
+            color: #00ff00;
+            text-align: center;
+        }
+        .subtitle {
+            color: #888;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        #canvas {
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #00ff00;
+            background-color: #000;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px;
+        }
+        .controls label {
+            margin: 0 10px;
+        }
+        .info {
+            text-align: center;
+            color: #88ff88;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AN/FSQ-7 SAGE Character Matrix Font Test</h1>
+    <div class="subtitle">
+        5x7 Dot Matrix - Authentic CRT Character Display + Tabular Track Format
+    </div>
+    <div class="info">
+        Testing both font rendering and 5-feature (A/B/C/D/E) track layout
+    </div>
+    
+    <canvas id="canvas" width="800" height="600"></canvas>
+    
+    <div class="controls">
+        <label>
+            Brightness: 
+            <input type="range" id="brightness" min="0" max="100" value="100">
+            <span id="brightnessValue">100%</span>
+        </label>
+        <br><br>
+        <label>
+            Test Text: 
+            <input type="text" id="testText" value="FPTKG GRB C 6" size="30">
+        </label>
+        <button onclick="redraw()">Redraw</button>
+    </div>
+    
+    <div class="info">
+        Examples from Manual: "FPTKG", "GRB", "GR 8", "C 6"<br>
+        Tabular Format: Feature A (Track ID), B (Alt/Speed), C (Classification), D (Heading), E (Central Point)
+    </div>
+
+    <script src="dot_matrix_font.js"></script>
+    <script src="tabular_track_display.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const brightnessSlider = document.getElementById('brightness');
+        const brightnessValue = document.getElementById('brightnessValue');
+        const testTextInput = document.getElementById('testText');
+        
+        // Update brightness display
+        brightnessSlider.addEventListener('input', function() {
+            brightnessValue.textContent = this.value + '%';
+            redraw();
+        });
+        
+        // Redraw on text change
+        testTextInput.addEventListener('input', redraw);
+        
+        function redraw() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const alpha = brightnessSlider.value / 100;
+            const color = 'rgba(0, 255, 100, 1.0)';  // P14 phosphor green
+            
+            // Test 1: Full alphabet
+            let y = 40;
+            window.DotMatrixFont.renderString(ctx, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 20, y, color, alpha, 4);
+            
+            // Test 2: Numbers
+            y += 60;
+            window.DotMatrixFont.renderString(ctx, '0123456789', 20, y, color, alpha, 4);
+            
+            // Test 3: Special characters
+            y += 60;
+            window.DotMatrixFont.renderString(ctx, 'TRACK-123 ALT/45', 20, y, color, alpha, 4);
+            
+            // Test 4: Examples from manual
+            y += 80;
+            ctx.fillStyle = color.replace('1.0)', '0.5)');
+            ctx.fillText('Manual Examples:', 20, y - 10);
+            window.DotMatrixFont.renderString(ctx, 'FPTKG', 20, y, color, alpha, 4);
+            
+            y += 60;
+            window.DotMatrixFont.renderString(ctx, 'GRB', 20, y, color, alpha, 4);
+            
+            y += 60;
+            window.DotMatrixFont.renderString(ctx, 'GR 8', 20, y, color, alpha, 4);
+            
+            y += 60;
+            window.DotMatrixFont.renderString(ctx, 'C 6', 20, y, color, alpha, 4);
+            
+            // Test 5: Custom text
+            y += 80;
+            ctx.fillStyle = color.replace('1.0)', '0.5)');
+            ctx.fillText('Custom Text:', 20, y - 10);
+            const testText = testTextInput.value.toUpperCase();
+            window.DotMatrixFont.renderString(ctx, testText, 20, y, color, alpha, 4);
+            
+            // Test 6: Brightness variations (simulating history trail)
+            y = 40;
+            let x = 500;
+            ctx.fillStyle = color.replace('1.0)', '0.5)');
+            ctx.fillText('History Trail:', x, y - 10);
+            
+            for (let i = 0; i < 8; i++) {
+                const trailAlpha = 1.0 - (i * 0.12);  // Fade from bright to dim
+                window.DotMatrixFont.renderChar(ctx, 'T', x + (i * 20), y, color, trailAlpha * alpha);
+            }
+            
+            // Test 7: Character sizing info
+            const dims = window.DotMatrixFont.getCharDimensions();
+            const testString = 'TEST';
+            const stringWidth = window.DotMatrixFont.getStringWidth(testString, 4);
+            
+            y += 120;
+            ctx.fillStyle = color.replace('1.0)', '0.5)');
+            ctx.font = '12px monospace';
+            ctx.fillText(`Character: ${dims.width}x${dims.height}px`, x, y);
+            ctx.fillText(`String "${testString}": ${stringWidth}px`, x, y + 20);
+            ctx.fillText(`Dot size: ${window.DotMatrixFont.DOT_SIZE}px`, x, y + 40);
+            ctx.fillText(`Spacing: ${window.DotMatrixFont.DOT_SPACING}px`, x, y + 60);
+            
+            // Test 8: Tabular track display (5-feature format)
+            y += 100;
+            ctx.fillText('Tabular Track Tests (A/B/C/D/E Format):', x, y);
+            
+            // Sample track 1: Hostile bomber
+            const track1 = window.TabularTrackDisplay.formatTrackForDisplay({
+                id: 'TK01',
+                x: 0.3,
+                y: 0.4,
+                altitude: 35000,
+                speed: 450,
+                heading: 270,  // West
+                track_type: 'bomber'
+            });
+            window.TabularTrackDisplay.renderTrack(ctx, track1, 200, 450, color, alpha);
+            
+            // Sample track 2: Friendly fighter (different position mode)
+            const track2 = window.TabularTrackDisplay.formatTrackForDisplay({
+                id: 'F102',
+                x: 0.7,
+                y: 0.3,
+                altitude: 42000,
+                speed: 850,
+                heading: 45,  // Northeast
+                track_type: 'friendly'
+            });
+            window.TabularTrackDisplay.renderTrack(ctx, track2, 550, 450, color, alpha);
+            
+            // Sample track 3: Unknown track (another mode)
+            const track3 = window.TabularTrackDisplay.formatTrackForDisplay({
+                id: 'UN99',
+                x: 0.2,
+                y: 0.7,
+                altitude: 28000,
+                speed: 320,
+                heading: 180,  // South
+                track_type: 'unknown'
+            });
+            track3.positionMode = window.TabularTrackDisplay.POSITION_MODES.ABOVE;
+            window.TabularTrackDisplay.renderTrack(ctx, track3, 375, 530, color, alpha);
+        }
+        
+        // Initial draw
+        redraw();
+        
+        console.log('[Test Page] Character matrix font test ready');
+        console.log('[Test Page] Character dimensions:', window.DotMatrixFont.getCharDimensions());
+    </script>
+</body>
+</html>

@@ -21,6 +21,8 @@ The AN/FSQ-7 was:
 
 ## 🆕 Interactive Features (NEW!)
 
+> **⚠️ NOTICE - Historical Accuracy Update Coming:** Based on official AN/FSQ-7 technical manuals, we've discovered the track display format needs major corrections. SAGE used **character-based tabular displays** with alphanumeric text (not geometric shapes). This will be implemented in a future update. See `docs/SAGE_DISPLAY_CORRECTIONS_REQUIRED.md` for details.
+
 ### 🎯 Working Light Gun System
 - **Press 'D' key** to arm the light gun → crosshair appears
 - **Click any target** on radar scope → highlight yellow and populate Track Detail panel

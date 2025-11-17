@@ -63,6 +63,14 @@ class CRTRadarScope {
         this.centerX = this.width / 2;
         this.centerY = this.height / 2;
         
+        // Track history for bright/dim trail rendering (Priority 8 - Task 4)
+        // Map<trackId, Array<{x, y, timestamp}>>
+        // Stores last 7 positions per track for P14 phosphor history effect
+        this.trackHistory = new Map();
+        this.historyMaxLength = 7;
+        this.historyUpdateInterval = 500; // milliseconds between history snapshots
+        this.lastHistoryUpdate = Date.now();
+        
         // 7x7 Sector Grid State (IBM DSP authentic feature)
         this.show_sector_grid = false;
         this.expansion_level = 1;  // 1x, 2x, 4x, 8x
@@ -513,17 +521,45 @@ class CRTRadarScope {
     }
     
     drawTracksBright() {
-        // Draw bright track markers on top (doesn't persist)
-        // P14 phosphor: purple flash on impact, all tracks monochrome
+        // Draw bright track markers on top with history trails (doesn't persist)
+        // P14 phosphor: purple flash on impact, orange afterglow history
+        // Priority 8 Task 4: Bright/dim history system with 7-position trails
         if (!this.tracks || !Array.isArray(this.tracks)) {
             return;
         }
+        
+        // Alpha values for history trail (7 positions, progressively dimmer)
+        const historyAlpha = [0.85, 0.7, 0.55, 0.4, 0.3, 0.2, 0.15];
+        
         this.tracks.forEach(track => {
-            // Tracks use normalized coordinates (0-1), convert to canvas pixels
+            // Draw history trail first (dim positions)
+            const history = this.trackHistory.get(track.id);
+            if (history && history.length > 0) {
+                // Draw from oldest to newest (so newest overlaps oldest)
+                for (let i = 0; i < history.length; i++) {
+                    const pos = history[i];
+                    const x = pos.x * this.width;
+                    const y = pos.y * this.height;
+                    const alpha = historyAlpha[i] || 0.1;
+                    
+                    // Use orange phosphor for history (P14 afterglow)
+                    const historyColor = `rgba(255, 180, 100, ${alpha})`;
+                    
+                    this.ctx.fillStyle = historyColor;
+                    this.ctx.shadowColor = historyColor;
+                    this.ctx.shadowBlur = 8;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                this.ctx.shadowBlur = 0;
+            }
+            
+            // Draw present position (brightest)
             const x = track.x * this.width;
             const y = track.y * this.height;
             
-            // Monochrome P14 phosphor: purple flash for all tracks
+            // Monochrome P14 phosphor: purple flash for present position
             const brightColor = this.phosphorFast;   // Purple flash
             const shadowColor = this.phosphorSlow;   // Orange glow
             
@@ -629,6 +665,13 @@ class CRTRadarScope {
         // Fetch fresh data from window globals (simulates computer reading display drum)
         if (window.__SAGE_TRACKS__) {
             this.tracks = window.__SAGE_TRACKS__;
+            
+            // Update track history for bright/dim trail rendering
+            const now = Date.now();
+            if (now - this.lastHistoryUpdate >= this.historyUpdateInterval) {
+                this.updateTrackHistory(now);
+                this.lastHistoryUpdate = now;
+            }
         }
         if (window.__SAGE_INTERCEPTORS__) {
             this.interceptors = window.__SAGE_INTERCEPTORS__;
@@ -649,6 +692,48 @@ class CRTRadarScope {
             this.selected_sector_row = grid.selected_sector_row;
             this.selected_sector_col = grid.selected_sector_col;
         }
+    }
+    
+    updateTrackHistory(timestamp) {
+        /**
+         * Update track history for bright/dim trail rendering
+         * Called every ~500ms to capture track positions
+         * Maintains last 7 positions per track for P14 phosphor history effect
+         */
+        if (!this.tracks || !Array.isArray(this.tracks)) {
+            return;
+        }
+        
+        // Create set of current track IDs
+        const currentTrackIds = new Set(this.tracks.map(t => t.id));
+        
+        // Remove history for tracks that no longer exist
+        for (const trackId of this.trackHistory.keys()) {
+            if (!currentTrackIds.has(trackId)) {
+                this.trackHistory.delete(trackId);
+            }
+        }
+        
+        // Update history for each current track
+        this.tracks.forEach(track => {
+            let history = this.trackHistory.get(track.id);
+            if (!history) {
+                history = [];
+                this.trackHistory.set(track.id, history);
+            }
+            
+            // Add current position to history
+            history.push({
+                x: track.x,
+                y: track.y,
+                timestamp: timestamp
+            });
+            
+            // Keep only last N positions (shift oldest if exceeded)
+            if (history.length > this.historyMaxLength) {
+                history.shift();
+            }
+        });
     }
     
     updateTracks(tracks) {

@@ -2164,7 +2164,10 @@ app = rx.App(
         "https://fonts.googleapis.com/css2?family=Courier+New:wght@400;700&display=swap"
     ],
     head_components=[
-        rx.script(src="/crt_radar.js")
+        # Priority 8: Authentic SAGE tabular display system
+        rx.script(src="/dot_matrix_font.js"),          # 5x7 character matrix font
+        rx.script(src="/tabular_track_display.js"),    # 5-feature (A/B/C/D/E) track format
+        rx.script(src="/crt_radar.js")                  # Main CRT rendering (includes history trails)
     ]
 )
 app.add_page(index, route="/")

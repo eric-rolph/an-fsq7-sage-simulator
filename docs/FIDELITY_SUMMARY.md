@@ -1,5 +1,14 @@
 # HIGH-FIDELITY EMULATION SUMMARY
 
+## ⚠️ Recent Discovery (November 2025)
+
+Analysis of the **C702-416L-ST Situation Display Generator Element** technical manual has revealed that our track display format requires major corrections for historical accuracy:
+
+- **Current**: Geometric shapes (circles, squares, diamonds) - INCORRECT
+- **Authentic SAGE**: Character-based tabular format with alphanumeric text - CORRECT
+
+See `docs/SAGE_DISPLAY_CORRECTIONS_REQUIRED.md` for complete analysis and implementation plan. This represents a significant but necessary rewrite to achieve true historical fidelity.
+
 ## What Changed
 
 This update transforms the AN/FSQ-7 SAGE simulator from a **visual demonstration** into a **high-fidelity emulation** capable of running authentic SAGE software.
