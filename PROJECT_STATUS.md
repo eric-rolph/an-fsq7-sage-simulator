@@ -69,14 +69,15 @@
 
 ### Automated Testing
 - ✅ **Pytest infrastructure setup complete** (pytest.ini, conftest.py)
-- ✅ **69 tests implemented** (33 unit, 36 simulation)
+- ✅ **100 tests implemented** (33 unit, 36 simulation, 31 design_language)
   - Unit tests: CPU core, light gun, track correlation
   - Simulation tests: Interceptor logic, scenarios, track physics
-- ✅ **100% pass rate** (69/69 tests passing)
+  - Design language tests: Mode-free UI, P14 monochrome, layout invariants
+- ✅ **100% pass rate** (100/100 tests passing)
 - 📊 **8% code coverage** (baseline established, target 80%+)
-- ⏳ **TODO:** Create design_language tests (mode-free UI, P14 monochrome, layout invariants)
 - ⏳ **TODO:** Create integration tests (light gun workflow, intercept workflow, scenario debrief)
 - ⏳ **TODO:** Add property-based tests with Hypothesis
+- ⏳ **TODO:** Expand unit test coverage (drum_io, cpu_authentic, state transitions)
 - ⏳ **TODO:** Add CI/CD pipeline (GitHub Actions)
 - ⏳ **TODO:** Cross-browser testing (Firefox, Safari, Edge)
 
