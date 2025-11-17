@@ -264,6 +264,9 @@ class InteractiveSageState(rx.State):
                 track.y += 1.0
             elif track.y > 1.0:
                 track.y -= 1.0
+            
+            # Update tabular display features to reflect current track state
+            state_model.update_track_display_features(track)
     
     def update_interceptor_positions(self, dt: float = 1.0):
         """
@@ -730,6 +733,8 @@ class InteractiveSageState(rx.State):
                 threat_level=rt.threat_level,
                 time_detected=self.world_time / 1000.0
             )
+            # Generate tabular display features (A/B/C/D)
+            state_model.update_track_display_features(track)
             self.tracks.append(track)
         
         # Initialize interceptors at nearby airbases
