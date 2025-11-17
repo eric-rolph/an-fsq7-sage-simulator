@@ -72,11 +72,12 @@ def sample_interceptor():
     """Create a sample interceptor for testing."""
     return state_model.Interceptor(
         id="INT-001",
-        x=0.5,
-        y=0.1,
-        fuel=100.0,
-        weapons=2,
-        aircraft_type="F-106",
+        aircraft_type="F-106 Delta Dart",
+        base_name="Test Base",
+        base_x=0.5,
+        base_y=0.1,
+        fuel_percent=100,
+        weapons_remaining=2,
         status="READY"
     )
 
@@ -84,5 +85,6 @@ def sample_interceptor():
 @pytest.fixture
 def sample_scenario():
     """Create a sample scenario for testing."""
-    from an_fsq7_simulator.sim.scenarios import get_scenario
-    return get_scenario("training")
+    from an_fsq7_simulator.sim import scenarios
+    # Use "Demo 1 - Three Inbound" which exists in SCENARIOS
+    return scenarios.get_scenario("Demo 1 - Three Inbound")
