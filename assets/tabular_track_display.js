@@ -77,9 +77,9 @@ function renderTabularTrack(ctx, track, centerX, centerY, color, alpha = 1.0) {
         );
     }
     
-    // Draw vector if present
+    // Draw vector if present (with constraint checking to avoid crossing features)
     if (track.heading !== undefined && track.speed) {
-        drawVector(ctx, centerX, centerY, track.heading, track.speed, color, alpha, positions);
+        drawVector(ctx, centerX, centerY, track.heading, track.speed, color, alpha, positions, features);
     }
 }
 
@@ -177,25 +177,164 @@ function calculateFeaturePositions(centerX, centerY, features, positionMode, cha
 }
 
 /**
+ * Calculate bounding box for a feature string
+ * Returns {x1, y1, x2, y2} representing top-left and bottom-right corners
+ */
+function getFeatureBoundingBox(featureText, x, y) {
+    if (!featureText || featureText.trim() === '') {
+        return null;
+    }
+    
+    const charDims = window.DotMatrixFont.getCharDimensions();
+    const width = window.DotMatrixFont.getStringWidth(featureText, CHAR_SPACING);
+    const height = charDims.height;
+    
+    // Add small margin for safety
+    const margin = 2;
+    
+    return {
+        x1: x - margin,
+        y1: y - margin,
+        x2: x + width + margin,
+        y2: y + height + margin
+    };
+}
+
+/**
+ * Check if a line segment intersects with a bounding box
+ * Line defined by (x1, y1) to (x2, y2)
+ * Box defined by {x1, y1, x2, y2}
+ */
+function lineIntersectsBox(lineX1, lineY1, lineX2, lineY2, box) {
+    if (!box) return false;
+    
+    // Check if either endpoint is inside the box
+    if ((lineX1 >= box.x1 && lineX1 <= box.x2 && lineY1 >= box.y1 && lineY1 <= box.y2) ||
+        (lineX2 >= box.x1 && lineX2 <= box.x2 && lineY2 >= box.y1 && lineY2 <= box.y2)) {
+        return true;
+    }
+    
+    // Check intersection with each edge of the box using parametric line equations
+    // This is a simplified check - more robust algorithms exist but this is sufficient
+    
+    // Check if line crosses any of the four box edges
+    const edges = [
+        {x1: box.x1, y1: box.y1, x2: box.x2, y2: box.y1}, // Top
+        {x1: box.x2, y1: box.y1, x2: box.x2, y2: box.y2}, // Right
+        {x1: box.x1, y1: box.y2, x2: box.x2, y2: box.y2}, // Bottom
+        {x1: box.x1, y1: box.y1, x2: box.x1, y2: box.y2}  // Left
+    ];
+    
+    for (const edge of edges) {
+        if (lineSegmentsIntersect(lineX1, lineY1, lineX2, lineY2, 
+                                  edge.x1, edge.y1, edge.x2, edge.y2)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * Check if two line segments intersect
+ * Based on parametric line equation
+ */
+function lineSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+    const denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+    
+    if (denom === 0) {
+        return false; // Lines are parallel
+    }
+    
+    const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom;
+    const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom;
+    
+    return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
+}
+
+/**
+ * Find the maximum safe vector length that doesn't intersect features
+ * Returns adjusted length (may be shorter than requested)
+ */
+function constrainVectorLength(centerX, centerY, angleRad, maxLength, featurePositions, features) {
+    // Build list of feature bounding boxes
+    const boxes = [];
+    
+    if (features.A && featurePositions.A) {
+        boxes.push(getFeatureBoundingBox(features.A, featurePositions.A.x, featurePositions.A.y));
+    }
+    if (features.B && featurePositions.B) {
+        boxes.push(getFeatureBoundingBox(features.B, featurePositions.B.x, featurePositions.B.y));
+    }
+    if (features.C && featurePositions.C) {
+        boxes.push(getFeatureBoundingBox(features.C, featurePositions.C.x, featurePositions.C.y));
+    }
+    if (features.D && featurePositions.D) {
+        boxes.push(getFeatureBoundingBox(features.D, featurePositions.D.x, featurePositions.D.y));
+    }
+    
+    // Remove null boxes
+    const validBoxes = boxes.filter(box => box !== null);
+    
+    if (validBoxes.length === 0) {
+        return maxLength; // No features to avoid
+    }
+    
+    // Binary search for maximum safe length
+    let safeLength = maxLength;
+    const step = 5; // Check every 5 pixels
+    
+    for (let len = step; len <= maxLength; len += step) {
+        const endX = centerX + len * Math.cos(angleRad);
+        const endY = centerY + len * Math.sin(angleRad);
+        
+        // Check if this length intersects any feature
+        let intersects = false;
+        for (const box of validBoxes) {
+            if (lineIntersectsBox(centerX, centerY, endX, endY, box)) {
+                intersects = true;
+                break;
+            }
+        }
+        
+        if (intersects) {
+            // Found intersection, return previous safe length
+            safeLength = len - step;
+            break;
+        }
+        
+        safeLength = len;
+    }
+    
+    // Ensure minimum length for visibility
+    return Math.max(VECTOR_MIN_LENGTH, safeLength);
+}
+
+/**
  * Draw direction/speed vector from E feature
- * Vector cannot cross character features (constrained by SAGE hardware)
+ * Vector constrained to not cross character features (authentic SAGE hardware limitation)
+ * Priority 8 Task 5: Vector rendering with intersection constraints
+ * 
  * @param {number} heading - Heading in degrees (0=North, 90=East, 180=South, 270=West)
  * @param {number} speed - Speed in knots
+ * @param {object} features - Feature strings {A, B, C, D}
  */
-function drawVector(ctx, centerX, centerY, heading, speed, color, alpha, featurePositions) {
-    // Calculate vector length based on speed
-    let length = speed * VECTOR_LENGTH_SCALE;
-    length = Math.max(VECTOR_MIN_LENGTH, Math.min(VECTOR_MAX_LENGTH, length));
+function drawVector(ctx, centerX, centerY, heading, speed, color, alpha, featurePositions, features) {
+    // Calculate desired vector length based on speed
+    let requestedLength = speed * VECTOR_LENGTH_SCALE;
+    requestedLength = Math.max(VECTOR_MIN_LENGTH, Math.min(VECTOR_MAX_LENGTH, requestedLength));
     
     // Convert heading to radians (0° = North = -90° in canvas coords)
     const angleRad = ((heading - 90) * Math.PI) / 180;
     
-    // Calculate end point
-    let endX = centerX + length * Math.cos(angleRad);
-    let endY = centerY + length * Math.sin(angleRad);
+    // Constrain vector to not cross feature bounding boxes
+    const safeLength = constrainVectorLength(
+        centerX, centerY, angleRad, requestedLength, featurePositions, features
+    );
     
-    // TODO: Implement constraint to prevent crossing character features
-    // For now, just draw the vector
+    // Calculate constrained end point
+    const endX = centerX + safeLength * Math.cos(angleRad);
+    const endY = centerY + safeLength * Math.sin(angleRad);
     
     ctx.save();
     ctx.strokeStyle = color.replace(/[\d.]+\)$/, ` ${alpha})`);
