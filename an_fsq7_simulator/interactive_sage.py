@@ -1757,7 +1757,11 @@ class InteractiveSageState(rx.State):
     @rx.var
     def tracks_script_tag(self) -> str:
         """Return complete script tag with tracks data - for rx.html injection"""
-        return f"<script>window.__SAGE_TRACKS__ = {self.get_tracks_json()};</script>"
+        # SECURITY: Escape JSON for HTML context to prevent XSS
+        import html
+        json_data = self.get_tracks_json()
+        safe_json = html.escape(json_data, quote=False)
+        return f"<script>window.__SAGE_TRACKS__ = {safe_json};</script>"
     
     @rx.var
     def world_time_seconds(self) -> float:
@@ -1772,7 +1776,10 @@ class InteractiveSageState(rx.State):
     @rx.var
     def geo_script_tag(self) -> str:
         """Return complete script tag with geo data - for rx.html injection"""
-        return f"<script>window.__SAGE_GEO__ = {self.get_geo_json()};</script>"
+        import html
+        json_data = self.get_geo_json()
+        safe_json = html.escape(json_data, quote=False)
+        return f"<script>window.__SAGE_GEO__ = {safe_json};</script>"
     
     def get_interceptors_json(self) -> str:
         """Convert interceptors list to JSON for JavaScript"""
@@ -1797,18 +1804,24 @@ class InteractiveSageState(rx.State):
     @rx.var
     def interceptors_script_tag(self) -> str:
         """Return complete script tag with interceptors data - for rx.html injection"""
-        return f"<script>window.__SAGE_INTERCEPTORS__ = {self.get_interceptors_json()};</script>"
+        import html
+        json_data = self.get_interceptors_json()
+        safe_json = html.escape(json_data, quote=False)
+        return f"<script>window.__SAGE_INTERCEPTORS__ = {safe_json};</script>"
     
     @rx.var
     def sector_grid_script_tag(self) -> str:
         """Return complete script tag with 7x7 sector grid state - for rx.html injection"""
+        import html
         data = {
             "show_sector_grid": self.show_sector_grid,
             "expansion_level": self.expansion_level,
             "selected_sector_row": self.selected_sector_row,
             "selected_sector_col": self.selected_sector_col,
         }
-        return f"<script>window.__SAGE_SECTOR_GRID__ = {json.dumps(data)};</script>"
+        json_data = json.dumps(data)
+        safe_json = html.escape(json_data, quote=False)
+        return f"<script>window.__SAGE_SECTOR_GRID__ = {safe_json};</script>"
     
     def get_network_stations_json(self) -> str:
         """Convert network stations to JSON for JavaScript rendering"""
@@ -1830,7 +1843,10 @@ class InteractiveSageState(rx.State):
     @rx.var
     def network_stations_script_tag(self) -> str:
         """Inject network stations data for JavaScript rendering"""
-        return f"<script>window.__SAGE_NETWORK_STATIONS__ = {self.get_network_stations_json()};</script>"
+        import html
+        json_data = self.get_network_stations_json()
+        safe_json = html.escape(json_data, quote=False)
+        return f"<script>window.__SAGE_NETWORK_STATIONS__ = {safe_json};</script>"
     
     # Sound config is managed through UI event handlers directly calling JavaScript
     # Initial volumes are set in SOUND_PLAYER_SCRIPT constructor
@@ -1902,6 +1918,7 @@ class InteractiveSageState(rx.State):
     @rx.var
     def system_messages_script_tag(self) -> str:
         """Inject system messages log as JSON for JavaScript access"""
+        import html
         messages_data = [
             {
                 "timestamp": msg.timestamp,
@@ -1911,7 +1928,9 @@ class InteractiveSageState(rx.State):
             }
             for msg in self.system_messages_log
         ]
-        return f"<script>window.__SAGE_SYSTEM_MESSAGES__ = {json.dumps(messages_data)};</script>"
+        json_data = json.dumps(messages_data)
+        safe_json = html.escape(json_data, quote=False)
+        return f"<script>window.__SAGE_SYSTEM_MESSAGES__ = {safe_json};</script>"
 
 
 # ========================

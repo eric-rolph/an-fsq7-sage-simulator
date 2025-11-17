@@ -1,22 +1,19 @@
 // Execute SAGE data scripts on page load (Reflex rx.html() doesn't auto-execute script innerHTML)
+// SECURITY FIX: Removed eval() - data is injected via script tags with direct assignments
 (function() {
     // Wait for DOM to be ready
     function executeSAGEScripts() {
-        var scripts = Array.from(document.querySelectorAll('script'));
-        var executed = 0;
-        scripts.forEach(function(s) {
-            var text = s.innerHTML || '';
-            if (text.includes('__SAGE_')) {
-                try {
-                    eval(text);
-                    executed++;
-                } catch(e) {
-                    console.error('[SAGE] Error executing data script:', e);
-                }
+        // Data is already injected via script tags with window.__SAGE_* = {...}
+        // No eval() needed - just verify data exists for diagnostics
+        var dataVars = ['__SAGE_TRACKS__', '__SAGE_INTERCEPTORS__', '__SAGE_GEO__', '__SAGE_SECTOR_GRID__', '__SAGE_NETWORK_STATIONS__', '__SAGE_SYSTEM_MESSAGES__'];
+        var found = 0;
+        dataVars.forEach(function(varName) {
+            if (window[varName] !== undefined) {
+                found++;
             }
         });
-        if (executed > 0) {
-            console.log('[SAGE] Executed ' + executed + ' data injection scripts');
+        if (found > 0) {
+            console.log('[SAGE] Loaded ' + found + ' data variables (secure mode)');
         }
     }
     
