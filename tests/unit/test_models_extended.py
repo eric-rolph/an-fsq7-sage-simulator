@@ -69,19 +69,26 @@ class TestVacuumTubeBankWarmup:
 
     def test_tick_can_cause_failures(self):
         """Verify tick can simulate tube failures."""
+        import random
+        
         bank = models.VacuumTubeBank()
         
         # Activate all tubes
         bank.active_tubes = 58000
         bank.temperature = bank.target_temperature
         
-        # Run many ticks to potentially trigger failure
-        initial_active = bank.active_tubes
-        for _ in range(10000):
-            bank.tick(dt=0.05)
+        # Mock random to force failure
+        original_random = random.random
+        random.random = lambda: 0.0  # Always triggers failure
         
-        # May or may not have failures (probabilistic), just check it runs
-        assert bank.active_tubes <= initial_active
+        try:
+            bank.tick(dt=0.05)
+            
+            # Should have decremented active tubes
+            assert bank.active_tubes == 57999
+            assert bank.failed_tubes == 1
+        finally:
+            random.random = original_random
 
     def test_shutdown_resets_temperature(self):
         """Verify shutdown cools down tubes."""

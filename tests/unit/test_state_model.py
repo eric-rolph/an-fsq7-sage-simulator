@@ -449,3 +449,117 @@ class TestTubeState:
         
         tube.health = 0
         assert tube.health == 0
+
+@pytest.mark.unit
+class TestScenarioDebriefEdgeCases:
+    """Test edge cases in ScenarioDebrief."""
+
+    def test_add_learning_moment(self):
+        """Verify add_learning_moment adds entry correctly."""
+        debrief = state_model.ScenarioMetrics()
+        
+        debrief.add_learning_moment(
+            severity="warning",
+            title="Test Warning",
+            description="Description",
+            tip="Tip"
+        )
+        
+        assert len(debrief.learning_moments) == 1
+        assert debrief.learning_moments[0]["severity"] == "warning"
+        assert debrief.learning_moments[0]["title"] == "Test Warning"
+
+
+@pytest.mark.unit
+class TestFeatureGenerationEdgeCases:
+    """Test edge cases in feature generation functions."""
+
+    def test_generate_feature_c_with_unrecognized_type(self):
+        """Verify generate_feature_c handles unrecognized track types."""
+        track = state_model.Track(
+            id="TRK-999",
+            x=0.5, y=0.5,
+            track_type="submarine",  # Unrecognized type
+            threat_level="low"
+        )
+        
+        result = state_model.generate_feature_c(track)
+        
+        # Should return spaces for unrecognized type
+        assert result == "   L"
+
+    def test_generate_feature_c_with_unrecognized_threat(self):
+        """Verify generate_feature_c handles unrecognized threat levels."""
+        track = state_model.Track(
+            id="TRK-999",
+            x=0.5, y=0.5,
+            track_type="bomber",
+            threat_level="unknown"  # Unrecognized threat
+        )
+        
+        result = state_model.generate_feature_c(track)
+        
+        # Should return spaces for unrecognized threat
+        assert result == "BM  "
+
+    def test_generate_feature_d_with_edge_heading(self):
+        """Verify generate_feature_d handles heading at 360 degrees."""
+        track = state_model.Track(
+            id="TRK-999",
+            x=0.5, y=0.5,
+            heading=360  # Treated as 0 (North) by modulo logic
+        )
+        
+        result = state_model.generate_feature_d(track)
+        
+        # 360 degrees is equivalent to 0 (North)
+        assert result == "N "
+
+    def test_update_track_display_features(self):
+        """Verify update_track_display_features updates all features."""
+        track = state_model.Track(
+            id="TRK-123",
+            x=0.5, y=0.5,
+            heading=45,
+            speed=500,
+            altitude=30000,
+            track_type="bomber",
+            threat_level="high"
+        )
+        
+        # Call update function
+        state_model.update_track_display_features(track)
+        
+        # Verify features are populated
+        assert track.feature_a is not None
+        assert track.feature_b is not None
+        assert track.feature_c is not None
+        assert track.feature_d is not None
+        assert track.position_mode >= 0
+
+    def test_scenario_metrics_to_dict(self):
+        """Verify ScenarioMetrics.to_dict() returns complete dictionary."""
+        metrics = state_model.ScenarioMetrics(
+            tracks_detected=10,
+            tracks_total=15,
+            scenario_duration=120.5
+        )
+        
+        result = metrics.to_dict()
+        
+        assert result["tracks_detected"] == 10
+        assert result["tracks_total"] == 15
+        assert result["scenario_duration"] == 120.5
+
+    def test_generate_feature_d_with_negative_heading(self):
+        """Verify generate_feature_d normalizes negative headings."""
+        track = state_model.Track(
+            id="TRK-999",
+            x=0.5, y=0.5,
+            heading=-10  # Normalizes to 350, which is 337.5-22.5 (North)
+        )
+        
+        result = state_model.generate_feature_d(track)
+        
+        # -10 degrees normalizes to 350, which falls in North range (337.5-360 or 0-22.5)
+        assert result == "N "
