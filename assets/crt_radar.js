@@ -39,9 +39,10 @@ class CRTRadarScope {
         this.height = this.canvas.height;
         
         // P14 Phosphor (historically accurate SAGE situation display)
-        // Purple flash when electron beam hits, orange afterglow for 2-3 seconds
-        this.phosphorFast = 'rgba(180, 100, 255, 0.9)';      // Purple flash (fast decay ~100ms)
-        this.phosphorSlow = 'rgba(255, 180, 100, 0.8)';      // Orange afterglow (slow persistence)
+        // Monochrome orange phosphor - bright when electron beam hits, dims over 2-3 seconds
+        // IBM DSP documentation shows all symbology in single orange color
+        this.phosphorFast = 'rgba(255, 180, 100, 1.0)';      // Bright orange present position
+        this.phosphorSlow = 'rgba(255, 180, 100, 0.7)';      // Orange afterglow (slow persistence)
         this.phosphorPersistence = 'rgba(255, 180, 100, 0.4)'; // Fading orange trail
         
         // Persistence layer for phosphor trails
@@ -88,7 +89,7 @@ class CRTRadarScope {
         this.lastFrameTime = Date.now();
         this.sweepSpeed = 6.0; // degrees per second
         
-        console.log('[CRT] Initialized with P14 phosphor simulation (purple flash + orange afterglow)');
+        console.log('[CRT] Initialized with P14 phosphor simulation (monochrome orange - historically accurate)');
         console.log('[CRT] Persistence decay:', this.persistenceDecay);
         console.log('[CRT] Computer refresh cycle:', this.enableRefreshCycle ? '2.5 seconds (authentic)' : 'continuous (modern)');
         console.log('[CRT] Overlays:', Array.from(this.overlays));
@@ -204,6 +205,15 @@ class CRTRadarScope {
         
         // Save context state before zoom transformation
         this.ctx.save();
+        
+        // Apply circular CRT mask (19" P14 tube boundary - IBM DSP 1 Figure 9.2)
+        // Prevents rendering outside scope circle for historical accuracy
+        const scopeRadius = Math.min(this.width, this.height) / 2;
+        const scopeCenterX = this.width / 2;
+        const scopeCenterY = this.height / 2;
+        this.ctx.beginPath();
+        this.ctx.arc(scopeCenterX, scopeCenterY, scopeRadius, 0, Math.PI * 2);
+        this.ctx.clip();
         
         // Apply sector zoom if expansion > 1x
         if (this.expansion_level > 1) {
@@ -519,7 +529,8 @@ class CRTRadarScope {
     
     drawTracksBright() {
         // Draw bright track markers on top with history trails (doesn't persist)
-        // P14 phosphor: purple flash on impact, orange afterglow history
+        // P14 phosphor: bright orange present position, dimmer orange afterglow history
+        // IBM DSP monochrome display - all symbology same orange phosphor color
         // Priority 8: Authentic tabular display with 5-feature format (A/B/C/D/E)
         if (!this.tracks || !Array.isArray(this.tracks)) {
             return;
@@ -560,7 +571,7 @@ class CRTRadarScope {
             const y = track.y * this.height;
             
             // Monochrome P14 phosphor color
-            const phosphorColor = this.phosphorFast;   // Purple flash for present
+            const phosphorColor = this.phosphorFast;   // Bright orange for present position
             
             // Priority 8: Use authentic tabular display if track has features
             if (hasTabularDisplay && track.feature_a && track.feature_b && track.feature_c && track.feature_d) {

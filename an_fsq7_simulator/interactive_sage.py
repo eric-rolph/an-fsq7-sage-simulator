@@ -2035,19 +2035,6 @@ def index() -> rx.Component:
                         InteractiveSageState.current_scenario_name,
                         InteractiveSageState.change_scenario
                     ),
-                    # Temporary test button for debrief
-                    rx.button(
-                        "TEST DEBRIEF",
-                        on_click=InteractiveSageState.complete_scenario,
-                        size="3",
-                        color_scheme="yellow",
-                        style={
-                            "background": "#FF6600",
-                            "border": "2px solid #FFAA00",
-                            "font-family": "'Courier New', monospace",
-                            "cursor": "pointer"
-                        }
-                    ),
                     sd_console.sd_console_master_panel(
                         InteractiveSageState.active_filters,
                         InteractiveSageState.active_overlays,
