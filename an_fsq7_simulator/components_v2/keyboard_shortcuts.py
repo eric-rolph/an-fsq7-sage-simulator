@@ -73,12 +73,15 @@ KEYBOARD_SHORTCUTS = {
 }
 
 
-def keyboard_help_panel() -> rx.Component:
+def keyboard_help_panel(on_close=None) -> rx.Component:
     """
     Keyboard shortcuts help overlay.
     
     Shows when user presses '?' key. Displays all available keyboard shortcuts
     organized by category with descriptions.
+    
+    Args:
+        on_close: Event handler for closing the panel (optional)
     """
     
     def shortcut_row(key: str, description: str) -> rx.Component:
@@ -132,10 +135,11 @@ def keyboard_help_panel() -> rx.Component:
                 ),
                 rx.icon_button(
                     rx.icon("x"),
-                    on_click=rx.set_value("keyboard_help_visible", False),
+                    on_click=on_close if on_close else lambda: None,
                     size="2",
                     variant="ghost",
                     aria_label="Close keyboard shortcuts help",
+                    id="keyboard-help-close-button",
                 ),
                 justify="between",
                 width="100%",
@@ -296,24 +300,25 @@ def keyboard_shortcuts_script() -> str:
         // Handle keyboard shortcuts
         let handled = false;
         
-        // Help overlay (?)
+        // Help overlay (?) - Toggle by clicking hidden button
         if (key === '?' && !ctrl && !alt) {
             console.log('[Keyboard] Toggle help overlay');
-            // Toggle keyboard help visibility
-            const helpVisible = window.__SAGE_KEYBOARD_HELP_VISIBLE__ || false;
-            window.__SAGE_KEYBOARD_HELP_VISIBLE__ = !helpVisible;
-            // Trigger Reflex state update via custom event
-            window.dispatchEvent(new CustomEvent('sage:toggle-keyboard-help'));
-            handled = true;
+            const toggleButton = document.getElementById('keyboard-help-toggle-button');
+            if (toggleButton) {
+                toggleButton.click();
+                handled = true;
+            } else {
+                console.warn('[Keyboard] Help toggle button not found');
+            }
         }
         
         // Escape - dismiss panels
         else if (key === 'Escape' && !ctrl && !alt) {
             console.log('[Keyboard] Dismiss active panels');
-            // Close keyboard help if open
-            if (window.__SAGE_KEYBOARD_HELP_VISIBLE__) {
-                window.__SAGE_KEYBOARD_HELP_VISIBLE__ = false;
-                window.dispatchEvent(new CustomEvent('sage:toggle-keyboard-help'));
+            // Close keyboard help if open by clicking the visible close button
+            const closeButton = document.getElementById('keyboard-help-close-button');
+            if (closeButton) {
+                closeButton.click();
                 handled = true;
             }
             // Close any modals or panels
@@ -523,7 +528,7 @@ textarea:focus-visible,
     """.strip()
 
 
-def keyboard_shortcuts_component(keyboard_help_visible_var) -> rx.Component:
+def keyboard_shortcuts_component(keyboard_help_visible_var, on_close_help=None) -> rx.Component:
     """
     Main keyboard shortcuts component.
     
@@ -532,6 +537,7 @@ def keyboard_shortcuts_component(keyboard_help_visible_var) -> rx.Component:
     
     Args:
         keyboard_help_visible_var: Reflex Var for keyboard_help_visible state
+        on_close_help: Event handler for closing the help panel (optional)
     
     Returns:
         Reflex component with keyboard functionality
@@ -548,9 +554,18 @@ def keyboard_shortcuts_component(keyboard_help_visible_var) -> rx.Component:
             '<a href="#main-content" class="skip-to-main">Skip to main content</a>'
         ),
         
+        # Hidden button for toggling help via JavaScript (? key)
+        # This button is always present but invisible, allowing JavaScript to trigger the state change
+        rx.button(
+            id="keyboard-help-toggle-button",
+            on_click=on_close_help if on_close_help else lambda: None,
+            style={"display": "none"},  # Completely hidden from UI
+            aria_hidden="true",
+        ),
+        
         # Keyboard help panel (shown conditionally)
         rx.cond(
             keyboard_help_visible_var,
-            keyboard_help_panel(),
+            keyboard_help_panel(on_close=on_close_help),
         ),
     )

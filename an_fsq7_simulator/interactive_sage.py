@@ -1449,6 +1449,14 @@ class InteractiveSageState(rx.State):
         # Future: restore station status in network_stations_data
         pass
     
+    # ========================
+    # KEYBOARD SHORTCUTS HANDLERS (Priority 1)
+    # ========================
+    
+    def toggle_keyboard_help(self):
+        """Toggle keyboard shortcuts help panel"""
+        self.keyboard_help_visible = not self.keyboard_help_visible
+    
     def pan_scope(self, direction: str):
         """Pan scope view (arrow buttons)"""
         step = 0.05
@@ -2003,7 +2011,8 @@ def index() -> rx.Component:
     return rx.fragment(
         # Keyboard shortcuts system (Priority 1 - Keyboard Shortcuts & Accessibility)
         keyboard_shortcuts.keyboard_shortcuts_component(
-            InteractiveSageState.keyboard_help_visible
+            InteractiveSageState.keyboard_help_visible,
+            on_close_help=InteractiveSageState.toggle_keyboard_help
         ),
         
         rx.container(
