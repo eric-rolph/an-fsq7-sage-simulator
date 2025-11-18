@@ -57,11 +57,15 @@ def track_detail_panel(track: Optional[Track], armed: bool, on_launch=None, on_c
                 padding="2rem",
                 border="1px dashed #003300",
                 border_radius="4px",
+                role="status",
+                aria_live="polite",
             ),
             padding="1rem",
             background="#000000",
             border="1px solid #00ff00",
             border_radius="4px",
+            role="region",
+            aria_label="Target detail panel",
         )
     )
 
@@ -321,6 +325,8 @@ def light_gun_controls(on_arm=None) -> rx.Component:
                 width="100%",
                 size="3",
                 _hover={"background": "#005500"},
+                aria_label="Arm light gun target selector. Keyboard shortcut: D key",
+                aria_pressed="false",
             ),
             
             # Instructions

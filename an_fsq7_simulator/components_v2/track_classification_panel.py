@@ -196,6 +196,8 @@ def track_classification_panel(
                     "background": "rgba(255, 0, 0, 0.3)",
                     "box_shadow": "0 0 15px rgba(255, 0, 0, 0.5)",
                 },
+                aria_label=f"Classify track {track_id} as hostile threat. Keyboard shortcut: H key",
+                role="button",
             ),
             rx.button(
                 "FRIENDLY",
@@ -211,6 +213,8 @@ def track_classification_panel(
                     "background": "rgba(0, 255, 0, 0.3)",
                     "box_shadow": "0 0 15px rgba(0, 255, 0, 0.5)",
                 },
+                aria_label=f"Classify track {track_id} as friendly aircraft. Keyboard shortcut: F key",
+                role="button",
             ),
             rx.button(
                 "UNKNOWN",
@@ -226,6 +230,8 @@ def track_classification_panel(
                     "background": "rgba(255, 255, 0, 0.3)",
                     "box_shadow": "0 0 15px rgba(255, 255, 0, 0.5)",
                 },
+                aria_label=f"Mark track {track_id} as unknown. Keyboard shortcut: U key",
+                role="button",
             ),
             rx.button(
                 "IGNORE TRACK",
@@ -239,6 +245,8 @@ def track_classification_panel(
                 _hover={
                     "background": "rgba(128, 128, 128, 0.3)",
                 },
+                aria_label=f"Ignore track {track_id} and remove from display",
+                role="button",
             ),
             align_items="stretch",
             spacing="3",

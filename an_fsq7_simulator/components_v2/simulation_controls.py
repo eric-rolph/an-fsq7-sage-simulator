@@ -90,7 +90,9 @@ def simulation_control_panel(
                     cursor="pointer",
                     font_weight="bold",
                     font_size="16px",
-                    padding="10px"
+                    padding="10px",
+                    aria_label="Resume simulation. Keyboard shortcut: P key",
+                    aria_pressed="false",
                 ),
                 rx.button(
                     "⏸ PAUSE",
@@ -103,7 +105,9 @@ def simulation_control_panel(
                     cursor="pointer",
                     font_weight="bold",
                     font_size="16px",
-                    padding="10px"
+                    padding="10px",
+                    aria_label="Pause simulation. Keyboard shortcut: P key",
+                    aria_pressed="true",
                 )
             ),
             
@@ -132,7 +136,9 @@ def simulation_control_panel(
                         _hover={"background": "#004400"},
                         cursor="pointer",
                         flex="1",
-                        padding="8px"
+                        padding="8px",
+                        aria_label="Set simulation speed to half speed",
+                        aria_pressed=rx.cond(speed_multiplier == 0.5, "true", "false"),
                     ),
                     rx.button(
                         "1x",
@@ -155,7 +161,9 @@ def simulation_control_panel(
                         _hover={"background": "#004400"},
                         cursor="pointer",
                         flex="1",
-                        padding="8px"
+                        padding="8px",
+                        aria_label="Set simulation speed to normal speed",
+                        aria_pressed=rx.cond(speed_multiplier == 1.0, "true", "false"),
                     ),
                     rx.button(
                         "2x",
@@ -178,7 +186,9 @@ def simulation_control_panel(
                         _hover={"background": "#004400"},
                         cursor="pointer",
                         flex="1",
-                        padding="8px"
+                        padding="8px",
+                        aria_label="Set simulation speed to double speed",
+                        aria_pressed=rx.cond(speed_multiplier == 2.0, "true", "false"),
                     ),
                     rx.button(
                         "5x",
@@ -201,7 +211,9 @@ def simulation_control_panel(
                         _hover={"background": "#004400"},
                         cursor="pointer",
                         flex="1",
-                        padding="8px"
+                        padding="8px",
+                        aria_label="Set simulation speed to five times speed",
+                        aria_pressed=rx.cond(speed_multiplier == 5.0, "true", "false"),
                     ),
                     spacing="2",
                     width="100%"

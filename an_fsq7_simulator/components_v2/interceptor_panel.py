@@ -130,7 +130,9 @@ def interceptor_card(interceptor: state_model.Interceptor, selected_track_id: st
                 size="2",
                 width="100%",
                 disabled=(interceptor.status != "READY") | (selected_track_id == ""),
-                on_click=lambda: state.assign_interceptor(iid)
+                on_click=lambda: state.assign_interceptor(iid),
+                aria_label=f"Assign interceptor {interceptor.id} to selected hostile track. Keyboard shortcut: A key",
+                aria_disabled=rx.cond((interceptor.status != "READY") | (selected_track_id == ""), "true", "false"),
             ),
             
             spacing="2",

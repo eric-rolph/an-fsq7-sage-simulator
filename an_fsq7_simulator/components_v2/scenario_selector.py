@@ -42,7 +42,9 @@ def scenario_selector_panel(
                         "border": "1px solid #00FF00",
                         "color": "#00FF00",
                         "font-family": "'Courier New', monospace",
-                    }
+                    },
+                    aria_label="Select simulation scenario. Keyboard shortcut: 1-7 for quick selection",
+                    role="combobox",
                 ),
                 rx.text(f"Current: {current_scenario}", color="#00FF00", size="2"),
                 spacing="3",
