@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\sim\models.py
+# hypothesis_version: 6.148.1
+
+[0.0, 0.0001, 0.001, 0.95, 1.0, 5.0, 10.0, 20.0, 270.0, 600.0, 1000.0, 100, 600, 800, 58000, 'AIM-4 Falcon', 'READY', 'UNKNOWN']

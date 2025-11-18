@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\sim\modes.py
+# hypothesis_version: 6.148.1
+
+['MEMORY', 'MEMORY VISUALIZATION', 'RADAR', 'RADAR SURVEILLANCE', 'STATUS', 'SYSTEM STATUS', 'System diagnostics', 'TACTICAL', 'TACTICAL SITUATION', 'View CPU registers', 'View memory banks', 'View target details']

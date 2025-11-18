@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\state_model.py
+# hypothesis_version: 6.148.1
+
+[0.0, 0.3, 0.4, 0.5, 10.0, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5, 600.0, 100, 300, 360, 600, 800, 1000, ' C', ' H', ' L', ' M', 'AIM-4 Falcon', 'BM', 'CRITICAL', 'E ', 'FR', 'FS', 'FT', 'HIGH', 'HS', 'LOW', 'MD', 'MEDIUM', 'MS', 'N ', 'NE', 'NW', 'READY', 'S ', 'SE', 'SL', 'SS', 'SW', 'TK', 'TRACK', 'UN', 'UNK', 'UNKNOWN', 'W ', 'attempted_intercepts', 'bomber', 'completed_objectives', 'description', 'feature_a', 'feature_b', 'feature_c', 'feature_d', 'fighter', 'friendly', 'hostile', 'learning_moments', 'missile', 'objectives', 'overall_score', 'scenario_duration', 'severity', 'success_criteria', 'tip', 'title', 'tracks_detected', 'tracks_total', 'uncorrelated', 'unknown']

@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\cpu_core.py
+# hypothesis_version: 6.148.1
+
+[100, 200, 201, 202, 255, 10000, 65535, 65536, 131072, 2147483647, 2147483648, 4294967295, 4294967296, '=', '__main__', 'accumulator', 'accumulator_before', 'cycle_count', 'effective_addr', 'halted', 'index_before', 'index_reg', 'indexed', 'instruction', 'instruction_count', 'opcode', 'pc', 'program_counter', 'raw_addr']

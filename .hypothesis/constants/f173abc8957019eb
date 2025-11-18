@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\drum_io_system.py
+# hypothesis_version: 6.148.1
+
+[0.0, 0.5, 6.0, 360.0, 100, 150, 200, 250, 450, 500, 3600, 30000, 35000, 65535, 'TGT-1', 'TGT-2', 'TGT-3', '__main__', 'altitude', 'light_gun_selection', 'radar_targets', 'speed', 'x', 'y']

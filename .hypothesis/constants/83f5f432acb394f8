@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\sim\scenario_events.py
+# hypothesis_version: 6.148.1
+
+[0.0, 0.1, 0.12, 0.15, 0.2, 0.35, 0.5, 0.8, 0.9, 5.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 50.0, 60.0, 1000.0, 135, 180, 270, 320, 430, 580, 600, 700, 720, 850, 950, 15000, 27000, 28000, 43000, 44000, 60000, 'AIRCRAFT', 'COMMS', 'CORRELATION', 'CRITICAL', 'DETECTION', 'FRIENDLY', 'HIGH', 'IFF', 'INTEL', 'LOW', 'MEDIUM', 'MISSILE', 'SCENARIO', 'STATUS', 'TGT-2002', 'TGT-2005', 'TGT-3007', 'TGT-3008', 'TGT-5003', 'TGT-6005', 'TGT-6006', 'TGT-7009', 'TGT-7010', 'TUTORIAL', 'WARNING', 'Wave 2', 'altitude', 'category', 'count', 'course_change', 'details', 'equipment_failure', 'heading', 'interceptor_ready', 'message', 'new_heading', 'new_speed', 'new_threat_level', 'remove_track', 'spawn_track', 'speed', 'system_message', 'threat_escalation', 'threat_level', 'track_id', 'track_type', 'tracks', 'tube_ids', 'wave_name', 'wave_spawn', 'x', 'y']

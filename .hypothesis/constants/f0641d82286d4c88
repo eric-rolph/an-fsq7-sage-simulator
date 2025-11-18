@@ -1,0 +1,4 @@
+# file: C:\Users\ericr\an-fsq7-sage-simulator\an_fsq7_simulator\sim\sim_loop.py
+# hypothesis_version: 6.148.1
+
+[0.0, 1.0, 30.0, 32.0, 200, 359, 550, 750, 800, 5000, 45000, 'AIRCRAFT', 'FRIENDLY', 'HIGH', 'LOW', 'MEDIUM', 'MISSILE', 'UNKNOWN', 'altitude', 'heading', 'speed', 'target_id', 'target_type', 'threat_level', 'x', 'y']
