@@ -66,6 +66,27 @@ class TestSimulatorCPUIntegration:
         # Last RTC tick time should remain unchanged (interval not reached)
         assert simulator._last_rtc_tick == recent_time
 
+    def test_simulator_cpu_rtc_tick_executes_when_interval_elapsed(self):
+        """Verify CPU RTC tick_rtc is actually called when interval passes."""
+        simulator = Simulator()
+        
+        cpu = CPUCore()
+        simulator.cpu_core = cpu
+        
+        # Power on and set system ready so tick() doesn't early return
+        simulator.power_on()
+        simulator.system_ready = True
+        
+        # Set last tick to past (force interval elapsed)
+        old_tick_time = time.time() - 1.0
+        simulator._last_rtc_tick = old_tick_time
+        
+        # Tick simulator
+        simulator.tick(dt=0.1)
+        
+        # Last RTC tick time should be updated (interval was reached)
+        assert simulator._last_rtc_tick > old_tick_time
+
 
 @pytest.mark.sim
 class TestSimulatorTargetSelection:

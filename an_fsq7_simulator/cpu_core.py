@@ -75,6 +75,18 @@ class CPUCore:
         self.trace_enabled = False
         self.trace_buffer = []
         
+        # Real-time clock (for compatibility with sim_loop tick_rtc call)
+        self.rtc_ticks = 0
+        
+    def tick_rtc(self, delta_seconds: float):
+        """
+        Update real-time clock (stub for compatibility with sim_loop).
+        
+        Args:
+            delta_seconds: Time elapsed since last RTC tick
+        """
+        self.rtc_ticks += 1
+        
     def reset(self):
         """Reset CPU to initial state."""
         self.accumulator = 0
