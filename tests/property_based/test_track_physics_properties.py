@@ -191,7 +191,16 @@ class TestVelocityProperties:
     )
     def test_heading_changes_direction(self, heading1, heading2):
         """Verify different headings produce different movement directions."""
-        assume(abs(heading1 - heading2) > 10)  # Significant difference
+        # Normalize headings to handle 0 == 360
+        h1_norm = heading1 % 360
+        h2_norm = heading2 % 360
+        
+        # Calculate angular difference
+        diff = abs(h1_norm - h2_norm)
+        if diff > 180:
+            diff = 360 - diff
+        
+        assume(diff > 10)  # Significant difference
         
         target1 = RadarTarget(
             target_id="TEST-001",
