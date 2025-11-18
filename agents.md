@@ -269,7 +269,339 @@ uv run pytest tests/property_based
 - If a test directory doesn't exist yet (e.g., `tests/design_language`), create it and add at least one basic test.
 - If you can't run a test suite (missing tool, unsupported OS, etc.), state that clearly in comments/PR description.
 
-## Testing Checklist (manual + smoke tests)
+## Browser Testing with Playwright (Automated UI Tests)
+
+**Overview**: Playwright provides automated browser testing for the SAGE simulator UI. This complements unit tests (core logic) with end-to-end UI validation (Reflex components, canvas interactions, workflows).
+
+**What to test with Playwright**:
+- ✅ UI component rendering and visibility
+- ✅ Button clicks and form interactions
+- ✅ Canvas-based interactions (radar, light gun)
+- ✅ JavaScript data injection (window.__SAGE_*)
+- ✅ End-to-end workflows (light gun → track selection → classification → intercept)
+- ✅ Scenario execution and debrief display
+- ✅ Keyboard shortcuts (once implemented)
+
+**What NOT to test with Playwright**:
+- ❌ Pure Python logic (use unit tests in tests/unit/)
+- ❌ Simulation math (use property tests in tests/property_based/)
+- ❌ CPU core operations (use tests/unit/test_cpu.py)
+
+### Installation (Already Complete)
+
+Playwright is already installed and configured:
+
+```powershell
+# Verify Playwright is installed
+uv run python -c "import playwright; print(f'Playwright {playwright.__version__}')"
+
+# Verify Chromium browser is installed
+uv run playwright install --list
+```
+
+**Expected output**:
+```
+Playwright 1.56.0
+Chromium 141.0.7390.37 (playwright build v1194) - downloaded
+```
+
+### Running Browser Tests
+
+**Prerequisites**: Reflex dev server MUST be running first:
+
+```powershell
+# Terminal 1: Start dev server (REQUIRED)
+uv run reflex run
+
+# Terminal 2: Run browser tests once server is ready
+uv run pytest tests/browser -c pytest-playwright.ini
+
+# Run with visible browser (headed mode)
+uv run pytest tests/browser --headed
+
+# Run specific test
+uv run pytest tests/browser/test_ui_smoke.py::TestUILoad::test_homepage_loads_successfully --headed
+
+# Run only smoke tests
+uv run pytest tests/browser -m smoke
+```
+
+### Configuration
+
+**pytest-playwright.ini**:
+```ini
+[pytest]
+markers =
+    browser: Browser-based tests using Playwright
+    slow: Tests that take longer than 5 seconds
+    smoke: Quick smoke tests for critical paths
+
+base_url = http://localhost:3000
+headed = false
+browser = chromium
+slowmo = 0
+
+testpaths = tests/browser
+timeout = 30
+```
+
+**Markers**:
+- `@pytest.mark.browser` - All Playwright tests must have this
+- `@pytest.mark.smoke` - Critical path smoke tests (run first)
+- `@pytest.mark.slow` - Tests that take >5 seconds
+
+### Writing Browser Tests
+
+**Basic Structure**:
+
+```python
+import pytest
+from playwright.sync_api import Page, expect
+
+@pytest.mark.browser
+def test_my_feature(page: Page):
+    """Test description."""
+    # Navigate to app
+    page.goto("http://localhost:3000")
+    page.wait_for_load_state("networkidle")
+    
+    # Interact with UI
+    button = page.get_by_role("button", name="ARM LIGHT GUN")
+    button.click()
+    
+    # Assert state
+    expect(button).to_have_class("armed")
+```
+
+**Available Fixtures** (see tests/browser/conftest.py):
+
+```python
+@pytest.mark.browser
+def test_with_app_loaded(sage_app):
+    """sage_app fixture: page already loaded at localhost:3000."""
+    assert sage_app.title() == "AN/FSQ-7 SAGE System Simulator"
+
+@pytest.mark.browser
+def test_with_scenario_active(sage_with_scenario):
+    """sage_with_scenario: app loaded with scenario running."""
+    # Scenario already started, can test active state
+    pass
+
+@pytest.mark.browser
+def test_with_light_gun_armed(light_gun_armed):
+    """light_gun_armed: light gun already armed for selection."""
+    # Can immediately test track selection
+    pass
+```
+
+**Common Patterns**:
+
+```python
+# 1. Find elements by role (RECOMMENDED)
+button = page.get_by_role("button", name="ARM LIGHT GUN")
+heading = page.get_by_role("heading", name="Track Details")
+
+# 2. Find by CSS selector
+canvas = page.locator("#radar-scope-canvas")
+panel = page.locator(".track-detail-panel")
+
+# 3. Wait for elements
+expect(canvas).to_be_visible(timeout=5000)
+page.wait_for_selector("#radar-scope-canvas", state="visible")
+
+# 4. Click elements
+button.click()
+canvas.click(position={"x": 400, "y": 300})
+
+# 5. Check JavaScript state
+has_tracks = page.evaluate("() => typeof window.__SAGE_TRACKS__ !== 'undefined'")
+tracks = page.evaluate("() => window.__SAGE_TRACKS__")
+
+# 6. Assert conditions
+expect(button).to_be_visible()
+expect(button).to_be_enabled()
+expect(button).to_have_text("ARMED")
+expect(canvas).to_have_attribute("width", "800")
+
+# 7. Wait for network idle
+page.wait_for_load_state("networkidle")
+
+# 8. Handle timeouts
+page.wait_for_timeout(1000)  # Wait 1 second
+```
+
+### Testing Canvas Interactions
+
+**Radar canvas clicks** (light gun selection):
+
+```python
+@pytest.mark.browser
+def test_light_gun_selection(light_gun_armed):
+    """Test light gun track selection on radar canvas."""
+    canvas = light_gun_armed.locator("#radar-scope-canvas")
+    
+    # Get canvas dimensions
+    box = canvas.bounding_box()
+    
+    # Click at specific position (center of canvas)
+    center_x = box["width"] / 2
+    center_y = box["height"] / 2
+    canvas.click(position={"x": center_x, "y": center_y})
+    
+    # Verify selection occurred
+    light_gun_armed.wait_for_timeout(500)
+    selected_track = light_gun_armed.evaluate("() => window.crtRadarScope?.selectedTrack")
+    assert selected_track is not None, "No track selected"
+```
+
+### Debugging Browser Tests
+
+**Run with headed browser to see what's happening**:
+
+```powershell
+uv run pytest tests/browser/test_ui_smoke.py::test_homepage_loads_successfully --headed --slowmo 1000
+```
+
+**Options**:
+- `--headed` - Show browser window (default is headless)
+- `--slowmo 1000` - Slow down actions by 1000ms for debugging
+- `--browser firefox` - Use Firefox instead of Chromium
+- `--tracing on` - Record test execution traces
+
+**Inspect failures**:
+
+```powershell
+# Take screenshot on failure (add to conftest.py)
+@pytest.fixture(autouse=True)
+def screenshot_on_failure(page: Page, request):
+    yield
+    if request.node.rep_call.failed:
+        page.screenshot(path=f"test-screenshots/{request.node.name}.png")
+```
+
+**Check console logs**:
+
+```python
+@pytest.mark.browser
+def test_no_js_errors(page: Page):
+    """Verify no JavaScript errors."""
+    errors = []
+    page.on("console", lambda msg: errors.append(msg.text) if msg.type == "error" else None)
+    
+    page.goto("http://localhost:3000")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(2000)
+    
+    # Filter out expected WebSocket warnings
+    serious_errors = [e for e in errors if "WebSocket" not in e]
+    assert len(serious_errors) == 0, f"Console errors: {serious_errors}"
+```
+
+### Common Issues
+
+**1. "Server not running" error**:
+
+```
+pytest.fail("Server not responding correctly. Run: uv run reflex run")
+```
+
+**Fix**: Start dev server in a separate terminal before running tests:
+
+```powershell
+# Terminal 1
+uv run reflex run
+
+# Terminal 2 (once server shows "App running at: http://localhost:3000")
+uv run pytest tests/browser
+```
+
+**2. "Element not found" timeout**:
+
+```
+TimeoutError: locator.click: Timeout 30000ms exceeded.
+```
+
+**Fix**: Increase timeout or wait for element to appear:
+
+```python
+# Option 1: Increase timeout
+button = page.get_by_role("button", name="ARM LIGHT GUN")
+button.click(timeout=10000)  # 10 seconds
+
+# Option 2: Wait for visibility first
+expect(button).to_be_visible(timeout=10000)
+button.click()
+
+# Option 3: Wait for network idle
+page.wait_for_load_state("networkidle")
+```
+
+**3. "Canvas not initialized" error**:
+
+**Fix**: Wait for CRT radar scope to initialize:
+
+```python
+# Wait for canvas element
+canvas = page.locator("#radar-scope-canvas")
+expect(canvas).to_be_visible(timeout=5000)
+
+# Wait for JavaScript initialization
+page.wait_for_timeout(1000)
+
+# Verify scope exists
+has_scope = page.evaluate("() => typeof window.crtRadarScope !== 'undefined'")
+assert has_scope, "CRT radar scope not initialized"
+```
+
+**4. "Chromium executable doesn't exist" error**:
+
+```powershell
+# Reinstall Chromium browser
+uv run playwright install chromium
+```
+
+**5. "window.__SAGE_* is undefined"**:
+
+**Fix**: Wait for data injection scripts to execute:
+
+```python
+page.goto("http://localhost:3000")
+page.wait_for_load_state("networkidle")
+page.wait_for_timeout(1000)  # Wait for data injection
+
+# Verify globals exist
+has_tracks = page.evaluate("() => typeof window.__SAGE_TRACKS__ !== 'undefined'")
+assert has_tracks, "window.__SAGE_TRACKS__ not injected"
+```
+
+### CI/CD Integration (Future)
+
+**GitHub Actions workflow** (future enhancement):
+
+```yaml
+name: Browser Tests
+
+on: [push, pull_request]
+
+jobs:
+  playwright:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Install dependencies
+        run: uv pip install -r requirements.txt
+      - name: Install Playwright
+        run: uv run playwright install chromium
+      - name: Start dev server
+        run: uv run reflex run &
+      - name: Wait for server
+        run: Start-Sleep -Seconds 10
+      - name: Run browser tests
+        run: uv run pytest tests/browser -c pytest-playwright.ini
+```
+
+### Testing Checklist (manual + smoke tests)
 
 Before you consider a change "done":
 
@@ -278,6 +610,7 @@ Before you consider a change "done":
 - [ ] Browser loads at http://localhost:3000.
 - [ ] UI renders with no red errors in F12 console.
 - [ ] `window.__SAGE_*` globals are present and populated in DevTools.
+- [ ] **Playwright smoke tests pass**: `uv run pytest tests/browser -m smoke`
 - [ ] Basic interactions work end-to-end:
   - [ ] Tracks render and move over time.
   - [ ] Light gun / selection flow responds (arm → click → selection).
