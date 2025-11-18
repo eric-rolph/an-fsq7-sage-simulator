@@ -209,3 +209,15 @@ class TestLightGunSystemAdditional:
         # Verify cleared
         assert gun.poll_status() == False
         assert gun.get_selected_id() is None
+
+
+@pytest.mark.unit
+class TestDrumIOSystemMainFunction:
+    """Test drum_io_system.py main test function."""
+
+    def test_drum_io_system_test_function_runs(self):
+        """Verify test_drum_io_system() executes without errors."""
+        from an_fsq7_simulator import drum_io_system
+        
+        # Should not raise exception
+        drum_io_system.test_drum_io_system()
