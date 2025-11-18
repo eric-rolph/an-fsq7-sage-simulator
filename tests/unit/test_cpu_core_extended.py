@@ -334,3 +334,230 @@ class TestCPUCoreTracing:
         trace = cpu.trace_buffer[0]
         assert trace["opcode"] == CPUCore.OP_ADD
         assert trace["accumulator_before"] == 10
+
+
+@pytest.mark.unit
+class TestCPUCoreAdvancedBranching:
+    """Test advanced branching instructions (TSX, TIX, TXI, HLT)."""
+
+    def test_tsx_saves_return_address(self):
+        """Verify TSX instruction saves return address in index register."""
+        cpu = CPUCore()
+        
+        cpu.program_counter = 100
+        
+        # Create TSX instruction (subroutine call)
+        instruction = (CPUCore.OP_TSX << 24) | 500
+        
+        cpu.execute_instruction(instruction)
+        
+        # Should save return address (100) in index register
+        assert cpu.index_reg == 100
+        # Should jump to subroutine
+        assert cpu.program_counter == 500
+
+    def test_tix_decrements_index_and_jumps(self):
+        """Verify TIX instruction decrements index and jumps if positive."""
+        cpu = CPUCore()
+        
+        cpu.index_reg = 5
+        cpu.program_counter = 100
+        
+        # Create TIX instruction
+        instruction = (CPUCore.OP_TIX << 24) | 200
+        
+        cpu.execute_instruction(instruction)
+        
+        # Should decrement index
+        assert cpu.index_reg == 4
+        # Should jump (index still positive)
+        assert cpu.program_counter == 200
+
+    def test_tix_no_jump_when_index_zero(self):
+        """Verify TIX does not jump when index reaches zero."""
+        cpu = CPUCore()
+        
+        cpu.index_reg = 1
+        cpu.program_counter = 100
+        
+        # Create TIX instruction
+        instruction = (CPUCore.OP_TIX << 24) | 200
+        
+        cpu.execute_instruction(instruction)
+        
+        # Should decrement to zero
+        assert cpu.index_reg == 0
+        # Should NOT jump
+        assert cpu.program_counter == 100
+
+    def test_txi_increments_index_and_jumps(self):
+        """Verify TXI instruction increments index and jumps if within limit."""
+        cpu = CPUCore()
+        
+        cpu.index_reg = 5
+        cpu.program_counter = 100
+        
+        # Create TXI instruction with increment=2, limit=10
+        # Address field: (increment << 8) | limit = 522
+        address_field = (2 << 8) | 10
+        instruction = (CPUCore.OP_TXI << 24) | address_field
+        
+        cpu.execute_instruction(instruction)
+        
+        # Should increment index by 2 (5 + 2 = 7)
+        assert cpu.index_reg == 7
+        # Should jump to effective_addr (522)
+        assert cpu.program_counter == 522
+
+    def test_hlt_stops_execution(self):
+        """Verify HLT instruction halts CPU."""
+        cpu = CPUCore()
+        
+        # Create HLT instruction
+        instruction = (CPUCore.OP_HLT << 24) | 0
+        
+        cpu.execute_instruction(instruction)
+        
+        assert cpu.halted == True
+
+    def test_unknown_opcode_halts_cpu(self):
+        """Verify unknown opcode halts CPU with error."""
+        cpu = CPUCore()
+        
+        # Create instruction with invalid opcode 0x99
+        instruction = (0x99 << 24) | 100
+        
+        cpu.execute_instruction(instruction)
+        
+        assert cpu.halted == True
+
+
+@pytest.mark.unit
+class TestCPUCoreExecutionFlow:
+    """Test execution flow (step, run)."""
+
+    def test_step_executes_one_instruction(self):
+        """Verify step() executes one fetch-decode-execute cycle."""
+        cpu = CPUCore()
+        
+        # Load simple program: LDA 100, HLT
+        cpu.memory[0] = (CPUCore.OP_LDA << 24) | 100
+        cpu.memory[1] = (CPUCore.OP_HLT << 24) | 0
+        cpu.memory[100] = 42
+        
+        # Execute first instruction
+        continue_execution = cpu.step()
+        
+        assert cpu.accumulator == 42
+        assert cpu.program_counter == 1
+        assert cpu.instruction_count == 1
+        assert continue_execution == True
+
+    def test_step_returns_false_when_halted(self):
+        """Verify step() returns False after halt."""
+        cpu = CPUCore()
+        
+        # Load HLT instruction
+        cpu.memory[0] = (CPUCore.OP_HLT << 24) | 0
+        
+        # Execute HLT
+        continue_execution = cpu.step()
+        
+        assert cpu.halted == True
+        assert continue_execution == False
+
+    def test_step_does_not_execute_when_already_halted(self):
+        """Verify step() does nothing if CPU already halted."""
+        cpu = CPUCore()
+        
+        cpu.halted = True
+        initial_pc = cpu.program_counter
+        
+        continue_execution = cpu.step()
+        
+        assert cpu.program_counter == initial_pc
+        assert continue_execution == False
+
+    def test_run_executes_until_halt(self):
+        """Verify run() executes program until HLT instruction."""
+        cpu = CPUCore()
+        
+        # Load program: LDA 100, ADD 101, STO 102, HLT
+        cpu.memory[0] = (CPUCore.OP_LDA << 24) | 100
+        cpu.memory[1] = (CPUCore.OP_ADD << 24) | 101
+        cpu.memory[2] = (CPUCore.OP_STO << 24) | 102
+        cpu.memory[3] = (CPUCore.OP_HLT << 24) | 0
+        cpu.memory[100] = 10
+        cpu.memory[101] = 20
+        
+        cpu.run()
+        
+        # Should execute all 4 instructions
+        assert cpu.instruction_count == 4
+        assert cpu.memory[102] == 30
+        assert cpu.halted == True
+
+    def test_run_stops_at_max_instructions(self):
+        """Verify run() stops at max_instructions limit."""
+        cpu = CPUCore()
+        
+        # Create infinite loop: TRA 0
+        cpu.memory[0] = (CPUCore.OP_TRA << 24) | 0
+        
+        cpu.run(max_instructions=100)
+        
+        # Should stop at limit, not halt
+        assert cpu.instruction_count == 100
+        assert cpu.halted == False
+
+
+@pytest.mark.unit
+class TestCPUCoreMemoryAccess:
+    """Test memory read/write methods."""
+
+    def test_read_memory_bounds_check(self):
+        """Verify read_memory returns 0 for out-of-bounds address."""
+        cpu = CPUCore(memory_size=100)
+        
+        value = cpu.read_memory(200)  # Beyond memory size
+        
+        assert value == 0
+
+    def test_write_memory_bounds_check(self):
+        """Verify write_memory ignores out-of-bounds address."""
+        cpu = CPUCore(memory_size=100)
+        
+        cpu.write_memory(200, 999)  # Beyond memory size
+        
+        # Should not crash, memory unchanged
+        assert len(cpu.memory) == 100
+
+    def test_write_memory_masks_to_32_bits(self):
+        """Verify write_memory masks values to 32 bits."""
+        cpu = CPUCore()
+        
+        # Write value larger than 32 bits
+        cpu.write_memory(100, 0x123456789ABCDEF)
+        
+        # Should be masked to 32 bits
+        assert cpu.memory[100] == 0x89ABCDEF
+
+
+@pytest.mark.unit
+class TestCPUCoreDivisionByZero:
+    """Test division by zero handling."""
+
+    def test_dvh_division_by_zero(self):
+        """Verify DVH handles division by zero gracefully."""
+        cpu = CPUCore()
+        
+        cpu.accumulator = 100
+        cpu.memory[50] = 0  # Zero divisor
+        
+        # Create DVH instruction
+        instruction = (CPUCore.OP_DVH << 24) | 50
+        
+        cpu.execute_instruction(instruction)
+        
+        # Should set accumulator to max value
+        assert cpu.accumulator == 0x7FFFFFFF
