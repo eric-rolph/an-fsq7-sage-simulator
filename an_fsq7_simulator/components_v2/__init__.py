@@ -22,6 +22,7 @@ from . import performance_test
 from . import scenarios_layered
 from . import scenario_debrief  # Priority 4
 from . import script_loader
+from . import keyboard_shortcuts  # Priority 1 - Keyboard Shortcuts & Accessibility
 
 __all__ = [
     "radar_scope",
@@ -40,5 +41,6 @@ __all__ = [
     "performance_test",
     "scenarios_layered",
     "scenario_debrief",
-    "script_loader"
+    "script_loader",
+    "keyboard_shortcuts"
 ]

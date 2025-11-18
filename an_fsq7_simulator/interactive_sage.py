@@ -49,6 +49,7 @@ from .components_v2 import (
     system_inspector,  # NEW: System Inspector Overlay (Priority 3)
     scenario_debrief,  # NEW: Scenario Debrief Panel (Priority 4)
     sound_effects,  # NEW: Sound Effects & Audio Feedback (Priority 5)
+    keyboard_shortcuts,  # NEW: Keyboard Shortcuts & Accessibility (Priority 1)
 )
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
@@ -146,6 +147,9 @@ class InteractiveSageState(rx.State):
     show_network_view: bool = False
     selected_station_id: str = ""
     network_stations_data: str = "[]"  # JSON of all stations
+    
+    # ===== KEYBOARD SHORTCUTS STATE (Priority 1 - Keyboard Shortcuts & Accessibility) =====
+    keyboard_help_visible: bool = False
     
     # ===== 7x7 SECTOR GRID STATE (IBM DSP Authentic Feature) =====
     show_sector_grid: bool = False
@@ -1997,6 +2001,11 @@ class InteractiveSageState(rx.State):
 def index() -> rx.Component:
     """Main SAGE simulator page"""
     return rx.fragment(
+        # Keyboard shortcuts system (Priority 1 - Keyboard Shortcuts & Accessibility)
+        keyboard_shortcuts.keyboard_shortcuts_component(
+            InteractiveSageState.keyboard_help_visible
+        ),
+        
         rx.container(
             # Welcome modal (first visit) - Temporarily disabled due to lambda event handler issues
             # rx.cond(
