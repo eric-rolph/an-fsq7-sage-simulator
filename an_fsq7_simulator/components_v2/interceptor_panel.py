@@ -70,11 +70,31 @@ def fuel_gauge(fuel_percent: int) -> rx.Component:
 def interceptor_card(interceptor: state_model.Interceptor, selected_track_id: str, state) -> rx.Component:
     """Display card for single interceptor with assignment option"""
     
-    # Calculate distance to selected track if one is selected
+    # Get distance to assigned target (if any)
+    assigned_dist = state.interceptor_assigned_distances[interceptor.id]
+    
+    # Get distance to selected track (if any)
+    selected_dist = state.interceptor_distances[interceptor.id]
+    
     distance_display = rx.cond(
-        selected_track_id != "",
-        rx.text(f"Distance: calculating...", size="1", color="gray"),
-        rx.text("No target selected", size="1", color="gray")
+        interceptor.assigned_target_id,
+        # If assigned, show assigned distance
+        rx.vstack(
+            rx.text(f"Engaging target: {assigned_dist}", size="1", color="red", weight="bold"),
+            # Optionally show distance to selected if different
+            rx.cond(
+                (selected_track_id != "") & (selected_track_id != interceptor.assigned_target_id),
+                rx.text(f"(To Selected: {selected_dist})", size="1", color="gray"),
+                rx.box()
+            ),
+            spacing="0"
+        ),
+        # If not assigned, show distance to selected (preview)
+        rx.cond(
+            selected_track_id != "",
+            rx.text(f"Distance: {selected_dist}", size="1", color="gray"),
+            rx.text("No target selected", size="1", color="gray")
+        )
     )
     
     # Create interceptor ID as a variable for the lambda

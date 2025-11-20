@@ -11,23 +11,10 @@ All actions accessible without mode changes or screen navigation.
 """
 
 import reflex as rx
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
-
-
-@dataclass
-class OperatorWorkflowState:
-    """
-    Current state in the operator workflow
-    Tracks progression through detect → intercept cycle
-    """
-    current_step: str = "detect"  # detect, inspect, designate, assign, confirm
-    selected_track_id: str = ""
-    selected_track_data: dict = None
-    intercept_ready: bool = False
-    interceptor_id: str = ""
-    action_locked: bool = False  # Prevent accidental double-clicks
-
+from ..state_model import Track
+from . import system_messages
 
 # Workflow steps with descriptions
 WORKFLOW_STEPS = {
@@ -69,20 +56,114 @@ WORKFLOW_STEPS = {
 }
 
 
+class OperatorWorkflowStateMixin(rx.State):
+    """
+    Mixin for InteractiveSageState to handle operator workflow logic.
+    Allows parallel tasking by maintaining workflow state on each track.
+    """
+    
+    def advance_workflow(self, track_id: str):
+        """Advance the workflow for a specific track to the next step"""
+        # This method assumes self.tracks exists (provided by InteractiveSageState)
+        for track in self.tracks:
+            if track.id == track_id:
+                current = track.workflow_step
+                if current == "detect":
+                    track.workflow_step = "inspect"
+                elif current == "inspect":
+                    track.workflow_step = "designate"
+                elif current == "designate":
+                    track.workflow_step = "assign"
+                elif current == "assign":
+                    # Launch interceptor logic
+                    # Find available interceptor
+                    # This assumes self.interceptors exists
+                    available_interceptor = None
+                    if hasattr(self, 'interceptors'):
+                        for interceptor in self.interceptors:
+                            if interceptor.status == "READY":
+                                available_interceptor = interceptor
+                                break
+                    
+                    if available_interceptor:
+                        available_interceptor.status = "SCRAMBLING"
+                        available_interceptor.assigned_target_id = track.id
+                        track.interceptor_assigned = True
+                        track.workflow_interceptor_id = available_interceptor.id
+                        track.workflow_step = "confirm"
+                        
+                        # Add system message
+                        if hasattr(self, 'system_messages_log'):
+                             self.system_messages_log.append(
+                                 system_messages.log_intercept_launched(track.id, available_interceptor.id)
+                             )
+                    else:
+                        # No interceptors available - maybe show error?
+                        # For now, just advance state but with no interceptor ID (simulation logic might fail)
+                        track.workflow_step = "confirm"
+                        track.workflow_interceptor_id = "NONE"
+                        
+                        if hasattr(self, 'system_messages_log'):
+                             self.system_messages_log.append(
+                                 system_messages.log_warning(f"No interceptors available for {track.id}")
+                             )
+
+                # confirm is the last step
+                return
+
+    def reset_workflow(self, track_id: str):
+        """Reset workflow for a track (e.g. if lost or re-evaluated)"""
+        for track in self.tracks:
+            if track.id == track_id:
+                track.workflow_step = "detect"
+                track.workflow_interceptor_id = ""
+                return
+
+    def confirm_hostile(self, track_id: str):
+        """Operator confirms track is hostile"""
+        for track in self.tracks:
+            if track.id == track_id:
+                track.workflow_step = "assign"
+                # Also update the track classification if needed
+                if track.track_type == "unknown":
+                    track.track_type = "hostile"  # Operator judgment
+                    track.threat_level = "HIGH"
+                return
+
+    def cancel_designation(self, track_id: str):
+        """Operator cancels designation, goes back to inspect"""
+        for track in self.tracks:
+            if track.id == track_id:
+                track.workflow_step = "inspect"
+                return
+
+
 def workflow_progress_bar(current_step: str) -> rx.Component:
     """
     Visual progress bar showing current position in workflow
     Always visible at top of main screen
     """
     steps = ["detect", "inspect", "designate", "assign", "confirm"]
-    current_index = steps.index(current_step) if current_step in steps else 0
     
+    def is_step_complete(step_name):
+        # A step is complete if the current_step is one of the subsequent steps
+        step_index = steps.index(step_name)
+        subsequent_steps = steps[step_index+1:]
+        if not subsequent_steps:
+            return False
+        
+        # Build OR condition: current_step == next1 | current_step == next2 ...
+        condition = (current_step == subsequent_steps[0])
+        for s in subsequent_steps[1:]:
+            condition = condition | (current_step == s)
+        return condition
+
     return rx.hstack(
         *[
             workflow_step_indicator(
                 step=step,
-                is_current=(step == current_step),
-                is_complete=(steps.index(step) < current_index)
+                is_current=(current_step == step),
+                is_complete=is_step_complete(step)
             )
             for step in steps
         ],
@@ -99,19 +180,24 @@ def workflow_step_indicator(step: str, is_current: bool, is_complete: bool) -> r
     """Single step in the workflow progress bar"""
     step_info = WORKFLOW_STEPS[step]
     
-    # Determine style based on state
-    if is_complete:
-        color = "#00ff00"
-        opacity = 0.5
-        icon = "✓"
-    elif is_current:
-        color = step_info["color"]
-        opacity = 1.0
-        icon = step_info["icon"]
-    else:
-        color = "#444444"
-        opacity = 0.3
-        icon = step_info["icon"]
+    # Determine style based on state using rx.cond for Vars
+    color = rx.cond(
+        is_complete,
+        "#00ff00",
+        rx.cond(is_current, step_info["color"], "#444444")
+    )
+    
+    opacity = rx.cond(
+        is_complete,
+        0.5,
+        rx.cond(is_current, 1.0, 0.3)
+    )
+    
+    icon = rx.cond(
+        is_complete,
+        "✓",
+        step_info["icon"]
+    )
     
     return rx.vstack(
         # Icon
@@ -127,7 +213,7 @@ def workflow_step_indicator(step: str, is_current: bool, is_complete: bool) -> r
             step_info["label"],
             font_family="Courier New",
             font_size="11px",
-            font_weight="bold" if is_current else "normal",
+            font_weight=rx.cond(is_current, "bold", "normal"),
             color=color,
             style={"opacity": opacity}
         ),
@@ -156,63 +242,53 @@ def workflow_step_indicator(step: str, is_current: bool, is_complete: bool) -> r
     )
 
 
-def unified_action_panel(workflow_state: OperatorWorkflowState) -> rx.Component:
+def unified_action_panel(track: Optional[Track], state_class) -> rx.Component:
     """
     Fixed action panel showing current workflow step and available actions
     Always in same position on screen (right side)
+    
+    Args:
+        track: The currently selected track (can be None)
+        state_class: The main state class (InteractiveSageState) to bind events to
     """
-    current_step_info = WORKFLOW_STEPS[workflow_state.current_step]
+    # If no track selected, we are in DETECT mode
+    current_step = rx.cond(track != None, track.workflow_step, "detect")
+    
+    # We need to access properties of the step info dynamically based on current_step
+    # But rx.cond is better for high-level switching
     
     return rx.box(
         rx.vstack(
-            # Current step header
-            rx.hstack(
-                rx.text(
-                    current_step_info["icon"],
-                    font_size="32px",
-                    color=current_step_info["color"]
-                ),
-                rx.vstack(
-                    rx.heading(
-                        current_step_info["label"],
-                        size="5",
-                        color=current_step_info["color"]
-                    ),
-                    rx.text(
-                        current_step_info["instruction"],
-                        font_family="Courier New",
-                        font_size="12px",
-                        color="#00ff88"
-                    ),
-                    align_items="start",
-                    spacing="1"
-                ),
-                spacing="3",
-                width="100%"
+            # Header is dynamic based on step
+            rx.cond(
+                track == None,
+                # DETECT Header
+                _step_header("detect"),
+                # Track-specific Header
+                rx.match(
+                    track.workflow_step,
+                    ("inspect", _step_header("inspect")),
+                    ("designate", _step_header("designate")),
+                    ("assign", _step_header("assign")),
+                    ("confirm", _step_header("confirm")),
+                    _step_header("detect") # Fallback
+                )
             ),
             
             rx.divider(border_color="#00ff00"),
             
             # Step-specific content
             rx.cond(
-                workflow_state.current_step == "detect",
-                detect_content()
-            ),
-            rx.cond(
-                workflow_state.current_step == "inspect",
-                inspect_content(workflow_state)
-            ),
-            rx.cond(
-                workflow_state.current_step == "designate",
-                designate_content(workflow_state)
-            ),
-            rx.cond(
-                workflow_state.current_step == "assign",
-                assign_content(workflow_state)
-            ),
-            rx.cond(
-                workflow_state.current_step == "confirm",
-                confirm_content(workflow_state)
+                track == None,
+                detect_content(),
+                rx.match(
+                    track.workflow_step,
+                    ("inspect", inspect_content(track, state_class)),
+                    ("designate", designate_content(track, state_class)),
+                    ("assign", assign_content(track, state_class)),
+                    ("confirm", confirm_content(track, state_class)),
+                    detect_content() # Fallback
+                )
             ),
             
             spacing="4",
@@ -224,6 +300,38 @@ def unified_action_panel(workflow_state: OperatorWorkflowState) -> rx.Component:
         padding="20px",
         width="350px",
         min_height="400px"
+    )
+
+
+def _step_header(step_name: str) -> rx.Component:
+    """Helper to render header for a specific step"""
+    # We can't easily use WORKFLOW_STEPS[step_name] inside rx.cond/match if step_name is a Var
+    # But here step_name is a python string because we call this from python logic inside rx.match
+    
+    info = WORKFLOW_STEPS[step_name]
+    return rx.hstack(
+        rx.text(
+            info["icon"],
+            font_size="32px",
+            color=info["color"]
+        ),
+        rx.vstack(
+            rx.heading(
+                info["label"],
+                size="5",
+                color=info["color"]
+            ),
+            rx.text(
+                info["instruction"],
+                font_family="Courier New",
+                font_size="12px",
+                color="#00ff88"
+            ),
+            align_items="start",
+            spacing="1"
+        ),
+        spacing="3",
+        width="100%"
     )
 
 
@@ -278,7 +386,7 @@ def detect_content() -> rx.Component:
     )
 
 
-def inspect_content(workflow_state: OperatorWorkflowState) -> rx.Component:
+def inspect_content(track: Track, state_class) -> rx.Component:
     """Content for INSPECT step"""
     return rx.vstack(
         rx.text(
@@ -301,36 +409,28 @@ def inspect_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             margin="10px 0"
         ),
         
-        rx.text(
-            "Click on any radar contact to inspect.",
-            font_size="12px",
-            color="#888888"
-        ),
-        
-        rx.cond(
-            workflow_state.selected_track_id != "",
-            rx.vstack(
-                rx.text("SELECTED:", font_size="10px", color="#888888"),
-                rx.text(
-                    workflow_state.selected_track_id,
-                    font_size="18px",
-                    color="#ffff00",
-                    font_family="Courier New"
-                ),
-                rx.button(
-                    "VIEW DETAILS →",
-                    size="2",
-                    color_scheme="yellow",
-                    on_click=lambda: [],  # TODO: Advance to designate
-                    style={"font_family": "Courier New"}
-                ),
-                spacing="2",
-                padding="15px",
-                background="#222200",
-                border="1px solid #ffff00",
-                border_radius="4px",
-                margin_top="10px"
-            )
+        rx.vstack(
+            rx.text("SELECTED:", font_size="10px", color="#888888"),
+            rx.text(
+                track.id,
+                font_size="18px",
+                color="#ffff00",
+                font_family="Courier New"
+            ),
+            rx.button(
+                "VIEW DETAILS →",
+                size="2",
+                color_scheme="yellow",
+                on_click=lambda: state_class.advance_workflow(track.id),
+                style={"font_family": "Courier New"}
+            ),
+            spacing="2",
+            padding="15px",
+            background="#222200",
+            border="1px solid #ffff00",
+            border_radius="4px",
+            margin_top="10px",
+            width="100%"
         ),
         
         rx.text(
@@ -347,7 +447,7 @@ def inspect_content(workflow_state: OperatorWorkflowState) -> rx.Component:
     )
 
 
-def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
+def designate_content(track: Track, state_class) -> rx.Component:
     """Content for DESIGNATE step - shows track details"""
     return rx.vstack(
         rx.text(
@@ -362,7 +462,7 @@ def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
                 rx.hstack(
                     rx.text("TRACK ID:", color="#888888", font_size="11px"),
                     rx.text(
-                        workflow_state.selected_track_id,
+                        track.id,
                         color="#ffff00",
                         font_family="Courier New",
                         font_weight="bold"
@@ -373,33 +473,33 @@ def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
                 rx.hstack(
                     rx.text("TYPE:", color="#888888", font_size="11px"),
                     rx.badge(
-                        "HOSTILE",  # TODO: Real track type
-                        color_scheme="red"
+                        track.track_type.upper(),
+                        color_scheme=rx.cond(track.track_type == "hostile", "red", "green")
                     ),
                     justify="between",
                     width="100%"
                 ),
                 rx.hstack(
                     rx.text("ALTITUDE:", color="#888888", font_size="11px"),
-                    rx.text("40,000 ft", color="#00ff00", font_family="Courier New"),
+                    rx.text(f"{track.altitude} ft", color="#00ff00", font_family="Courier New"),
                     justify="between",
                     width="100%"
                 ),
                 rx.hstack(
                     rx.text("SPEED:", color="#888888", font_size="11px"),
-                    rx.text("550 kts", color="#00ff00", font_family="Courier New"),
+                    rx.text(f"{track.speed} kts", color="#00ff00", font_family="Courier New"),
                     justify="between",
                     width="100%"
                 ),
                 rx.hstack(
                     rx.text("HEADING:", color="#888888", font_size="11px"),
-                    rx.text("180°", color="#00ff00", font_family="Courier New"),
+                    rx.text(f"{track.heading}°", color="#00ff00", font_family="Courier New"),
                     justify="between",
                     width="100%"
                 ),
                 rx.hstack(
                     rx.text("THREAT:", color="#888888", font_size="11px"),
-                    rx.badge("HIGH", color_scheme="red", size="2"),
+                    rx.badge(track.threat_level, color_scheme="red", size="2"),
                     justify="between",
                     width="100%"
                 ),
@@ -409,7 +509,8 @@ def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             padding="15px",
             background="#110000",
             border="2px solid #ff0000",
-            border_radius="4px"
+            border_radius="4px",
+            width="100%"
         ),
         
         # Confirmation question
@@ -426,7 +527,7 @@ def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
                 "✓ CONFIRM",
                 size="3",
                 color_scheme="red",
-                on_click=lambda: [],  # TODO: Advance to assign
+                on_click=lambda: state_class.confirm_hostile(track.id),
                 style={"font_family": "Courier New", "flex": 1}
             ),
             rx.button(
@@ -434,7 +535,7 @@ def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
                 size="3",
                 variant="soft",
                 color_scheme="gray",
-                on_click=lambda: [],  # TODO: Back to inspect
+                on_click=lambda: state_class.cancel_designation(track.id),
                 style={"font_family": "Courier New", "flex": 1}
             ),
             spacing="3",
@@ -447,7 +548,7 @@ def designate_content(workflow_state: OperatorWorkflowState) -> rx.Component:
     )
 
 
-def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
+def assign_content(track: Track, state_class) -> rx.Component:
     """Content for ASSIGN step - launch interceptor"""
     return rx.vstack(
         rx.text(
@@ -461,7 +562,7 @@ def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             rx.vstack(
                 rx.text("TARGET", font_size="10px", color="#888888"),
                 rx.text(
-                    workflow_state.selected_track_id,
+                    track.id,
                     font_size="24px",
                     color="#ff0000",
                     font_family="Courier New"
@@ -472,7 +573,8 @@ def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             background="#110000",
             border="2px solid #ff0000",
             border_radius="4px",
-            text_align="center"
+            text_align="center",
+            width="100%"
         ),
         
         # Launch button (BIG and obvious)
@@ -490,11 +592,10 @@ def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             color_scheme="cyan",
             width="100%",
             padding="30px",
-            on_click=lambda: [],  # TODO: Launch interceptor
-            disabled=workflow_state.action_locked,
+            on_click=lambda: state_class.advance_workflow(track.id), # TODO: Trigger actual launch logic
             style={
                 "font_family": "Courier New",
-                "cursor": "pointer" if not workflow_state.action_locked else "not-allowed"
+                "cursor": "pointer"
             }
         ),
         
@@ -504,7 +605,8 @@ def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             font_size="11px",
             color="#ffff00",
             font_style="italic",
-            text_align="center"
+            text_align="center",
+            width="100%"
         ),
         
         # Cancel option
@@ -514,7 +616,7 @@ def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             variant="soft",
             color_scheme="gray",
             width="100%",
-            on_click=lambda: [],  # TODO: Back to designate
+            on_click=lambda: state_class.cancel_designation(track.id),
             style={"font_family": "Courier New"}
         ),
         
@@ -524,7 +626,7 @@ def assign_content(workflow_state: OperatorWorkflowState) -> rx.Component:
     )
 
 
-def confirm_content(workflow_state: OperatorWorkflowState) -> rx.Component:
+def confirm_content(track: Track, state_class) -> rx.Component:
     """Content for CONFIRM step - monitor intercept"""
     return rx.vstack(
         rx.text(
@@ -538,7 +640,7 @@ def confirm_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             rx.vstack(
                 rx.text("INTERCEPTOR", font_size="10px", color="#888888"),
                 rx.text(
-                    workflow_state.interceptor_id,
+                    track.workflow_interceptor_id, # This needs to be set during assign
                     font_size="20px",
                     color="#00ffff",
                     font_family="Courier New"
@@ -546,7 +648,7 @@ def confirm_content(workflow_state: OperatorWorkflowState) -> rx.Component:
                 rx.text("→", font_size="24px", color="#888888"),
                 rx.text("TARGET", font_size="10px", color="#888888"),
                 rx.text(
-                    workflow_state.selected_track_id,
+                    track.id,
                     font_size="20px",
                     color="#ff0000",
                     font_family="Courier New"
@@ -557,7 +659,8 @@ def confirm_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             background="#001111",
             border="2px solid #00ffff",
             border_radius="4px",
-            text_align="center"
+            text_align="center",
+            width="100%"
         ),
         
         # Status
@@ -587,7 +690,8 @@ def confirm_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             border="1px solid #00ffff",
             border_radius="4px",
             text_align="center",
-            margin_top="10px"
+            margin_top="10px",
+            width="100%"
         ),
         
         # Reset button
@@ -596,7 +700,7 @@ def confirm_content(workflow_state: OperatorWorkflowState) -> rx.Component:
             size="2",
             color_scheme="green",
             width="100%",
-            on_click=lambda: [],  # TODO: Reset to detect
+            on_click=lambda: state_class.reset_workflow(track.id),
             style={"font_family": "Courier New"},
             margin_top="20px"
         ),

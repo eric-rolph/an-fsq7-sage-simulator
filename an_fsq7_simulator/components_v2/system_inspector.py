@@ -411,6 +411,47 @@ def queue_inspector_panel(
     )
 
 
+def simulation_metrics_panel(
+    active_tracks: int = 0,
+    active_interceptors: int = 0,
+    world_time: int = 0,
+    speed_multiplier: float = 1.0
+) -> rx.Component:
+    """
+    Real-time Simulation Metrics
+    
+    Args:
+        active_tracks: Number of active radar tracks
+        active_interceptors: Number of active interceptors
+        world_time: Current simulation time in ms
+        speed_multiplier: Current simulation speed
+    """
+    return rx.box(
+        rx.heading(
+            "SIMULATION METRICS",
+            size="3",
+            color="#00ff00",
+            font_family="'Courier New', monospace",
+            margin_bottom="0.75rem"
+        ),
+        
+        rx.grid(
+            inspector_metric_box("ACTIVE TRACKS", active_tracks.to(str)),
+            inspector_metric_box("INTERCEPTORS", active_interceptors.to(str)),
+            inspector_metric_box("SIM SPEED", speed_multiplier.to(str) + "x"),
+            inspector_metric_box("WORLD TIME", (world_time / 1000).to(str) + "s"),
+            columns="2",
+            spacing="2"
+        ),
+        
+        padding="1rem",
+        background="rgba(0, 20, 0, 0.95)",
+        border="2px solid #00ff00",
+        border_radius="8px",
+        margin_bottom="1rem"
+    )
+
+
 def system_inspector_overlay(
     show: bool = False,
     accumulator: int = 0,
@@ -425,6 +466,10 @@ def system_inspector_overlay(
     radar_processing_rate: int = 0,
     track_processing_rate: int = 0,
     display_processing_rate: int = 0,
+    active_tracks: int = 0,
+    active_interceptors: int = 0,
+    world_time: int = 0,
+    speed_multiplier: float = 1.0,
     on_close = None
 ) -> rx.Component:
     """
@@ -447,6 +492,10 @@ def system_inspector_overlay(
         radar_processing_rate: Radar processing rate
         track_processing_rate: Track processing rate
         display_processing_rate: Display processing rate
+        active_tracks: Number of active radar tracks
+        active_interceptors: Number of active interceptors
+        world_time: Current simulation time in ms
+        speed_multiplier: Current simulation speed
         on_close: Callback to close overlay
     """
     return rx.cond(
@@ -474,6 +523,13 @@ def system_inspector_overlay(
             
             # Scrollable content area
             rx.box(
+                simulation_metrics_panel(
+                    active_tracks=active_tracks,
+                    active_interceptors=active_interceptors,
+                    world_time=world_time,
+                    speed_multiplier=speed_multiplier
+                ),
+
                 cpu_state_panel(
                     accumulator=accumulator,
                     index_register=index_register,

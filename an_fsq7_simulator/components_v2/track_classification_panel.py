@@ -51,8 +51,19 @@ def track_classification_panel(
     """
     
     # Determine why correlation failed (using rx.cond for Reflex Var compatibility)
-    # Note: Using text display instead of complex conditional logic with Vars
-    correlation_issue_text = "Auto-correlation processing failed - manual classification required"
+    correlation_issue_text = rx.cond(
+        speed > 600,
+        "Velocity exceeds auto-correlation limits (>600 kts) - Possible Missile",
+        rx.cond(
+            altitude > 60000,
+            "Altitude exceeds auto-correlation limits (>60k ft) - High Altitude Intruder",
+            rx.cond(
+                track_type == "unknown",
+                "No IFF transponder response detected - Identification required",
+                "Ambiguous radar return signature - Manual correlation required"
+            )
+        )
+    )
     
     return rx.box(
         # Header

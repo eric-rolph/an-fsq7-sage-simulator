@@ -50,12 +50,14 @@ from .components_v2 import (
     scenario_debrief,  # NEW: Scenario Debrief Panel (Priority 4)
     sound_effects,  # NEW: Sound Effects & Audio Feedback (Priority 5)
     keyboard_shortcuts,  # NEW: Keyboard Shortcuts & Accessibility (Priority 1)
+    operator_workflow,  # NEW: Operator Goal Flow (Requirement #1)
 )
+from .components_v2.operator_workflow import OperatorWorkflowStateMixin, unified_action_panel, workflow_progress_bar
 from .components_v2.radar_scope_native import radar_scope_with_init
 from .components_v2.radar_inline_js import RADAR_SCOPE_INLINE_JS
 
 
-class InteractiveSageState(rx.State):
+class InteractiveSageState(OperatorWorkflowStateMixin):
     """
     Main state container for the interactive SAGE simulator
     Single source of truth for all UI and simulation state
@@ -70,6 +72,9 @@ class InteractiveSageState(rx.State):
     is_paused: bool = False
     speed_multiplier: float = 1.0
     _background_task_started: bool = False  # Track if simulation loop is running
+    _event_timeline: Any = None  # Backend-only: Timeline of scenario events
+    scenario_elapsed_time: float = 0.0  # Seconds since scenario start
+    active_events_count: int = 0  # Number of currently active scenario events
     
     # ===== CPU STATE =====
     current_program: str = ""
@@ -146,10 +151,11 @@ class InteractiveSageState(rx.State):
     # ===== NETWORK STATION VIEW STATE (Priority 6) =====
     show_network_view: bool = False
     selected_station_id: str = ""
-    network_stations_data: str = "[]"  # JSON of all stations
     
-    # ===== KEYBOARD SHORTCUTS STATE (Priority 1 - Keyboard Shortcuts & Accessibility) =====
+    # ===== KEYBOARD SHORTCUTS STATE (Priority 1) =====
     keyboard_help_visible: bool = False
+    show_performance_overlay: bool = False
+    network_stations_data: str = "[]"  # JSON of all stations
     
     # ===== 7x7 SECTOR GRID STATE (IBM DSP Authentic Feature) =====
     show_sector_grid: bool = False
@@ -157,13 +163,30 @@ class InteractiveSageState(rx.State):
     selected_sector_row: int = 3  # 0-6 (center = 3)
     selected_sector_col: int = 3  # 0-6 (center = 3)
     
+    @rx.var
+    def selected_track(self) -> Optional[state_model.Track]:
+        """Get the currently selected track object"""
+        if not self.selected_track_id:
+            return None
+        return next((t for t in self.tracks if t.id == self.selected_track_id), None)
+    
+    @rx.var
+    def current_workflow_step(self) -> str:
+        """Get current workflow step for progress bar"""
+        track = self.selected_track
+        if track:
+            return track.workflow_step
+        return "detect"
+
+    @rx.var
+    def active_track_count(self) -> int:
+        return len(self.tracks)
+
+    @rx.var
+    def active_interceptor_count(self) -> int:
+        return len(self.interceptors)
+
     # ===== SCENARIO EVENT SYSTEM STATE (Dynamic Scenarios) =====
-    _event_timeline: Optional[scenario_events.EventTimeline] = None  # Private - not serialized
-    scenario_elapsed_time: float = 0.0  # Seconds since scenario start
-    active_events_count: int = 0  # Count of events that have triggered
-    
-    # Note: geo_overlays removed from state - use geographic_overlays module directly in views
-    
     
     # ========================
     # SIMULATION CONTROL
@@ -272,6 +295,22 @@ class InteractiveSageState(rx.State):
                 track.y += 1.0
             elif track.y > 1.0:
                 track.y -= 1.0
+            
+            # Update t_minus for missiles (Time to Impact on Sector Center)
+            if track.track_type == "missile":
+                import math
+                # Assume target is center of sector (0.5, 0.5)
+                dx = 0.5 - track.x
+                dy = 0.5 - track.y
+                dist = math.sqrt(dx*dx + dy*dy)
+                
+                # Speed in normalized units per second
+                speed_norm = math.sqrt(track.vx*track.vx + track.vy*track.vy)
+                
+                if speed_norm > 0:
+                    track.t_minus = dist / speed_norm
+                else:
+                    track.t_minus = None
             
             # PERFORMANCE: Only regenerate tabular features if significant changes
             # Thresholds: 500ft altitude, 5° heading, 50 knots speed
@@ -1296,6 +1335,33 @@ class InteractiveSageState(rx.State):
         )
     
     # ========================
+    # KEYBOARD SHORTCUTS HANDLERS (Priority 1)
+    # ========================
+    
+    def toggle_keyboard_help(self):
+        """Toggle keyboard shortcuts help panel (?)"""
+        self.keyboard_help_visible = not self.keyboard_help_visible
+    
+    def toggle_performance_overlay(self):
+        """Toggle performance metrics overlay (Shift+P)"""
+        self.show_performance_overlay = not self.show_performance_overlay
+        action = "OPENED" if self.show_performance_overlay else "CLOSED"
+        self.add_system_message(f"Performance Overlay {action}")
+
+    def dismiss_panels(self):
+        """Dismiss all active panels/modals (Esc)"""
+        self.keyboard_help_visible = False
+        self.show_system_inspector = False
+        self.show_classification_panel = False
+        self.show_network_view = False
+        self.show_correlation_help = False
+        # Also disarm light gun if armed
+        if self.lightgun_armed:
+            self.disarm_lightgun()
+        
+        self.add_system_message("Panels dismissed")
+    
+    # ========================
     # SCENARIO DEBRIEF HANDLERS (Priority 4)
     # ========================
     
@@ -1642,10 +1708,98 @@ class InteractiveSageState(rx.State):
         
         step = mission.steps[self.current_step_num]
         
-        # TODO: Actually evaluate step.check_condition
-        # For now, auto-advance on any action
-        # if step.check_condition(self):
-        #     self.current_step_num += 1
+        if self.evaluate_mission_condition(step.check_condition):
+            self.current_step_num += 1
+
+    def evaluate_mission_condition(self, condition: str) -> bool:
+        """Evaluate a mission step condition"""
+        if condition == "system_powered_on":
+            return True  # Sim starts powered on
+            
+        elif condition == "system_operational":
+            return True  # Sim starts operational
+            
+        elif condition == "overlay_coastlines_active":
+            return "coastlines" in self.active_overlays
+            
+        elif condition == "lightgun_armed":
+            return self.lightgun_armed
+            
+        elif condition == "target_selected":
+            return self.selected_track_id != ""
+            
+        elif condition == "target_detail_visible":
+            return self.selected_track_id != ""
+            
+        elif condition == "hostile_target_selected":
+            track = next((t for t in self.tracks if t.id == self.selected_track_id), None)
+            return track is not None and track.track_type == "hostile"
+            
+        elif condition == "intercept_launched":
+            return any(i.status in ["SCRAMBLING", "AIRBORNE", "ENGAGING"] for i in self.interceptors)
+            
+        elif condition == "intercept_success":
+            # Check if any interceptor is returning after engagement or has destroyed target
+            # Simplified: just check if any interceptor is returning
+            return any(i.status == "RETURNING" for i in self.interceptors)
+            
+        elif condition == "filter_hostile_active":
+            return "hostile" in self.active_filters
+            
+        elif condition == "filter_friendly_active":
+            return "friendly" in self.active_filters
+            
+        elif condition == "filter_all_active":
+            return len(self.active_filters) == 0
+            
+        elif condition == "overlay_flight_paths_active":
+            return "flight_paths" in self.active_overlays
+            
+        elif condition == "tube_failure_detected":
+            # Check for failed or degrading tubes
+            has_failure = any(t.status in ["failed", "degrading"] for t in self.maintenance.tubes)
+            
+            # FORCE FAILURE if none exists (to prevent waiting)
+            if not has_failure:
+                import random
+                healthy_tubes = [t for t in self.maintenance.tubes if t.status == "ok"]
+                if healthy_tubes:
+                    tube = random.choice(healthy_tubes)
+                    tube.status = "degrading"
+                    tube.health = 50
+                    self.add_system_message("WARNING: Tube failure detected", "MAINTENANCE")
+                    return True
+            
+            return has_failure
+            
+        elif condition == "tube_selected_for_replacement":
+            return self.replacing_tube_id != -1
+            
+        elif condition == "tube_replacement_started":
+            if self.replacing_tube_id != -1:
+                tube = self.maintenance.tubes[self.replacing_tube_id]
+                return tube.status == "warming_up"
+            return False
+            
+        elif condition == "tube_replacement_complete":
+            # This is tricky as it happens over time. 
+            # We'll assume if we were replacing and now it's OK, we're good.
+            # For simplicity, just check if we have no failed tubes if we were previously replacing
+            return not any(t.status in ["failed", "degrading"] for t in self.maintenance.tubes)
+            
+        elif condition == "program_selected":
+            return self.current_program != ""
+            
+        elif condition == "program_loaded":
+            return self.cpu_trace is not None and self.cpu_trace.status == "loaded"
+            
+        elif condition == "program_running":
+            return self.cpu_trace is not None and self.cpu_trace.status == "running"
+            
+        elif condition == "program_complete":
+            return self.cpu_trace is not None and self.cpu_trace.status == "completed"
+            
+        return False
     
     def previous_mission(self):
         """Navigate to the previous tutorial mission"""
@@ -2012,7 +2166,9 @@ def index() -> rx.Component:
         # Keyboard shortcuts system (Priority 1 - Keyboard Shortcuts & Accessibility)
         keyboard_shortcuts.keyboard_shortcuts_component(
             InteractiveSageState.keyboard_help_visible,
-            on_close_help=InteractiveSageState.toggle_keyboard_help
+            on_close_help=InteractiveSageState.toggle_keyboard_help,
+            on_toggle_inspector=InteractiveSageState.toggle_system_inspector,
+            on_dismiss_panels=InteractiveSageState.dismiss_panels
         ),
         
         rx.container(
@@ -2084,6 +2240,9 @@ def index() -> rx.Component:
                 
                 # CENTER COLUMN: Radar Scope + Tutorial
                 rx.vstack(
+                    # Workflow Progress Bar (Requirement #1)
+                    workflow_progress_bar(InteractiveSageState.current_workflow_step),
+                    
                     # Radar scope (Canvas with inline initialization)
                     rx.box(
                         radar_scope_with_init(),
@@ -2115,16 +2274,16 @@ def index() -> rx.Component:
                         InteractiveSageState.resume_simulation,
                         InteractiveSageState.set_speed_multiplier
                     ),
-                    light_gun.track_detail_panel(
+                    # Unified Operator Workflow Panel (Requirement #1)
+                    # Replaces separate light gun and interceptor panels
+                    unified_action_panel(
                         InteractiveSageState.selected_track,
-                        InteractiveSageState.lightgun_armed,
-                        on_launch=InteractiveSageState.launch_intercept,
-                        on_clear=InteractiveSageState.disarm_lightgun
+                        InteractiveSageState
                     ),
+                    # Keep light gun controls for explicit arming if needed, but panel handles it
                     light_gun.light_gun_controls(
                         on_arm=InteractiveSageState.arm_lightgun
                     ),
-                    interceptor_panel.interceptor_panel(),
                     system_messages.system_messages_panel(
                         messages=InteractiveSageState.system_messages_log,
                         max_height="250px",
@@ -2186,6 +2345,10 @@ def index() -> rx.Component:
             radar_processing_rate=InteractiveSageState.radar_processing_rate,
             track_processing_rate=InteractiveSageState.track_processing_rate,
             display_processing_rate=InteractiveSageState.display_processing_rate,
+            active_tracks=InteractiveSageState.active_track_count,
+            active_interceptors=InteractiveSageState.active_interceptor_count,
+            world_time=InteractiveSageState.world_time,
+            speed_multiplier=InteractiveSageState.speed_multiplier,
             on_close=InteractiveSageState.toggle_system_inspector
         ),
         
@@ -2214,23 +2377,6 @@ def index() -> rx.Component:
         
         # Sound Effects System (Priority 5) - config managed through UI event handlers
         rx.script(sound_effects.SOUND_PLAYER_SCRIPT),
-        
-        rx.html(light_gun.LIGHT_GUN_KEYBOARD_SCRIPT),
-        
-        # System Inspector keyboard shortcut (Shift+I)
-        rx.script("""
-            document.addEventListener('keydown', function(event) {
-                // Shift+I to toggle System Inspector
-                if (event.shiftKey && event.key === 'I') {
-                    event.preventDefault();
-                    console.log('[System Inspector] Shift+I pressed, toggling...');
-                    // Trigger Reflex event through WebSocket
-                    if (window.__reflex__) {
-                        window.__reflex__.toggle_system_inspector();
-                    }
-                }
-            });
-        """),
         
         # Bridge canvas track clicks to Reflex event handlers via localStorage
         rx.script("""

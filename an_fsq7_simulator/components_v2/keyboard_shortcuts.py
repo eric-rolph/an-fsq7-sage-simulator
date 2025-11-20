@@ -321,7 +321,13 @@ def keyboard_shortcuts_script() -> str:
                 closeButton.click();
                 handled = true;
             }
-            // Close any modals or panels
+            // Trigger dismiss event via hidden button
+            const dismissButton = document.getElementById('keyboard-dismiss-button');
+            if (dismissButton) {
+                dismissButton.click();
+                handled = true;
+            }
+            // Also dispatch event for client-side listeners
             window.dispatchEvent(new CustomEvent('sage:dismiss-panels'));
         }
         
@@ -334,15 +340,23 @@ def keyboard_shortcuts_script() -> str:
         // Shift+I - System Inspector
         else if (key === 'I' && shift && !ctrl && !alt) {
             console.log('[Keyboard] Toggle system inspector');
+            const inspectorButton = document.getElementById('keyboard-inspector-toggle-button');
+            if (inspectorButton) {
+                inspectorButton.click();
+                handled = true;
+            }
             window.dispatchEvent(new CustomEvent('sage:toggle-inspector'));
-            handled = true;
         }
         
         // Shift+P - Performance overlay
         else if (key === 'P' && shift && !ctrl && !alt) {
             console.log('[Keyboard] Toggle performance overlay');
+            const perfButton = document.getElementById('keyboard-performance-toggle-button');
+            if (perfButton) {
+                perfButton.click();
+                handled = true;
+            }
             window.dispatchEvent(new CustomEvent('sage:toggle-performance'));
-            handled = true;
         }
         
         // Shift+N - Network view
@@ -358,6 +372,7 @@ def keyboard_shortcuts_script() -> str:
             handled = clickButtonByText('LAUNCH') || 
                       clickButtonByText('ASSIGN') ||
                       clickButtonByText('HOSTILE') ||
+                      clickButtonByText('VIEW DETAILS') ||
                       clickButtonByText('START');
         }
         
@@ -382,7 +397,7 @@ def keyboard_shortcuts_script() -> str:
         // C - Clear selection
         else if (key === 'c' && !ctrl && !alt && !shift) {
             console.log('[Keyboard] Clear selection');
-            handled = clickButtonByText('CLEAR');
+            handled = clickButtonByText('CLEAR') || clickButtonByText('CANCEL');
         }
         
         // A - Assign interceptor
@@ -427,6 +442,15 @@ def keyboard_shortcuts_script() -> str:
                 scenarioButtons[index].click();
                 handled = true;
             }
+        }
+        
+        // Enter - Confirm/Launch/Start
+        else if (key === 'Enter' && !ctrl && !alt && !shift) {
+            console.log('[Keyboard] Enter key pressed');
+            handled = clickButtonByText('CONFIRM') || 
+                      clickButtonByText('LAUNCH') || 
+                      clickButtonByText('START') ||
+                      clickButtonByText('NEW CONTACT');
         }
         
         // Tab navigation (update focusable elements list)
@@ -528,7 +552,13 @@ textarea:focus-visible,
     """.strip()
 
 
-def keyboard_shortcuts_component(keyboard_help_visible_var, on_close_help=None) -> rx.Component:
+def keyboard_shortcuts_component(
+    keyboard_help_visible_var, 
+    on_close_help=None,
+    on_toggle_inspector=None,
+    on_toggle_performance=None,
+    on_dismiss_panels=None
+) -> rx.Component:
     """
     Main keyboard shortcuts component.
     
@@ -538,6 +568,9 @@ def keyboard_shortcuts_component(keyboard_help_visible_var, on_close_help=None) 
     Args:
         keyboard_help_visible_var: Reflex Var for keyboard_help_visible state
         on_close_help: Event handler for closing the help panel (optional)
+        on_toggle_inspector: Event handler for toggling system inspector
+        on_toggle_performance: Event handler for toggling performance overlay
+        on_dismiss_panels: Event handler for dismissing panels (Esc)
     
     Returns:
         Reflex component with keyboard functionality
@@ -558,8 +591,28 @@ def keyboard_shortcuts_component(keyboard_help_visible_var, on_close_help=None) 
         # This button is always present but invisible, allowing JavaScript to trigger the state change
         rx.button(
             id="keyboard-help-toggle-button",
-            on_click=on_close_help if on_close_help else lambda: None,
+            on_click=on_close_help,
             style={"display": "none"},  # Completely hidden from UI
+            aria_hidden="true",
+        ),
+        
+        # Hidden buttons for other global shortcuts
+        rx.button(
+            id="keyboard-inspector-toggle-button",
+            on_click=on_toggle_inspector,
+            style={"display": "none"},
+            aria_hidden="true",
+        ),
+        rx.button(
+            id="keyboard-performance-toggle-button",
+            on_click=on_toggle_performance,
+            style={"display": "none"},
+            aria_hidden="true",
+        ),
+        rx.button(
+            id="keyboard-dismiss-button",
+            on_click=on_dismiss_panels,
+            style={"display": "none"},
             aria_hidden="true",
         ),
         

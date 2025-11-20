@@ -36,12 +36,17 @@ class Track:
     time_detected: float = 0.0  # Seconds since scenario start
     selected: bool = False  # Light gun selection state
     trail: List[tuple[float, float]] = field(default_factory=list)  # Position history for trail rendering
+    t_minus: Optional[float] = None  # Time to impact (for missiles)
     
     # Correlation state (for system transparency and learning)
     correlation_state: str = "uncorrelated"  # "uncorrelated", "correlating", "correlated"
     confidence_level: str = "unknown"  # "low", "medium", "high", "unknown"
     correlation_reason: str = ""  # Why classified: "auto_iff", "auto_velocity", "manual", "visual"
     classification_time: Optional[float] = None  # When track was classified
+    
+    # Workflow state for parallel tasking
+    workflow_step: str = "detect"  # detect, inspect, designate, assign, confirm
+    workflow_interceptor_id: str = ""  # ID of interceptor assigned in workflow
     
     # Tabular display features (authentic SAGE format - C702-416L-ST Manual Figure 4-5)
     # These are generated from track data and displayed as 5x7 dot-matrix characters
